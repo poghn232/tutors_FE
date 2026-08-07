@@ -12,7 +12,7 @@ export default function App() {
         <ul style={{ color: '#cbd5e1', lineHeight: '1.8', paddingLeft: '20px' }}>
           <li><strong>Framework:</strong> React (Vite)</li>
           <li><strong>Deployment:</strong> Vercel</li>
-          <li><strong>Backend API:</strong> Java Spring Boot (PostgreSQL trên Supabase)</li>
+          <li><strong>Backend API:</strong> Java Spring Boot (MySQL)</li>
         </ul>
       </div>
     </div>
