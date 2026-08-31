@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, FileText, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
+import LessonList from '../components/LessonList';
+import { User, FileText, Calendar, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function DashboardPage({ onNavigate }) {
   const { user } = useAuth();
@@ -53,7 +54,7 @@ export default function DashboardPage({ onNavigate }) {
       </div>
 
       {/* Main Feature Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
         
         {/* Security / Auth Status */}
         <div className="card">
@@ -62,60 +63,31 @@ export default function DashboardPage({ onNavigate }) {
             <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Xác thực & Bảo mật</h3>
           </div>
           <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            Tài khoản đã được bảo mật với mật khẩu mã hóa BCrypt và phiên đăng nhập JWT hợp lệ.
+            Mật khẩu mã hóa **BCrypt** & Phiên làm việc bảo mật **JWT Token**.
           </p>
-          <div style={{ marginTop: '16px', fontSize: '0.85rem', color: '#10b981', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={16} /> Mật khẩu đăng nhập đã mã hóa
+          <div style={{ marginTop: '12px', fontSize: '0.85rem', color: '#10b981', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={16} /> Đã bảo vệ tài khoản
           </div>
         </div>
 
-        {/* Core Feature Quick Access */}
-        {user.role === 'TUTOR' && (
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <FileText style={{ color: '#2563eb' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Quản lý Buổi học & AI Note</h3>
-            </div>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              Nhập ghi chú sau buổi học để AI Note tự động chuẩn hóa và gửi báo cáo rõ ràng cho phụ huynh.
-            </p>
-            <button className="btn btn-secondary" style={{ marginTop: '16px', width: '100%', fontSize: '0.85rem' }}>
-              Tạo ghi chú buổi học mới
-            </button>
+        {/* Core Feature Quick Overview */}
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <Sparkles style={{ color: '#2563eb' }} size={22} />
+            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>AI Note GiaSuHQ</h3>
           </div>
-        )}
-
-        {user.role === 'PARENT' && (
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <Calendar style={{ color: '#059669' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Tiến độ Học tập của Con</h3>
-            </div>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              Xem tóm tắt nội dung bài học và nhận xét tiến độ từ Gia sư được tổng hợp bởi AI Note.
-            </p>
-            <button className="btn btn-secondary" style={{ marginTop: '16px', width: '100%', fontSize: '0.85rem' }}>
-              Xem báo cáo buổi học gần nhất
-            </button>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
+            Tổng hợp thông minh ghi chú giảng dạy thành báo cáo rõ ràng cho phụ huynh & học sinh.
+          </p>
+          <div style={{ marginTop: '12px', fontSize: '0.85rem', color: '#2563eb', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={16} /> Hoàn toàn Miễn phí cho MVP
           </div>
-        )}
-
-        {user.role === 'STUDENT' && (
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <FileText style={{ color: '#d97706' }} size={22} />
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Ghi nhớ Bài giảng</h3>
-            </div>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              Theo dõi các kiến thức trọng tâm đã học và hướng dẫn ôn tập từ Gia sư.
-            </p>
-            <button className="btn btn-secondary" style={{ marginTop: '16px', width: '100%', fontSize: '0.85rem' }}>
-              Xem nhật ký bài học
-            </button>
-          </div>
-        )}
+        </div>
 
       </div>
+
+      {/* Embedded Lesson Management List Section for the User Role */}
+      <LessonList user={user} />
     </div>
   );
 }
