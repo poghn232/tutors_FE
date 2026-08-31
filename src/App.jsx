@@ -1,20 +1,49 @@
-import React from 'react'
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+
+function AppContent() {
+  const { user, loading } = useAuth();
+  const [currentView, setCurrentView] = useState('dashboard');
+
+  const handleNavigate = (view) => {
+    setCurrentView(view);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#64748b' }}>
+        Đang tải ứng dụng GiaSuHQ...
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <Navbar onNavigate={handleNavigate} />
+
+      <main className="main-content">
+        {(!user && currentView === 'login') && <LoginPage onNavigate={handleNavigate} />}
+        {(!user && currentView === 'register') && <RegisterPage onNavigate={handleNavigate} />}
+        {(user || currentView === 'dashboard' || currentView === 'home') && (
+          user ? <DashboardPage onNavigate={handleNavigate} /> : <LoginPage onNavigate={handleNavigate} />
+        )}
+      </main>
+
+      <footer style={{ borderTop: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
+        © {new Date().getFullYear()} GiaSuHQ - Nền tảng Hỗ trợ Dạy kèm & AI Note.
+      </footer>
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: '#38bdf8' }}>GiaSuHQ Frontend</h1>
-      <p style={{ fontSize: '1.2rem', color: '#94a3b8', marginBottom: '2rem' }}>
-        Nền tảng hỗ trợ dạy kèm & Tóm tắt ghi chú bằng AI Note dành cho Gia sư, Học sinh và Phụ huynh.
-      </p>
-      <div style={{ padding: '24px', background: '#1e293b', borderRadius: '12px', textAlign: 'left', border: '1px solid #334155' }}>
-        <h3 style={{ color: '#f8fafc', marginBottom: '12px' }}>⚡ Cấu hình khởi tạo:</h3>
-        <ul style={{ color: '#cbd5e1', lineHeight: '1.8', paddingLeft: '20px' }}>
-          <li><strong>Framework:</strong> React (Vite)</li>
-          <li><strong>Deployment:</strong> Vercel</li>
-          <li><strong>Backend API:</strong> Java Spring Boot (MySQL)</li>
-        </ul>
-      </div>
-    </div>
-  )
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
