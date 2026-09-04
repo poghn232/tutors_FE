@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { lessonService } from '../services/lessonService';
-import { Calendar, Clock, BookOpen, CheckCircle, AlertCircle, FileText, Plus, Sparkles, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { classService } from '../services/classService';
+import { Calendar, Clock, BookOpen, CheckCircle, AlertCircle, FileText, Plus, Sparkles, User, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export default function LessonList({ user }) {
   const [lessons, setLessons] = useState([]);
+  const [classList, setClassList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
   // State cho Form tạo buổi học mới (Gia sư)
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
@@ -42,9 +45,59 @@ export default function LessonList({ user }) {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const res = await classService.getClasses();
+      if (res.success && res.data) {
+        setClassList(res.data);
+        if (res.data.length > 0) {
+          setSelectedClassId(res.data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Không thể lấy danh sách lớp học:', err);
+    }
+  };
+
   useEffect(() => {
     fetchLessons();
-  }, []);
+    if (user.role === 'TUTOR') {
+      fetchClasses();
+    }
+  }, [user]);
+
+  const handleCreateLesson = async (e) => {
+    e.preventDefault();
+    if (!selectedClassId || !newTitle.trim() || !newStartTime || !newEndTime) {
+      alert('Vui lòng điền đầy đủ các thông tin bắt buộc.');
+      return;
+    }
+
+    try {
+      setCreateSubmitting(true);
+      const payload = {
+        classId: Number(selectedClassId),
+        title: newTitle.trim(),
+        startTime: newStartTime,
+        endTime: newEndTime
+      };
+      const res = await lessonService.createLesson(payload);
+      if (res.success) {
+        alert('Tạo buổi học mới thành công!');
+        setShowCreateModal(false);
+        setNewTitle('');
+        setNewStartTime('');
+        setNewEndTime('');
+        fetchLessons();
+      } else {
+        alert(res.message || 'Tạo buổi học thất bại.');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi tạo buổi học.');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
 
   const handleStatusChange = async (lessonId, newStatus) => {
     try {
@@ -390,6 +443,109 @@ export default function LessonList({ user }) {
                   disabled={noteSubmitting}
                 >
                   {noteSubmitting ? 'Đang lưu...' : 'Lưu Ghi chú & AI Note'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thêm buổi học mới (Gia sư) */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div className="card" style={{ maxWidth: '520px', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Lên lịch buổi học mới</h3>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLesson}>
+              <div className="form-group">
+                <label>Chọn Lớp học (*)</label>
+                {classList.length === 0 ? (
+                  <p style={{ color: '#ef4444', fontSize: '0.875rem' }}>
+                    Bạn chưa có lớp học nào. Hãy sang tab "Lớp học" để tạo lớp trước!
+                  </p>
+                ) : (
+                  <select
+                    className="form-control"
+                    value={selectedClassId}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    required
+                  >
+                    {classList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.className} ({c.subjectName}) - {c.studentName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Tên bài học / Tiêu đề (*)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ví dụ: Buổi 3: Luyện giải đề Cực trị Hàm số"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label>Thời gian bắt đầu (*)</label>
+                  <input
+                    type="datetime-local"
+                    className="form-control"
+                    value={newStartTime}
+                    onChange={(e) => setNewStartTime(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Thời gian kết thúc (*)</label>
+                  <input
+                    type="datetime-local"
+                    className="form-control"
+                    value={newEndTime}
+                    onChange={(e) => setNewEndTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={createSubmitting || classList.length === 0}
+                >
+                  {createSubmitting ? 'Đang tạo...' : 'Tạo buổi học'}
                 </button>
               </div>
             </form>

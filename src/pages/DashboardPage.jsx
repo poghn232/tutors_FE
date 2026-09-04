@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LessonList from '../components/LessonList';
-import { User, FileText, Calendar, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
+import ClassManagement from '../components/ClassManagement';
+import TutorCatalog from '../components/TutorCatalog';
+import ProfileView from '../components/ProfileView';
+import PaymentView from '../components/PaymentView';
+import { User, Calendar, BookOpen, Users, CreditCard, UserCheck, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function DashboardPage({ onNavigate }) {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('lessons');
 
   if (!user) {
     return (
@@ -30,64 +35,155 @@ export default function DashboardPage({ onNavigate }) {
   return (
     <div>
       {/* Welcome Banner */}
-      <div className="card" style={{ marginBottom: '24px', backgroundColor: '#ffffff' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{
-            backgroundColor: '#eff6ff',
-            color: '#2563eb',
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
+      <div className="card" style={{ marginBottom: '20px', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              backgroundColor: '#eff6ff',
+              color: '#2563eb',
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '1.25rem'
+            }}>
+              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.35rem', marginBottom: '2px', color: '#0f172a' }}>Xin chào, {user.fullName}!</h2>
+              <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
+                Tài khoản: <strong>{user.email}</strong> • Vai trò: <span className="badge badge-tutor" style={{ textTransform: 'none' }}>{getRoleLabel(user.role)}</span>
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ShieldCheck size={18} /> Hệ thống Bảo mật JWT & BCrypt
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '2px solid #e2e8f0',
+        marginBottom: '20px',
+        overflowX: 'auto',
+        paddingBottom: '2px'
+      }}>
+        <button
+          onClick={() => setActiveTab('lessons')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            color: activeTab === 'lessons' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'lessons' ? '3px solid #2563eb' : '3px solid transparent',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <User size={28} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.4rem', marginBottom: '4px' }}>Xin chào, {user.fullName}!</h2>
-            <p style={{ color: '#64748b', fontSize: '0.95rem' }}>
-              Tài khoản: <strong>{user.email}</strong> • Vai trò: <span className="badge badge-tutor" style={{ textTransform: 'none' }}>{getRoleLabel(user.role)}</span>
-            </p>
-          </div>
-        </div>
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Calendar size={18} /> Buổi học & AI Note
+        </button>
+
+        <button
+          onClick={() => setActiveTab('classes')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            color: activeTab === 'classes' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'classes' ? '3px solid #2563eb' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <BookOpen size={18} /> Lớp học của tôi
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tutors')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            color: activeTab === 'tutors' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'tutors' ? '3px solid #2563eb' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Users size={18} /> Danh mục Gia sư
+        </button>
+
+        <button
+          onClick={() => setActiveTab('payment')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            color: activeTab === 'payment' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'payment' ? '3px solid #2563eb' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <CreditCard size={18} /> Học phí (Chờ API Payment)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('profile')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.95rem',
+            color: activeTab === 'profile' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'profile' ? '3px solid #2563eb' : '3px solid transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <UserCheck size={18} /> Hồ sơ cá nhân
+        </button>
       </div>
 
-      {/* Main Feature Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-        
-        {/* Security / Auth Status */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <ShieldCheck style={{ color: '#10b981' }} size={22} />
-            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Xác thực & Bảo mật</h3>
-          </div>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            Mật khẩu mã hóa **BCrypt** & Phiên làm việc bảo mật **JWT Token**.
-          </p>
-          <div style={{ marginTop: '12px', fontSize: '0.85rem', color: '#10b981', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={16} /> Đã bảo vệ tài khoản
-          </div>
-        </div>
-
-        {/* Core Feature Quick Overview */}
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <Sparkles style={{ color: '#2563eb' }} size={22} />
-            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>AI Note GiaSuHQ</h3>
-          </div>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            Tổng hợp thông minh ghi chú giảng dạy thành báo cáo rõ ràng cho phụ huynh & học sinh.
-          </p>
-          <div style={{ marginTop: '12px', fontSize: '0.85rem', color: '#2563eb', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle2 size={16} /> Hoàn toàn Miễn phí cho MVP
-          </div>
-        </div>
-
-      </div>
-
-      {/* Embedded Lesson Management List Section for the User Role */}
-      <LessonList user={user} />
+      {/* Tab Content Display */}
+      {activeTab === 'lessons' && <LessonList user={user} />}
+      {activeTab === 'classes' && <ClassManagement user={user} />}
+      {activeTab === 'tutors' && <TutorCatalog />}
+      {activeTab === 'payment' && <PaymentView />}
+      {activeTab === 'profile' && <ProfileView />}
     </div>
   );
 }
