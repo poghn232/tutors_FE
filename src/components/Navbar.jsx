@@ -1,8 +1,19 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User as UserIcon, BookOpen } from 'lucide-react';
+import { 
+  LogOut, 
+  BookOpen, 
+  Search, 
+  GraduationCap, 
+  FileText, 
+  CheckSquare, 
+  Calendar, 
+  UserCheck, 
+  CreditCard,
+  LayoutDashboard
+} from 'lucide-react';
 
-export default function Navbar({ onNavigate }) {
+export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const { user, logout } = useAuth();
 
   const getRoleBadge = (role) => {
@@ -18,54 +29,84 @@ export default function Navbar({ onNavigate }) {
     }
   };
 
+  // Define tabs based on role matching Figma EXE-2 design
+  const isTutor = user?.role === 'TUTOR';
+
+  const navItems = isTutor
+    ? [
+        { id: 'dashboard', label: 'Tổng Quan', icon: <LayoutDashboard size={18} /> },
+        { id: 'lessons', label: 'Lịch Dạy', icon: <Calendar size={18} /> },
+        { id: 'materials', label: 'Tài Liệu', icon: <FileText size={18} /> },
+        { id: 'assignments', label: 'Bài Tập', icon: <CheckSquare size={18} /> },
+        { id: 'profile', label: 'Hồ Sơ', icon: <UserCheck size={18} /> },
+        { id: 'payment', label: 'Thanh Toán', icon: <CreditCard size={18} /> },
+      ]
+    : [
+        { id: 'tutors', label: 'Tìm Gia Sư', icon: <Search size={18} /> },
+        { id: 'classes', label: 'Lớp Học Của Tôi', icon: <GraduationCap size={18} /> },
+        { id: 'materials', label: 'Tài Liệu', icon: <FileText size={18} /> },
+        { id: 'assignments', label: 'Bài Tập', icon: <CheckSquare size={18} /> },
+        { id: 'profile', label: 'Hồ Sơ', icon: <UserCheck size={18} /> },
+      ];
+
   return (
     <header style={{
       backgroundColor: '#ffffff',
       borderBottom: '1px solid #e2e8f0',
-      padding: '16px 24px',
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)'
+      padding: '12px 24px',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
     }}>
       <div style={{
-        maxWidth: '1100px',
+        maxWidth: '1200px',
         margin: '0 auto',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        gap: '20px'
       }}>
         {/* Brand Logo */}
         <div 
-          onClick={() => onNavigate('home')} 
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+          onClick={() => onNavigate(isTutor ? 'dashboard' : 'classes')} 
+          className="navbar-brand"
         >
-          <div style={{
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            width: '36px',
-            height: '36px',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            fontSize: '18px'
-          }}>
-            <BookOpen size={20} />
+          <div className="brand-icon">
+            <BookOpen size={22} />
           </div>
           <div>
-            <span style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>GiaSuHQ</span>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginTop: '-2px' }}>
-              Quản lý Dạy kèm & AI Note
-            </span>
+            <div className="brand-title">GiaSuHQ</div>
+            <div className="brand-subtitle">Nền tảng Dạy kèm & AI Note</div>
           </div>
         </div>
 
-        {/* User Status / Navigation */}
+        {/* Role-based Nav Tabs */}
+        {user && (
+          <nav className="nav-links-wrap">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`nav-tab-btn ${activeTab === item.id ? 'active' : ''}`}
+                onClick={() => onNavigate(item.id)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {/* User Status / Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#0f172a' }}>{user.fullName}</div>
-                <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end', marginTop: '2px' }}>
+                <div style={{ fontWeight: '700', fontSize: '0.92rem', color: '#0f172a' }}>
+                  {user.fullName}
+                </div>
+                <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
                   {getRoleBadge(user.role)}
                 </div>
               </div>
@@ -73,6 +114,7 @@ export default function Navbar({ onNavigate }) {
                 onClick={logout}
                 className="btn btn-secondary" 
                 style={{ padding: '6px 12px', fontSize: '0.85rem', gap: '6px' }}
+                title="Đăng xuất khỏi hệ thống"
               >
                 <LogOut size={16} />
                 Đăng xuất

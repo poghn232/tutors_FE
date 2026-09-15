@@ -1,23 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import { tutorService } from '../services/tutorService';
-import { Search, Star, Award, BookOpen, DollarSign, Mail, Phone, UserCheck } from 'lucide-react';
+import { 
+  Search, 
+  Star, 
+  Award, 
+  CheckCircle2, 
+  DollarSign, 
+  User, 
+  BookOpen, 
+  Calendar, 
+  SlidersHorizontal,
+  GraduationCap
+} from 'lucide-react';
+import BookingView from './BookingView';
 
-export default function TutorCatalog() {
+export default function TutorCatalog({ onSelectTutor }) {
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTutor, setSelectedTutor] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedGender, setSelectedGender] = useState('all');
+  const [selectedDegree, setSelectedDegree] = useState('all');
+  const [activeBookingTutor, setActiveBookingTutor] = useState(null);
+
+  // Mock list matching Figma EXE-2 frame 15:2008
+  const defaultTutors = [
+    {
+      id: 1,
+      fullName: 'Hoàng Thiên Ưng',
+      degree: 'Thạc sĩ Toán học',
+      school: 'Đại học Bách Khoa Hà Nội',
+      experienceYears: 8,
+      rating: 4.9,
+      reviewsCount: 127,
+      studentsCount: 243,
+      hourlyRate: 250000,
+      gender: 'male',
+      educationLevel: 'master',
+      subjects: ['Toán học', 'Vật lý', 'Tin học'],
+      bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
+      verified: true,
+    },
+    {
+      id: 2,
+      fullName: 'TS. Nguyễn Thị Hoa',
+      degree: 'Tiến sĩ Sư phạm Toán',
+      school: 'Đại học Sư phạm Hà Nội',
+      experienceYears: 10,
+      rating: 5.0,
+      reviewsCount: 184,
+      studentsCount: 310,
+      hourlyRate: 300000,
+      gender: 'female',
+      educationLevel: 'doctor',
+      subjects: ['Toán học', 'Luyện thi THPT'],
+      bio: 'Chuyên gia luyện thi THPT Quốc gia môn Toán với hơn 10 năm kinh nghiệm. Đã giúp hơn 150 học sinh đạt 9+ môn Toán trong các kỳ thi đại học.',
+      verified: true,
+    },
+    {
+      id: 3,
+      fullName: 'TS. Phạm Thị Lan',
+      degree: 'Tiến sĩ Hóa học',
+      school: 'Đại học Khoa học Tự nhiên',
+      experienceYears: 7,
+      rating: 4.9,
+      reviewsCount: 96,
+      studentsCount: 180,
+      hourlyRate: 280000,
+      gender: 'female',
+      educationLevel: 'doctor',
+      subjects: ['Hóa học', 'Sinh học'],
+      bio: 'Giảng viên chuyên ngành Hóa học hữu cơ. Phương pháp dạy học trực quan, biến các phương trình hóa học phức tạp thành sơ đồ tư duy sinh động.',
+      verified: true,
+    },
+    {
+      id: 4,
+      fullName: 'Trần Minh Đức',
+      degree: 'Cử nhân Kinh tế Quốc tế - IELTS 8.5',
+      school: 'Đại học Ngoại Thương',
+      experienceYears: 5,
+      rating: 4.8,
+      reviewsCount: 112,
+      studentsCount: 205,
+      hourlyRate: 250000,
+      gender: 'male',
+      educationLevel: 'bachelor',
+      subjects: ['Tiếng Anh', 'Luyện thi THPT'],
+      bio: 'Cựu học sinh Chuyên Anh Amsterdam, đạt IELTS 8.5 từ năm 20 tuổi. Chuyên dạy phát âm chuẩn, tư duy phản biện tiếng Anh và mẹo giải đề đọc hiểu.',
+      verified: true,
+    },
+  ];
 
   useEffect(() => {
     async function loadTutors() {
       try {
         setLoading(true);
         const res = await tutorService.getTutors();
-        if (res.success) {
-          setTutors(res.data || []);
+        if (res.success && res.data && res.data.length > 0) {
+          setTutors(res.data);
+        } else {
+          setTutors(defaultTutors);
         }
       } catch (err) {
-        console.error('Lỗi khi tải danh sách gia sư:', err);
+        console.error('Lỗi khi tải danh sách gia sư, dùng dữ liệu mẫu Figma:', err);
+        setTutors(defaultTutors);
       } finally {
         setLoading(false);
       }
@@ -25,159 +111,266 @@ export default function TutorCatalog() {
     loadTutors();
   }, []);
 
+  const subjectsList = [
+    { id: 'all', label: 'Tất cả môn học' },
+    { id: 'Toán học', label: 'Toán học' },
+    { id: 'Vật lý', label: 'Vật lý' },
+    { id: 'Hóa học', label: 'Hóa học' },
+    { id: 'Sinh học', label: 'Sinh học' },
+    { id: 'Tiếng Anh', label: 'Tiếng Anh' },
+    { id: 'Tin học', label: 'Tin học' },
+    { id: 'Luyện thi THPT', label: 'Luyện thi THPT' },
+  ];
+
   const filteredTutors = tutors.filter((t) => {
     const term = searchQuery.toLowerCase();
-    return (
+    const matchSearch = (
       (t.fullName && t.fullName.toLowerCase().includes(term)) ||
+      (t.school && t.school.toLowerCase().includes(term)) ||
       (t.bio && t.bio.toLowerCase().includes(term)) ||
-      (t.qualification && t.qualification.toLowerCase().includes(term))
+      (t.subjects && t.subjects.some(s => s.toLowerCase().includes(term)))
     );
+
+    const matchSubject = selectedSubject === 'all' || (t.subjects && t.subjects.includes(selectedSubject));
+    const matchGender = selectedGender === 'all' || t.gender === selectedGender;
+    const matchDegree = selectedDegree === 'all' || t.educationLevel === selectedDegree;
+
+    return matchSearch && matchSubject && matchGender && matchDegree;
   });
 
   const formatCurrency = (val) => {
-    if (!val) return 'Thỏa thuận';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val) + '/giờ';
+    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
   };
 
-  if (loading) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Đang tải danh sách gia sư...</div>;
+  if (activeBookingTutor) {
+    return (
+      <BookingView 
+        tutor={activeBookingTutor} 
+        onBack={() => setActiveBookingTutor(null)} 
+      />
+    );
   }
 
   return (
-    <div style={{ marginTop: '24px' }}>
-      {/* Header & Search Bar */}
-      <div style={{ marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1.25rem', color: '#0f172a', margin: 0 }}>
-          Danh mục Gia sư Chất lượng cao ({filteredTutors.length} gia sư)
-        </h3>
-        <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 16px 0' }}>
-          Đội ngũ Gia sư uy tín, giàu kinh nghiệm giảng dạy các môn học từ Lớp 1 - Lớp 12 & Ôn thi Đại học.
-        </p>
+    <div>
+      {/* Header */}
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Tìm Gia Sư Phù Hợp</h2>
+          <p className="section-desc">
+            Kết nối với hơn 2.400+ gia sư chất lượng cao, đúng môn, đúng trình độ trên toàn quốc
+          </p>
+        </div>
 
-        <div style={{ position: 'relative', maxWidth: '480px' }}>
+        {/* Search Input */}
+        <div style={{ position: 'relative', width: '320px' }}>
           <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input
             type="text"
             className="form-control"
-            style={{ paddingLeft: '40px' }}
-            placeholder="Tìm theo tên gia sư, bằng cấp, môn học..."
+            style={{ paddingLeft: '40px', height: '44px' }}
+            placeholder="Tìm theo tên gia sư, môn học..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      {filteredTutors.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-          Không tìm thấy gia sư nào phù hợp với tìm kiếm.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-          {filteredTutors.map((tutor) => (
-            <div key={tutor.id} className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                  <div style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    backgroundColor: '#eff6ff',
-                    color: '#2563eb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '1.2rem',
-                    border: '2px solid #bfdbfe'
-                  }}>
-                    {tutor.fullName ? tutor.fullName.charAt(0).toUpperCase() : 'G'}
-                  </div>
+      {/* Catalog Layout: Left Filter Sidebar + Right Tutor Grid (Figma 15:2008) */}
+      <div className="catalog-layout">
+        {/* Filter Sidebar */}
+        <aside className="filter-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: '#0f172a', fontWeight: '800' }}>
+            <SlidersHorizontal size={18} />
+            <span>BỘ LỌC TÌM KIẾM</span>
+          </div>
 
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', margin: '0 0 2px 0', color: '#0f172a' }}>{tutor.fullName}</h4>
-                    <span className="badge badge-tutor" style={{ fontSize: '0.75rem' }}>
-                      {tutor.qualification || 'Gia sư Chuyên nghiệp'}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.875rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Award size={16} color="#f59e0b" />
-                    <span>Kinh nghiệm: <strong>{tutor.experienceYears ? `${tutor.experienceYears} năm` : 'Trên 2 năm'}</strong></span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <DollarSign size={16} color="#10b981" />
-                    <span>Học phí: <strong style={{ color: '#059669' }}>{formatCurrency(tutor.hourlyRate || 150000)}</strong></span>
-                  </div>
-                  {tutor.bio && (
-                    <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      "{tutor.bio}"
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+          {/* Subjects */}
+          <div className="filter-group">
+            <span className="filter-label">Môn Học</span>
+            <div className="filter-chip-grid">
+              {subjectsList.map((item) => (
                 <button
-                  onClick={() => setSelectedTutor(tutor)}
-                  className="btn btn-secondary btn-block"
-                  style={{ fontSize: '0.85rem' }}
+                  key={item.id}
+                  type="button"
+                  className={`filter-chip ${selectedSubject === item.id ? 'active' : ''}`}
+                  onClick={() => setSelectedSubject(item.id)}
                 >
-                  Xem chi tiết hồ sơ
+                  {item.label}
                 </button>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* Modal Chi tiết Gia sư */}
-      {selectedTutor && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="card" style={{ maxWidth: '500px', width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-              <div style={{
-                width: '60px', height: '60px', borderRadius: '50%',
-                backgroundColor: '#2563eb', color: '#ffffff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.5rem', fontWeight: 'bold'
-              }}>
-                {selectedTutor.fullName ? selectedTutor.fullName.charAt(0) : 'G'}
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1.25rem', margin: 0 }}>{selectedTutor.fullName}</h3>
-                <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>{selectedTutor.email}</p>
-              </div>
-            </div>
-
-            <div style={{ fontSize: '0.9rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-              <div><strong>Trình độ / Bằng cấp:</strong> {selectedTutor.qualification || 'Đại học Sư phạm / Cử nhân chuyên ngành'}</div>
-              <div><strong>Số năm kinh nghiệm:</strong> {selectedTutor.experienceYears || 3} năm</div>
-              <div><strong>Mức học phí đề xuất:</strong> {formatCurrency(selectedTutor.hourlyRate || 150000)}</div>
-              <div><strong>Tiểu sử & Phương pháp giảng dạy:</strong></div>
-              <p style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '6px', margin: 0, fontSize: '0.875rem', color: '#475569' }}>
-                {selectedTutor.bio || 'Gia sư tận tâm, bám sát cấu trúc đề thi, phương pháp truyền đạt dễ hiểu giúp học sinh nắm vững kiến thức từ căn bản đến nâng cao.'}
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedTutor(null)} className="btn btn-primary">
-                Đóng
+          {/* Gender */}
+          <div className="filter-group">
+            <span className="filter-label">Giới Tính</span>
+            <div className="filter-chip-grid">
+              <button
+                type="button"
+                className={`filter-chip ${selectedGender === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedGender('all')}
+              >
+                Tất cả
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${selectedGender === 'male' ? 'active' : ''}`}
+                onClick={() => setSelectedGender('male')}
+              >
+                Nam
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${selectedGender === 'female' ? 'active' : ''}`}
+                onClick={() => setSelectedGender('female')}
+              >
+                Nữ
               </button>
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Education Level */}
+          <div className="filter-group">
+            <span className="filter-label">Học Vấn</span>
+            <div className="filter-chip-grid">
+              <button
+                type="button"
+                className={`filter-chip ${selectedDegree === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedDegree('all')}
+              >
+                Mọi trình độ
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${selectedDegree === 'bachelor' ? 'active' : ''}`}
+                onClick={() => setSelectedDegree('bachelor')}
+              >
+                Cử nhân
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${selectedDegree === 'master' ? 'active' : ''}`}
+                onClick={() => setSelectedDegree('master')}
+              >
+                Thạc sĩ
+              </button>
+              <button
+                type="button"
+                className={`filter-chip ${selectedDegree === 'doctor' ? 'active' : ''}`}
+                onClick={() => setSelectedDegree('doctor')}
+              >
+                Tiến sĩ
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Right: Tutor Grid */}
+        <section>
+          <div style={{ marginBottom: '16px', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+            Hiển thị <strong>{filteredTutors.length}</strong> gia sư phù hợp
+          </div>
+
+          {filteredTutors.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
+              <BookOpen size={42} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+              <p style={{ fontSize: '1rem', fontWeight: 600 }}>Không tìm thấy gia sư nào theo tiêu chí đã chọn.</p>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ marginTop: '12px' }}
+                onClick={() => {
+                  setSelectedSubject('all');
+                  setSelectedGender('all');
+                  setSelectedDegree('all');
+                  setSearchQuery('');
+                }}
+              >
+                Đặt lại bộ lọc
+              </button>
+            </div>
+          ) : (
+            <div className="tutor-grid">
+              {filteredTutors.map((tutor) => (
+                <div key={tutor.id} className="tutor-card">
+                  <div>
+                    {/* Header: Avatar & Name */}
+                    <div className="tutor-header">
+                      <div className="tutor-avatar" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '1.4rem',
+                        color: '#2563eb',
+                        background: '#eff6ff'
+                      }}>
+                        {tutor.fullName.charAt(0)}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div className="tutor-name">
+                          {tutor.fullName}
+                          {tutor.verified && (
+                            <span title="Đã xác minh danh tính và bằng cấp">
+                              <CheckCircle2 size={17} className="verified-icon" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="tutor-school">
+                          {tutor.school} • {tutor.experienceYears} năm kinh nghiệm
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rating & Stats */}
+                    <div className="tutor-meta">
+                      <span className="tutor-rating">
+                        <Star size={15} fill="#f59e0b" /> {tutor.rating}
+                      </span>
+                      <span>({tutor.reviewsCount} đánh giá)</span>
+                      <span>•</span>
+                      <span>{tutor.studentsCount} học sinh</span>
+                    </div>
+
+                    {/* Bio */}
+                    <p className="tutor-bio">
+                      {tutor.bio}
+                    </p>
+
+                    {/* Subject Tags */}
+                    <div className="tutor-tags">
+                      {tutor.subjects && tutor.subjects.map((sub, idx) => (
+                        <span key={idx} className="tutor-tag">
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="tutor-footer">
+                    <div className="tutor-price">
+                      <strong>{formatCurrency(tutor.hourlyRate)}</strong>
+                      <span> / buổi</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: '8px 18px', fontSize: '0.88rem' }}
+                      onClick={() => setActiveBookingTutor(tutor)}
+                    >
+                      Đặt lịch học
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
