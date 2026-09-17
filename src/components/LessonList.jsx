@@ -25,8 +25,10 @@ export default function LessonList({ user }) {
   const [areasImprovementInput, setAreasImprovementInput] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [noteSuccessMsg, setNoteSuccessMsg] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // State xem chi tiết ghi chú đối với Phụ huynh / Học sinh
+
   const [expandedLessonId, setExpandedLessonId] = useState(null);
 
   const fetchLessons = async () => {
@@ -125,7 +127,9 @@ export default function LessonList({ user }) {
       setAreasImprovementInput('');
     }
     setNoteSuccessMsg('');
+    setAiGenerating(false);
   };
+
 
   const handleSaveNote = async (e) => {
     e.preventDefault();
@@ -158,15 +162,28 @@ export default function LessonList({ user }) {
     }
   };
 
-  const handleSimulateAiProcessing = () => {
+  const handleGenerateAiNote = async () => {
     if (!rawNoteInput.trim()) {
-      alert('Vui lòng nhập ghi chú thô trước khi sinh tóm tắt AI.');
+      alert('Vui lòng nhập ghi chú thô của gia sư trước khi nhờ AI gợi ý.');
       return;
     }
-    setAiSummaryInput(`📌 [AI Note Tóm tắt]: Buổi học hoàn thành tốt. Gia sư đã giảng dạy các phần: ${rawNoteInput}`);
-    setKeyLearningsInput('Nắm chắc định lý, công thức cốt lõi và các dạng bài tập thực hành.');
-    setAreasImprovementInput('Cần chú ý ôn lại bài tập trắc nghiệm và chuẩn bị bài mới trước buổi học sau.');
+    try {
+      setAiGenerating(true);
+      const res = await lessonService.suggestAiNote(selectedLessonForNote.id, rawNoteInput.trim());
+      if (res.success && res.data) {
+        setAiSummaryInput(res.data.aiSummary || '');
+        setKeyLearningsInput(res.data.keyLearnings || '');
+        setAreasImprovementInput(res.data.areasForImprovement || '');
+      } else {
+        alert(res.message || 'Không thể tạo gợi ý từ Gemini AI.');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi kết nối tới Gemini AI.');
+    } finally {
+      setAiGenerating(false);
+    }
   };
+
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -388,13 +405,26 @@ export default function LessonList({ user }) {
               <div style={{ marginBottom: '16px' }}>
                 <button
                   type="button"
-                  onClick={handleSimulateAiProcessing}
+                  onClick={handleGenerateAiNote}
+                  disabled={aiGenerating || !rawNoteInput.trim()}
                   className="btn btn-secondary"
-                  style={{ gap: '6px', fontSize: '0.85rem', width: '100%', borderColor: '#2563eb', color: '#2563eb' }}
+                  style={{
+                    gap: '8px',
+                    fontSize: '0.88rem',
+                    width: '100%',
+                    fontWeight: 600,
+                    borderColor: '#2563eb',
+                    color: '#2563eb',
+                    backgroundColor: aiGenerating ? '#eff6ff' : '#ffffff',
+                    cursor: aiGenerating ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
                 >
-                  <Sparkles size={16} /> Tự động sinh tóm tắt AI Note từ ghi chú thô
+                  <Sparkles size={16} color="#2563eb" />
+                  {aiGenerating ? '✨ Gemini AI đang phân tích và soạn thảo...' : '✨ Gemini AI gợi ý báo cáo sư phạm'}
                 </button>
               </div>
+
 
               <div className="form-group">
                 <label>2. Tóm tắt AI Note (Phụ huynh & Học sinh sẽ nhìn thấy)</label>

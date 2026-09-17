@@ -23,5 +23,12 @@ export const lessonService = {
   async saveLessonNote(lessonId, noteData) {
     const response = await api.post(`/lessons/${lessonId}/note`, noteData);
     return response.data;
+  },
+
+  // Gọi Gemini AI gợi ý bản tóm tắt sư phạm từ ghi chú thô của gia sư
+  async suggestAiNote(lessonId, rawNote) {
+    const response = await api.post(`/lessons/${lessonId}/ai-note-suggest`, { rawNote });
+    return response.data;
   }
 };
+
