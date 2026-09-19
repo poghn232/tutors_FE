@@ -66,6 +66,71 @@ export default function DashboardPage({ activeTab = 'default', onNavigate }) {
 
   return (
     <div>
+      {/* Banner nhắc nhở bổ sung thông tin cá nhân (đặc biệt cho người dùng đăng nhập qua Google) */}
+      {(!user?.phone || user.phone.trim() === '') && currentTab !== 'profile' && (
+        <div style={{
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          border: '1.5px solid #bfdbfe',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.05)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1e3a8a' }}>
+                  Bổ sung thông tin cá nhân tài khoản
+                </h4>
+                <span style={{
+                  background: '#fef3c7', color: '#b45309', fontSize: '0.75rem', fontWeight: 800,
+                  padding: '2px 8px', borderRadius: '999px', border: '1px solid #fde68a'
+                }}>
+                  Cần bổ sung
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#3b82f6', lineHeight: '1.5' }}>
+                Chào <b>{user.fullName || user.email}</b>! Tài khoản vừa được kết nối từ Google. Vui lòng bổ sung Số điện thoại và thông tin hồ sơ để nhận thông báo lịch học và kích hoạt đầy đủ tính năng.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{
+              padding: '10px 20px',
+              fontWeight: 700,
+              gap: '8px',
+              backgroundColor: '#2563eb',
+              borderColor: '#2563eb',
+              boxShadow: '0 4px 10px rgba(37, 99, 235, 0.2)'
+            }}
+            onClick={() => handleTabChange('profile')}
+          >
+            <UserCheck size={18} /> Cập nhật hồ sơ ngay
+          </button>
+        </div>
+      )}
+
       {/* Tutor Overview matching Figma Frame 16:2 when currentTab is 'dashboard' */}
       {isTutor && currentTab === 'dashboard' ? (
         <div>

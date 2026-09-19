@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, UserRound } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
+import { BookOpen, UserRound, Info, X } from 'lucide-react';
 
 export default function RegisterPage({ onNavigate }) {
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   
   const [role, setRole] = useState('TUTOR');
   const [fullName, setFullName] = useState('');
@@ -14,6 +15,43 @@ export default function RegisterPage({ onNavigate }) {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
+
+  const googleLoginTrigger = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await loginWithGoogle({
+          idToken: tokenResponse.access_token,
+          role: role
+        });
+        if (res.success) {
+          onNavigate('dashboard');
+        } else {
+          setError(res.message || 'Đăng ký bằng Google thất bại.');
+        }
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Đăng ký bằng Google thất bại. Vui lòng kiểm tra lại.';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.error('Google register error:', err);
+      setError('Đăng ký bằng Google đã bị hủy hoặc gặp sự cố.');
+    }
+  });
+
+  const handleGoogleClick = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.trim() === '' || clientId.includes('dummy')) {
+      setShowClientModal(true);
+      return;
+    }
+    googleLoginTrigger();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,6 +219,60 @@ export default function RegisterPage({ onNavigate }) {
             {loading ? 'Đang tạo tài khoản...' : 'Hoàn tất Đăng ký'}
           </button>
         </form>
+
+        <div className="divider"><span>Hoặc đăng ký nhanh với</span></div>
+        <div className="social-row single">
+          <button type="button" onClick={handleGoogleClick} disabled={loading}>
+            <span className="google-mark">G</span> Đăng ký tài khoản nhanh với Google
+          </button>
+        </div>
+
+        {showClientModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
+          }}>
+            <div style={{
+              background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%',
+              padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)', position: 'relative'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowClientModal(false)}
+                style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
+              >
+                <X size={20} />
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', color: '#2563eb' }}>
+                <Info size={24} />
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Cấu hình Google Client ID</h3>
+              </div>
+              <p style={{ color: '#374151', fontSize: '14px', lineHeight: '1.6', marginBottom: '12px' }}>
+                Hệ thống đã sẵn sàng kết nối Google OAuth 2.0! Để đăng ký/đăng nhập tài khoản thật, bạn hãy điền <b>Client ID</b> từ Google Cloud Console vào file:
+              </p>
+              <div style={{ background: '#f3f4f6', padding: '12px', borderRadius: '8px', fontSize: '13px', fontFamily: 'monospace', color: '#1f2937', marginBottom: '14px', border: '1px solid #e5e7eb' }}>
+                tutors_FE/.env<br />
+                <b>VITE_GOOGLE_CLIENT_ID=</b>xxxxxxxx.apps.googleusercontent.com
+              </div>
+              <p style={{ color: '#6b7280', fontSize: '12px', lineHeight: '1.5', marginBottom: '20px' }}>
+                💡 Hướng dẫn chi tiết tạo Client ID miễn phí có sẵn trong file <b>implementation_plan.md</b>.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowClientModal(false)}
+                  style={{
+                    padding: '8px 20px', borderRadius: '8px', border: 'none',
+                    backgroundColor: '#2563eb', color: '#fff', fontWeight: '600', cursor: 'pointer'
+                  }}
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
           <p className="auth-switch">
             Đã có tài khoản? <button type="button" onClick={() => onNavigate('login')}>Đăng nhập ngay</button>

@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Eye, UserRound, UsersRound } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
+import { BookOpen, Eye, EyeOff, UserRound, Info, X } from 'lucide-react';
 
 export default function LoginPage({ onNavigate }) {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [infoNotice, setInfoNotice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('STUDENT');
+  const [showClientModal, setShowClientModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfoNotice('');
 
     if (!email || !password) {
       setError('Vui lòng nhập đầy đủ Email và Mật khẩu.');
@@ -34,7 +40,42 @@ export default function LoginPage({ onNavigate }) {
     }
   };
 
-  const [selectedRole, setSelectedRole] = useState('STUDENT');
+  const googleLoginTrigger = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        setError('');
+        setInfoNotice('');
+        const res = await loginWithGoogle({
+          idToken: tokenResponse.access_token,
+          role: selectedRole
+        });
+        if (res.success) {
+          onNavigate('dashboard');
+        } else {
+          setError(res.message || 'Đăng nhập Google thất bại.');
+        }
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Đăng nhập bằng Google thất bại. Vui lòng kiểm tra kết nối Server.';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.error('Google login error:', err);
+      setError('Đăng nhập bằng Google đã bị hủy hoặc gặp sự cố.');
+    }
+  });
+
+  const handleGoogleClick = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.trim() === '' || clientId.includes('dummy')) {
+      setShowClientModal(true);
+      return;
+    }
+    googleLoginTrigger();
+  };
 
   return (
     <div className="figma-auth-page">
@@ -99,6 +140,12 @@ export default function LoginPage({ onNavigate }) {
           </div>
 
           {error && <div className="alert alert-danger">{error}</div>}
+          {infoNotice && (
+            <div className="alert" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', fontSize: '13px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{infoNotice}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <input
@@ -114,14 +161,21 @@ export default function LoginPage({ onNavigate }) {
             <div className="password-wrap">
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 className="auth-input"
                 placeholder="Mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <Eye size={18} />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, color: '#6b7280' }}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             <div className="form-row">
@@ -135,10 +189,58 @@ export default function LoginPage({ onNavigate }) {
           </form>
 
           <div className="divider"><span>Hoặc tiếp tục với</span></div>
-          <div className="social-row">
-            <button type="button"><span className="google-mark">G</span> Google</button>
-            <button type="button"><UsersRound size={14} /> Facebook</button>
+          <div className="social-row single">
+            <button type="button" onClick={handleGoogleClick} disabled={loading}>
+              <span className="google-mark">G</span> Tiếp tục với tài khoản Google
+            </button>
           </div>
+
+          {showClientModal && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
+            }}>
+              <div style={{
+                background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%',
+                padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)', position: 'relative'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowClientModal(false)}
+                  style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
+                >
+                  <X size={20} />
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', color: '#2563eb' }}>
+                  <Info size={24} />
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Cấu hình Google Client ID</h3>
+                </div>
+                <p style={{ color: '#374151', fontSize: '14px', lineHeight: '1.6', marginBottom: '12px' }}>
+                  Chức năng đăng nhập Google đã được tích hợp hoàn tất trên cả Frontend và Backend! Để kết nối tài khoản Google thật, bạn hãy dán <b>Client ID</b> từ Google Cloud Console vào file:
+                </p>
+                <div style={{ background: '#f3f4f6', padding: '12px', borderRadius: '8px', fontSize: '13px', fontFamily: 'monospace', color: '#1f2937', marginBottom: '14px', border: '1px solid #e5e7eb' }}>
+                  tutors_FE/.env<br />
+                  <b>VITE_GOOGLE_CLIENT_ID=</b>xxxxxxxx.apps.googleusercontent.com
+                </div>
+                <p style={{ color: '#6b7280', fontSize: '12px', lineHeight: '1.5', marginBottom: '20px' }}>
+                  💡 Hướng dẫn chi tiết 5 bước tạo Client ID miễn phí trên Google Console được lưu tại file <b>implementation_plan.md</b>.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowClientModal(false)}
+                    style={{
+                      padding: '8px 20px', borderRadius: '8px', border: 'none',
+                      backgroundColor: '#2563eb', color: '#fff', fontWeight: '600', cursor: 'pointer'
+                    }}
+                  >
+                    Đã hiểu
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <p className="auth-switch">
             Chưa có tài khoản? <button type="button" onClick={() => onNavigate('register')}>Đăng ký ngay</button>

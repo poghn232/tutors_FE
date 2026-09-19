@@ -560,17 +560,30 @@ h1, h2, h3, h4 {
   gap: 12px;
 }
 
+.social-row.single {
+  grid-template-columns: 1fr;
+}
+
 .social-row button {
   display: inline-flex;
   height: 45px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   border: 1.3px solid var(--ink);
   border-radius: 10px;
   background: #fff;
   color: var(--ink);
   font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.social-row button:hover {
+  background: #f8fafc;
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .google-mark {

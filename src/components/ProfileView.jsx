@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../services/userService';
 import { useAuth } from '../context/AuthContext';
-import { User, Phone, Mail, Award, BookOpen, MapPin, Save, ShieldCheck } from 'lucide-react';
+import { User, Phone, Mail, Award, BookOpen, MapPin, Save, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function ProfileView() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +75,9 @@ export default function ProfileView() {
       const res = await userService.updateProfile(payload);
       if (res.success) {
         setSuccessMsg('Cập nhật hồ sơ thông tin thành công!');
+        if (updateUser && res.data) {
+          updateUser(res.data);
+        }
         fetchProfile();
       } else {
         setErrorMsg(res.message || 'Cập nhật thất bại.');
@@ -94,14 +97,22 @@ export default function ProfileView() {
     <div style={{ marginTop: '24px', maxWidth: '720px', margin: '24px auto 0 auto' }}>
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '50%',
-            backgroundColor: '#2563eb', color: '#ffffff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.75rem', fontWeight: 'bold'
-          }}>
-            {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
-          </div>
+          {profile?.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt="Avatar"
+              style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #2563eb' }}
+            />
+          ) : (
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              backgroundColor: '#2563eb', color: '#ffffff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.75rem', fontWeight: 'bold'
+            }}>
+              {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
+            </div>
+          )}
           <div>
             <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#0f172a' }}>Hồ sơ cá nhân</h2>
             <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '2px 0 0 0' }}>
@@ -109,6 +120,18 @@ export default function ProfileView() {
             </p>
           </div>
         </div>
+
+        {(!profile?.phone || profile.phone.trim() === '') && (
+          <div style={{
+            backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px',
+            padding: '12px 16px', marginBottom: '16px', color: '#1e40af', display: 'flex', gap: '10px', alignItems: 'center'
+          }}>
+            <Sparkles size={20} style={{ color: '#2563eb', flexShrink: 0 }} />
+            <div style={{ fontSize: '0.88rem', lineHeight: '1.5' }}>
+              <strong>Tài khoản Google đã kết nối!</strong> Vui lòng điền <b>Số điện thoại</b> và thông tin chi tiết bên dưới để hoàn tất kích hoạt hồ sơ trên hệ thống.
+            </div>
+          </div>
+        )}
 
         {successMsg && <div className="alert alert-success">{successMsg}</div>}
         {errorMsg && <div className="alert alert-danger">{errorMsg}</div>}

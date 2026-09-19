@@ -21,6 +21,16 @@ export const authService = {
     return response.data;
   },
 
+  // Đăng nhập bằng Google
+  async loginWithGoogle({ idToken, role }) {
+    const response = await api.post('/auth/google', { idToken, role });
+    if (response.data?.data?.token) {
+      localStorage.setItem('giasuhq_token', response.data.data.token);
+      localStorage.setItem('giasuhq_user', JSON.stringify(response.data.data.user));
+    }
+    return response.data;
+  },
+
   // Lấy thông tin user hiện tại từ Token
   async getCurrentUser() {
     const response = await api.get('/auth/me');

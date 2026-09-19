@@ -36,6 +36,14 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const loginWithGoogle = async ({ idToken, role }) => {
+    const res = await authService.loginWithGoogle({ idToken, role });
+    if (res.success && res.data?.user) {
+      setUser(res.data.user);
+    }
+    return res;
+  };
+
   const register = async (data) => {
     const res = await authService.register(data);
     if (res.success && res.data?.user) {
@@ -44,13 +52,21 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedUserData };
+      localStorage.setItem('giasuhq_user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );
