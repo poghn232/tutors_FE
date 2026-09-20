@@ -832,6 +832,22 @@ export default function ProfileView({ onBack }) {
           </div>
         )}
 
+        {saveError && (
+          <div style={{
+            backgroundColor: '#fee2e2',
+            color: '#b91c1c',
+            border: '2px solid #ef4444',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            fontWeight: 700,
+            marginBottom: '20px',
+            position: 'relative',
+            zIndex: 1
+          }}>
+            ⚠️ {saveError}
+          </div>
+        )}
+
         {/* 2 Column Layout (Left: Sidebar ~280px, Right: Form ~1fr) */}
         <div style={{
           display: 'grid',
@@ -1771,6 +1787,22 @@ export default function ProfileView({ onBack }) {
           zIndex: 1
         }}>
           ✓ Đã lưu thay đổi thông tin thành công!
+        </div>
+      )}
+
+      {saveError && (
+        <div style={{
+          backgroundColor: '#fee2e2',
+          color: '#b91c1c',
+          border: '2px solid #ef4444',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          fontWeight: 700,
+          marginBottom: '24px',
+          position: 'relative',
+          zIndex: 1
+        }}>
+          ⚠️ {saveError}
         </div>
       )}
 
