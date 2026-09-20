@@ -48,28 +48,21 @@ export default function ProfileView({ onBack }) {
   const [tutorFullBio, setTutorFullBio] = useState(user?.bio || '');
   const [tutorVideoUrl, setTutorVideoUrl] = useState('');
 
-  // Tutor Certificates State (Up to 5 photos)
+  const [tutorDegree, setTutorDegree] = useState(() => localStorage.getItem(`tutora_degree_${user?.id || user?.email}`) || '');
+  const [tutorUniversity, setTutorUniversity] = useState(() => localStorage.getItem(`tutora_univ_${user?.id || user?.email}`) || '');
+  const [tutorHourlyRate, setTutorHourlyRate] = useState(user?.hourlyRate || '');
+  const [tutorSkills, setTutorSkills] = useState(() => {
+    const s = localStorage.getItem(`tutora_skills_${user?.id || user?.email}`);
+    return s ? JSON.parse(s) : [];
+  });
+
+  // Tutor Certificates State - Mặc định hoàn toàn rỗng để gia sư tự tải lên bằng cấp
   const [certificates, setCertificates] = useState(() => {
-    const saved = localStorage.getItem('giasuhq_tutor_certificates');
+    const saved = localStorage.getItem(`giasuhq_tutor_certificates_${user?.id || user?.email}`);
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return [
-      {
-        id: 1,
-        title: 'Bằng Cử nhân Sư phạm Toán học - ĐH Sư phạm Hà Nội',
-        imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80',
-        date: '2023',
-        verified: true
-      },
-      {
-        id: 2,
-        title: 'Chứng chỉ Giảng dạy Tiếng Anh Quốc tế IELTS 8.0',
-        imageUrl: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&auto=format&fit=crop&q=80',
-        date: '2024',
-        verified: true
-      }
-    ];
+    return [];
   });
   const [showCertModal, setShowCertModal] = useState(false);
   const [previewCert, setPreviewCert] = useState(null);
@@ -78,7 +71,7 @@ export default function ProfileView({ onBack }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const certFileInputRef = useRef(null);
 
-  // State for Student Profile (Lấy đúng thông tin từ user đăng nhập, không dùng dữ liệu giả)
+  // State for Student Profile - Bỏ trống toàn bộ các thông tin để người dùng tự điền
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [dob, setDob] = useState(() => localStorage.getItem(`tutora_dob_${user?.id || user?.email}`) || '');
   const [gender, setGender] = useState('Nam');
@@ -86,22 +79,22 @@ export default function ProfileView({ onBack }) {
   const [email, setEmail] = useState(user?.email || '');
   const [school, setSchool] = useState(user?.schoolName || '');
   const [address, setAddress] = useState(user?.address || '');
-  const [grade, setGrade] = useState(user?.gradeLevel || 'Lớp 10');
+  const [grade, setGrade] = useState(user?.gradeLevel || '');
 
-  // Parent info
+  // Parent info - Mặc định bỏ trống
   const [parentName, setParentName] = useState(() => localStorage.getItem(`tutora_parent_name_${user?.id || user?.email}`) || '');
-  const [parentRelation, setParentRelation] = useState('Bố');
+  const [parentRelation, setParentRelation] = useState('');
   const [parentPhone, setParentPhone] = useState(user?.emergencyContact || '');
   const [parentEmail, setParentEmail] = useState(() => localStorage.getItem(`tutora_parent_email_${user?.id || user?.email}`) || '');
-  const [reportEmail, setReportEmail] = useState(true);
-  const [reportSms, setReportSms] = useState(true);
+  const [reportEmail, setReportEmail] = useState(false);
+  const [reportSms, setReportSms] = useState(false);
 
-  // Study goals
-  const [goal, setGoal] = useState('Cải thiện điểm số');
-  const [level, setLevel] = useState('Khá');
-  const [selectedSubjects, setSelectedSubjects] = useState(['Toán học', 'Tiếng Anh']);
-  const [preferredDays, setPreferredDays] = useState(['T2', 'T4', 'T6']);
-  const [preferredTimes, setPreferredTimes] = useState(['evening']);
+  // Study goals - Mặc định bỏ trống
+  const [goal, setGoal] = useState('');
+  const [level, setLevel] = useState('');
+  const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [preferredDays, setPreferredDays] = useState([]);
+  const [preferredTimes, setPreferredTimes] = useState([]);
   const [note, setNote] = useState('');
 
   // Notification toggles
@@ -115,6 +108,13 @@ export default function ProfileView({ onBack }) {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  // Modal xác nhận đã lưu thay đổi vào cơ sở dữ liệu MySQL
+  const [dbConfirmationModal, setDbConfirmationModal] = useState({
+    isOpen: false,
+    savedAt: '',
+    updatedSummary: []
+  });
 
   // Tải hồ sơ thực tế từ Backend Database khi mở trang
   useEffect(() => {
@@ -195,9 +195,35 @@ export default function ProfileView({ onBack }) {
       if (dob) localStorage.setItem(`tutora_dob_${user?.id || user?.email}`, dob);
       if (parentName) localStorage.setItem(`tutora_parent_name_${user?.id || user?.email}`, parentName);
       if (parentEmail) localStorage.setItem(`tutora_parent_email_${user?.id || user?.email}`, parentEmail);
+      if (tutorDegree) localStorage.setItem(`tutora_degree_${user?.id || user?.email}`, tutorDegree);
+      if (tutorUniversity) localStorage.setItem(`tutora_univ_${user?.id || user?.email}`, tutorUniversity);
+      if (tutorSkills) localStorage.setItem(`tutora_skills_${user?.id || user?.email}`, JSON.stringify(tutorSkills));
+
+      const nowStr = new Date().toLocaleTimeString('vi-VN') + ' · ' + new Date().toLocaleDateString('vi-VN');
+      const summaryList = isTutor ? [
+        { label: 'Họ và tên gia sư', value: payload.fullName },
+        { label: 'Số điện thoại', value: payload.phone || '(Chưa cập nhật)' },
+        { label: 'Học vị / Danh xưng', value: payload.qualification || '(Chưa cập nhật)' },
+        { label: 'Trình độ đào tạo', value: tutorDegree ? `${tutorDegree} - ${tutorUniversity}` : '(Chưa cập nhật)' },
+        { label: 'Giới thiệu bản thân', value: payload.bio ? `${payload.bio.substring(0, 45)}...` : '(Chưa cập nhật)' },
+        { label: 'Ảnh bằng cấp đã tải', value: `${certificates.length} ảnh chứng chỉ` }
+      ] : [
+        { label: 'Họ và tên học sinh', value: payload.fullName },
+        { label: 'Trường đang học', value: payload.schoolName || '(Chưa cập nhật)' },
+        { label: 'Khối / Lớp', value: payload.gradeLevel || '(Chưa cập nhật)' },
+        { label: 'Số điện thoại', value: payload.phone || '(Chưa cập nhật)' },
+        { label: 'Địa chỉ cư trú', value: payload.address || '(Chưa cập nhật)' },
+        { label: 'Phụ huynh liên hệ', value: parentName ? `${parentName} (${payload.emergencyContact || 'Chưa có SĐT'})` : '(Chưa cập nhật)' }
+      ];
+
+      setDbConfirmationModal({
+        isOpen: true,
+        savedAt: nowStr,
+        updatedSummary: summaryList
+      });
 
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 4000);
+      setTimeout(() => setSavedSuccess(false), 5000);
     } catch (err) {
       console.error('Error in handleSave:', err);
       setSaveError(err.response?.data?.message || 'Không thể lưu hồ sơ lên máy chủ. Vui lòng thử lại.');
@@ -427,6 +453,29 @@ export default function ProfileView({ onBack }) {
           </div>
         ))}
 
+        {certificates.length === 0 && (
+          <div style={{
+            border: '2px dashed #cbd5e1',
+            borderRadius: '16px',
+            padding: '24px',
+            backgroundColor: '#f8fafc',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            minHeight: '260px'
+          }}>
+            <div style={{ fontSize: '2.4rem', marginBottom: '8px' }}>🎓</div>
+            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.98rem', marginBottom: '4px' }}>
+              Chưa có bằng cấp nào
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#64748b', maxWidth: '280px' }}>
+              Danh mục bằng cấp được để trống mặc định để bạn tự tải lên chứng chỉ và bằng cấp thực tế của mình.
+            </div>
+          </div>
+        )}
+
         {certificates.length < 5 && (
           <div style={{
             border: '2px dashed #94a3b8',
@@ -506,6 +555,156 @@ export default function ProfileView({ onBack }) {
       )}
     </div>
   );
+
+  // Modal xác nhận lưu thành công vào cơ sở dữ liệu MySQL
+  const renderDbConfirmationModal = () => {
+    if (!dbConfirmationModal.isOpen) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        <div style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '24px',
+          border: '3.5px solid #0f172a',
+          boxShadow: '8px 8px 0px #0f172a',
+          maxWidth: '520px',
+          width: '100%',
+          overflow: 'hidden',
+          animation: 'fadeInUp 0.25s ease-out'
+        }}>
+          {/* Modal Header */}
+          <div style={{
+            backgroundColor: '#059669',
+            color: '#ffffff',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '3px solid #0f172a'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                backgroundColor: '#ffffff',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '1.2rem',
+                border: '2px solid #0f172a',
+                boxShadow: '2px 2px 0px #0f172a'
+              }}>
+                💾
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
+                  Đã Lưu Vào Cơ Sở Dữ Liệu
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#d1fae5', fontWeight: 600 }}>
+                  Ghi dữ liệu MySQL hoàn tất lúc: {dbConfirmationModal.savedAt}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDbConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <X size={22} />
+            </button>
+          </div>
+
+          {/* Modal Content */}
+          <div style={{ padding: '24px' }}>
+            <div style={{
+              backgroundColor: '#ecfdf5',
+              border: '2px solid #a7f3d0',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              marginBottom: '20px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'flex-start'
+            }}>
+              <Check size={20} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '0.85rem', color: '#065f46', lineHeight: 1.5 }}>
+                <strong>Xác nhận đồng bộ thành công!</strong> Mọi thông tin cập nhật của bạn đã được lưu trữ an toàn vào cơ sở dữ liệu ({isTutor ? 'Bảng `users` & `tutors`' : 'Bảng `users` & `students`'}).
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: '0.82rem', fontWeight: 900, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', marginBottom: '12px' }}>
+              Chi tiết dữ liệu vừa được ghi nhận:
+            </h4>
+
+            <div style={{
+              border: '2px solid #e2e8f0',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              marginBottom: '24px'
+            }}>
+              {dbConfirmationModal.updatedSummary.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#ffffff',
+                    borderBottom: idx === dbConfirmationModal.updatedSummary.length - 1 ? 'none' : '1px solid #f1f5f9',
+                    fontSize: '0.86rem'
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: '#475569' }}>{item.label}:</span>
+                  <span style={{ fontWeight: 800, color: '#0f172a', textAlign: 'right', maxWidth: '60%' }}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDbConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+              style={{
+                width: '100%',
+                backgroundColor: '#0f172a',
+                color: '#ffffff',
+                border: '2px solid #0f172a',
+                borderRadius: '12px',
+                padding: '12px',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '4px 4px 0px rgba(15, 23, 42, 0.2)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Đã hiểu & Đóng xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // -------------------------------------------------------------
   // TUTOR EDIT PROFILE (Figma Frame 16:1610)
@@ -778,7 +977,9 @@ export default function ProfileView({ onBack }) {
                       </label>
                       <input
                         type="text"
-                        defaultValue="Cử nhân Sư phạm loại Giỏi"
+                        placeholder="Nhập học vị (Ví dụ: Cử nhân Sư phạm, Thạc sĩ, Kỹ sư...)"
+                        value={tutorDegree}
+                        onChange={(e) => setTutorDegree(e.target.value)}
                         style={{ width: '100%', padding: '11px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.92rem', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -788,7 +989,9 @@ export default function ProfileView({ onBack }) {
                       </label>
                       <input
                         type="text"
-                        defaultValue="Đại học Sư phạm Hà Nội"
+                        placeholder="Nhập trường đào tạo (Ví dụ: ĐH Sư Phạm, ĐH Bách Khoa...)"
+                        value={tutorUniversity}
+                        onChange={(e) => setTutorUniversity(e.target.value)}
                         style={{ width: '100%', padding: '11px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.92rem', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -820,22 +1023,49 @@ export default function ProfileView({ onBack }) {
               <div>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <BookOpen size={24} color="#7c3aed" />
-                  <span>Môn dạy & Học phí tham khảo</span>
+                  <span>Môn dạy & Học phí đề xuất</span>
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-                  {[
-                    { sub: 'Toán học (Lớp 10 - 12)', price: '250.000đ / buổi (90 phút)', format: 'Online & Trực tiếp' },
-                    { sub: 'Vật lý (Lớp 11 - 12)', price: '280.000đ / buổi (90 phút)', format: 'Online qua Zoom' },
-                    { sub: 'Tiếng Anh THPT & IELTS', price: '320.000đ / buổi (90 phút)', format: 'Trực tiếp tại nhà' }
-                  ].map((item, idx) => (
-                    <div key={idx} style={{ border: '1.5px solid #0f172a', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>{item.sub}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>Hình thức: {item.format}</div>
-                      </div>
-                      <div style={{ fontWeight: 900, fontSize: '1rem', color: '#ea580c' }}>{item.price}</div>
-                    </div>
-                  ))}
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    Mức học phí theo buổi (VNĐ / buổi 90 phút)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: 250.000đ / buổi hoặc 200.000đ / giờ..."
+                    value={tutorHourlyRate}
+                    onChange={(e) => setTutorHourlyRate(e.target.value)}
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box', fontWeight: 700 }}
+                  />
+                </div>
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    Chọn các môn bạn tự tin nhận dạy kèm:
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {allSubjects.map((sub) => {
+                      const isSel = selectedSubjects.includes(sub);
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => toggleSubject(sub)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '999px',
+                            border: '1.5px solid',
+                            borderColor: isSel ? '#7c3aed' : '#e2e8f0',
+                            backgroundColor: isSel ? '#ede9fe' : '#ffffff',
+                            color: isSel ? '#7c3aed' : '#64748b',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {sub} {isSel ? '✓' : '+'}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button
@@ -852,7 +1082,7 @@ export default function ProfileView({ onBack }) {
                       boxShadow: '3px 3px 0px #0f172a'
                     }}
                   >
-                    Lưu học phí
+                    Lưu môn dạy & học phí
                   </button>
                 </div>
               </div>
@@ -915,25 +1145,41 @@ export default function ProfileView({ onBack }) {
               <div>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Globe size={24} color="#ea580c" />
-                  <span>Ngôn ngữ & Sở thích cá nhân</span>
+                  <span>Kỹ năng, Ngôn ngữ & Sở thích chuyên môn</span>
                 </h2>
+                <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 16px 0' }}>
+                  Chọn hoặc thêm các kỹ năng nổi bật để giúp học sinh hiểu rõ hơn về bạn (mặc định chưa chọn):
+                </p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                  {['Tiếng Việt (Bản ngữ)', 'Tiếng Anh (IELTS 8.0)', 'Tiếng Nhật (N3)', 'Cờ vua', 'Lập trình', 'Đọc sách'].map((tag, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        background: '#fff4cc',
-                        border: '1.5px solid #0f172a',
-                        borderRadius: '999px',
-                        padding: '6px 16px',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        color: '#0f172a'
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {['Tiếng Việt (Bản ngữ)', 'Tiếng Anh (IELTS)', 'Tiếng Nhật', 'Luyện thi THPT', 'Ôn thi Chuyên', 'Kỹ năng sư phạm', 'Cờ vua', 'Tin học / Lập trình', 'Khoa học thực nghiệm'].map((tag, i) => {
+                    const isSel = tutorSkills.includes(tag);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          if (isSel) {
+                            setTutorSkills(tutorSkills.filter(t => t !== tag));
+                          } else {
+                            setTutorSkills([...tutorSkills, tag]);
+                          }
+                        }}
+                        style={{
+                          background: isSel ? '#0f172a' : '#ffffff',
+                          color: isSel ? '#ffffff' : '#0f172a',
+                          border: '1.5px solid #0f172a',
+                          borderRadius: '999px',
+                          padding: '6px 16px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {tag} {isSel ? '✓' : '+'}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button
@@ -950,7 +1196,7 @@ export default function ProfileView({ onBack }) {
                       boxShadow: '3px 3px 0px #0f172a'
                     }}
                   >
-                    Lưu thông tin
+                    Lưu kỹ năng & sở thích
                   </button>
                 </div>
               </div>
@@ -1427,6 +1673,9 @@ export default function ProfileView({ onBack }) {
             </div>
           </div>
         )}
+
+        {/* Modal xác nhận lưu Database MySQL */}
+        {renderDbConfirmationModal()}
       </div>
     );
   }
@@ -1705,6 +1954,32 @@ export default function ProfileView({ onBack }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Số điện thoại học sinh
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: 0912345678 (Bỏ trống khi mới tạo)..."
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                  Email tài khoản
+                </label>
+                <input
+                  type="email"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.9rem', backgroundColor: '#f8fafc', color: '#64748b' }}
+                  value={user?.email || email}
+                  disabled
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
                   Trường đang theo học
                 </label>
                 <input
@@ -1940,6 +2215,8 @@ export default function ProfileView({ onBack }) {
 
       </div>
 
+      {/* Modal xác nhận lưu Database MySQL */}
+      {renderDbConfirmationModal()}
     </div>
   );
 }
