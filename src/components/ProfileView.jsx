@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import fileService from '../services/fileService';
 import { 
   Camera, 
   ArrowLeft, 
@@ -12,7 +13,14 @@ import {
   Calendar,
   Globe,
   User,
-  Sparkles
+  Sparkles,
+  UploadCloud,
+  Trash2,
+  Download,
+  Eye,
+  Plus,
+  X,
+  FileCheck
 } from 'lucide-react';
 
 export default function ProfileView({ onBack }) {
@@ -32,6 +40,36 @@ export default function ProfileView({ onBack }) {
     'Với hơn 5 năm kinh nghiệm thực chiến, mình tự tin đảm nhận giảng dạy xuất sắc TẤT CẢ các môn học từ Tiểu học đến THPT. Phương pháp dạy tư duy logic đa môn của mình đã giúp hàng trăm học sinh xóa mất gốc, bứt phá toàn diện và đỗ các trường top đầu. Dù là Toán, Văn, Anh hay các môn Khoa học, mình cam kết sẽ giúp các em làm chủ kiến thức nhanh nhất và chinh phục điểm 9, 10 một cách dễ dàng!'
   );
   const [tutorVideoUrl, setTutorVideoUrl] = useState('');
+
+  // Tutor Certificates State (Up to 5 photos)
+  const [certificates, setCertificates] = useState(() => {
+    const saved = localStorage.getItem('giasuhq_tutor_certificates');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        id: 1,
+        title: 'Bằng Cử nhân Sư phạm Toán học - ĐH Sư phạm Hà Nội',
+        imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80',
+        date: '2023',
+        verified: true
+      },
+      {
+        id: 2,
+        title: 'Chứng chỉ Giảng dạy Tiếng Anh Quốc tế IELTS 8.0',
+        imageUrl: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&auto=format&fit=crop&q=80',
+        date: '2024',
+        verified: true
+      }
+    ];
+  });
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [previewCert, setPreviewCert] = useState(null);
+  const [newCertTitle, setNewCertTitle] = useState('');
+  const [newCertFile, setNewCertFile] = useState(null);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const certFileInputRef = useRef(null);
 
   // State for Student Profile (Figma Frame 61:5450)
   const [fullName, setFullName] = useState(user?.fullName || 'Nguyễn Minh Anh');
@@ -92,17 +130,283 @@ export default function ProfileView({ onBack }) {
     }
   };
 
-  const handleSave = () => {
-    if (updateUser) {
-      if (isTutor) {
-        updateUser({ fullName: `${tutorLastName} ${tutorFirstName}`, phone: tutorPhone });
-      } else {
-        updateUser({ fullName, phone });
-      }
+  const handleUploadCertificate = async (e) => {
+    e.preventDefault();
+    if (certificates.length >= 5) {
+      alert('Bạn đã tải lên tối đa 5 ảnh bằng cấp.');
+      return;
     }
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    if (!newCertFile) {
+      alert('Vui lòng chọn ảnh bằng cấp cần tải lên.');
+      return;
+    }
+    if (!newCertTitle.trim()) {
+      alert('Vui lòng nhập tên bằng cấp hoặc chứng chỉ.');
+      return;
+    }
+
+    try {
+      setUploadingCert(true);
+      const res = await fileService.uploadFile(newCertFile);
+      const newCert = {
+        id: Date.now(),
+        title: newCertTitle.trim(),
+        imageUrl: res.data?.fileUrl || URL.createObjectURL(newCertFile),
+        date: new Date().getFullYear().toString(),
+        verified: true
+      };
+      const updated = [...certificates, newCert];
+      setCertificates(updated);
+      localStorage.setItem('giasuhq_tutor_certificates', JSON.stringify(updated));
+      setNewCertTitle('');
+      setNewCertFile(null);
+      if (certFileInputRef.current) certFileInputRef.current.value = '';
+    } catch (err) {
+      alert('Lỗi khi tải ảnh bằng cấp: ' + err.message);
+    } finally {
+      setUploadingCert(false);
+    }
   };
+
+  const handleDeleteCertificate = (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa ảnh bằng cấp này không?')) {
+      const updated = certificates.filter(c => c.id !== id);
+      setCertificates(updated);
+      localStorage.setItem('giasuhq_tutor_certificates', JSON.stringify(updated));
+      if (previewCert && previewCert.id === id) setPreviewCert(null);
+    }
+  };
+
+  const handleDownloadCertificate = (cert) => {
+    const fileName = `${cert.title.toLowerCase().replace(/[^a-z0-9]/gi, '_')}.jpg`;
+    fileService.downloadFile(cert.imageUrl, fileName);
+  };
+
+  const renderCertificateGallery = () => (
+    <div>
+      <div style={{
+        background: '#f0fdf4',
+        border: '1.5px solid #86efac',
+        borderRadius: '14px',
+        padding: '16px 20px',
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px'
+      }}>
+        <FileCheck size={24} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div style={{ fontSize: '0.88rem', color: '#166534', lineHeight: '1.5' }}>
+          <b>Hồ sơ bằng cấp gia sư (Tối đa 5 ảnh bằng cấp/chứng chỉ):</b><br />
+          Đăng tải bằng tốt nghiệp đại học, chứng chỉ ngoại ngữ (IELTS, TOEFL, JLPT), hoặc chứng chỉ nghiệp vụ sư phạm để tăng mức độ uy tín với phụ huynh và học sinh.
+        </div>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+        gap: '18px',
+        marginBottom: '24px'
+      }}>
+        {certificates.map((cert, index) => (
+          <div
+            key={cert.id}
+            style={{
+              border: '2px solid #0f172a',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              background: '#ffffff',
+              boxShadow: '3px 3px 0px #0f172a',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div 
+              style={{
+                height: '170px',
+                position: 'relative',
+                cursor: 'pointer',
+                backgroundColor: '#f1f5f9',
+                overflow: 'hidden'
+              }}
+              onClick={() => setPreviewCert(cert)}
+              title="Nhấn để phóng to xem ảnh đầy đủ"
+            >
+              <img
+                src={cert.imageUrl}
+                alt={cert.title}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: '#059669',
+                color: '#ffffff',
+                borderRadius: '999px',
+                padding: '3px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Check size={12} strokeWidth={3} /> Đã xác thực
+              </div>
+              <div style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                color: '#ffffff',
+                borderRadius: '8px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Eye size={12} /> Xem ảnh lớn
+              </div>
+            </div>
+
+            <div style={{ padding: '14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '2px' }}>
+                  Bằng cấp #{index + 1} ({cert.date || '2024'})
+                </div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a', lineHeight: '1.4', marginBottom: '12px' }}>
+                  {cert.title}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCertificate(cert)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '7px 10px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #0f172a',
+                    background: '#ffffff',
+                    color: '#0f172a',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Download size={13} /> Tải ảnh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCertificate(cert.id)}
+                  title="Xóa bằng cấp này"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '7px 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #ef4444',
+                    background: '#fef2f2',
+                    color: '#dc2626',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {certificates.length < 5 && (
+          <div style={{
+            border: '2px dashed #94a3b8',
+            borderRadius: '16px',
+            padding: '20px',
+            background: '#fafafa',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: '260px'
+          }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
+              + Thêm ảnh bằng cấp ({certificates.length}/5)
+            </h4>
+
+            <form onSubmit={handleUploadCertificate} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Tên bằng (VD: Cử nhân Sư phạm, IELTS...)"
+                  value={newCertTitle}
+                  onChange={(e) => setNewCertTitle(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  required
+                  ref={certFileInputRef}
+                  onChange={(e) => setNewCertFile(e.target.files?.[0] || null)}
+                  style={{ fontSize: '0.78rem', width: '100%' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploadingCert}
+                style={{
+                  marginTop: '4px',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '9px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                <UploadCloud size={16} />
+                {uploadingCert ? 'Đang tải lên...' : 'Tải lên bằng cấp'}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
+      {certificates.length >= 5 && (
+        <div style={{ fontSize: '0.82rem', color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginBottom: '16px' }}>
+          ✓ Đã đăng tối đa 5 ảnh bằng cấp. Bạn có thể xóa bớt bằng cấp cũ nếu muốn bổ sung bằng cấp mới.
+        </div>
+      )}
+    </div>
+  );
 
   // -------------------------------------------------------------
   // TUTOR EDIT PROFILE (Figma Frame 16:1610)
@@ -177,6 +481,7 @@ export default function ProfileView({ onBack }) {
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
               type="button"
+              onClick={() => setShowCertModal(true)}
               style={{
                 backgroundColor: '#ffffff',
                 border: '1.5px solid #0f172a',
@@ -185,10 +490,14 @@ export default function ProfileView({ onBack }) {
                 fontWeight: 700,
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                boxShadow: '2px 2px 0px #0f172a'
+                boxShadow: '2px 2px 0px #0f172a',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
-              Bằng cấp
+              <Award size={18} color="#059669" />
+              <span>Bằng cấp ({certificates.length}/5)</span>
             </button>
             <button
               type="button"
@@ -344,292 +653,681 @@ export default function ProfileView({ onBack }) {
             borderRadius: '20px',
             padding: '32px'
           }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 24px 0' }}>
-              Thông tin cá nhân
-            </h2>
-
-            {/* Avatar Row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '28px' }}>
-              <div style={{
-                width: '72px',
-                height: '72px',
-                borderRadius: '18px',
-                border: '2px solid #0f172a',
-                backgroundColor: '#ffd600',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2.4rem'
-              }}>
-                🐔
-              </div>
+            {tutorNav === 'expertise' ? (
+              /* TAB: CHUYÊN MÔN & BẰNG CẤP */
               <div>
-                <button
-                  type="button"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1.5px solid #0f172a',
-                    borderRadius: '10px',
-                    padding: '8px 18px',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    boxShadow: '2px 2px 0px #0f172a',
-                    marginBottom: '6px'
-                  }}
-                >
-                  Tải ảnh mới lên
-                </button>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                  JPG, PNG hoặc GIF · tối đa 5MB · nên dùng ảnh vuông
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Award size={26} color="#059669" />
+                    <span>Hồ sơ Chuyên môn & Bằng cấp</span>
+                  </h2>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '4px 12px', borderRadius: '999px', border: '1px solid #a7f3d0' }}>
+                    Đã tải {certificates.length}/5 ảnh bằng cấp
+                  </span>
+                </div>
+
+                {renderCertificateGallery()}
+
+                <div style={{ borderTop: '1.5px solid #f1f5f9', paddingTop: '24px', marginTop: '20px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+                    Trình độ học vấn & Bằng tốt nghiệp
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        HỌC VỊ CAO NHẤT
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="Cử nhân Sư phạm loại Giỏi"
+                        style={{ width: '100%', padding: '11px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.92rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        TRƯỜNG ĐÀO TẠO
+                      </label>
+                      <input
+                        type="text"
+                        defaultValue="Đại học Sư phạm Hà Nội"
+                        style={{ width: '100%', padding: '11px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.92rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                      backgroundColor: '#ff5f38',
+                      color: '#ffffff',
+                      border: '2px solid #0f172a',
+                      borderRadius: '12px',
+                      padding: '11px 28px',
+                      fontWeight: 800,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer',
+                      boxShadow: '3px 3px 0px #0f172a'
+                    }}
+                  >
+                    Lưu hồ sơ chuyên môn
+                  </button>
                 </div>
               </div>
-            </div>
-
-            {/* Form Fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Họ & Tên */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    HỌ *
-                  </label>
-                  <input
-                    type="text"
-                    style={{
-                      width: '100%',
-                      padding: '11px 16px',
-                      borderRadius: '12px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '0.92rem'
-                    }}
-                    value={tutorLastName}
-                    onChange={(e) => setTutorLastName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    TÊN *
-                  </label>
-                  <input
-                    type="text"
-                    style={{
-                      width: '100%',
-                      padding: '11px 16px',
-                      borderRadius: '12px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '0.92rem'
-                    }}
-                    value={tutorFirstName}
-                    onChange={(e) => setTutorFirstName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Tên hiển thị */}
+            ) : tutorNav === 'rates' ? (
+              /* TAB: MÔN DẠY & HỌC PHÍ */
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  TÊN HIỂN THỊ
-                </label>
-                <input
-                  type="text"
-                  style={{
-                    width: '100%',
-                    padding: '11px 16px',
-                    borderRadius: '12px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.92rem'
-                  }}
-                  value={tutorDisplayName}
-                  onChange={(e) => setTutorDisplayName(e.target.value)}
-                />
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                  Tên học sinh nhìn thấy trên hồ sơ
-                </div>
-              </div>
-
-              {/* Email & Số điện thoại */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    EMAIL *
-                  </label>
-                  <input
-                    type="email"
-                    style={{
-                      width: '100%',
-                      padding: '11px 16px',
-                      borderRadius: '12px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '0.92rem'
-                    }}
-                    value={tutorEmail}
-                    onChange={(e) => setTutorEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    SỐ ĐIỆN THOẠI
-                  </label>
-                  <input
-                    type="text"
-                    style={{
-                      width: '100%',
-                      padding: '11px 16px',
-                      borderRadius: '12px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '0.92rem'
-                    }}
-                    value={tutorPhone}
-                    onChange={(e) => setTutorPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Giới tính */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  GIỚI TÍNH
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['Nam', 'Nữ', 'Không muốn tiết lộ'].map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setTutorGender(g)}
-                      style={{
-                        padding: '8px 18px',
-                        borderRadius: '999px',
-                        border: '1.5px solid #cbd5e1',
-                        backgroundColor: tutorGender === g ? '#181b2a' : '#ffffff',
-                        color: tutorGender === g ? '#ffffff' : '#475569',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {g}
-                    </button>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <BookOpen size={24} color="#7c3aed" />
+                  <span>Môn dạy & Học phí tham khảo</span>
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+                  {[
+                    { sub: 'Toán học (Lớp 10 - 12)', price: '250.000đ / buổi (90 phút)', format: 'Online & Trực tiếp' },
+                    { sub: 'Vật lý (Lớp 11 - 12)', price: '280.000đ / buổi (90 phút)', format: 'Online qua Zoom' },
+                    { sub: 'Tiếng Anh THPT & IELTS', price: '320.000đ / buổi (90 phút)', format: 'Trực tiếp tại nhà' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ border: '1.5px solid #0f172a', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>{item.sub}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>Hình thức: {item.format}</div>
+                      </div>
+                      <div style={{ fontWeight: 900, fontSize: '1rem', color: '#ea580c' }}>{item.price}</div>
+                    </div>
                   ))}
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                      backgroundColor: '#ff5f38',
+                      color: '#ffffff',
+                      border: '2px solid #0f172a',
+                      borderRadius: '12px',
+                      padding: '11px 28px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '3px 3px 0px #0f172a'
+                    }}
+                  >
+                    Lưu học phí
+                  </button>
+                </div>
               </div>
-
-              {/* Giới thiệu ngắn */}
+            ) : tutorNav === 'schedule' ? (
+              /* TAB: LỊCH DẠY */
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                    CÂU GIỚI THIỆU NGẮN
-                  </label>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                    {tutorShortBio.length}/100
-                  </span>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Calendar size={24} color="#0284c7" />
+                  <span>Lịch dạy khả dụng trong tuần</span>
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>
+                  Chọn các khung giờ bạn có thể nhận lớp dạy kèm:
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                  {daysOfWeek.map((d) => {
+                    const isSel = preferredDays.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleDay(d)}
+                        style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '12px',
+                          border: '2px solid #0f172a',
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          background: isSel ? '#0f172a' : '#ffffff',
+                          color: isSel ? '#ffffff' : '#0f172a',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
                 </div>
-                <input
-                  type="text"
-                  maxLength={100}
-                  style={{
-                    width: '100%',
-                    padding: '11px 16px',
-                    borderRadius: '12px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.92rem'
-                  }}
-                  value={tutorShortBio}
-                  onChange={(e) => setTutorShortBio(e.target.value)}
-                />
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                  Một câu thể hiện phong cách giảng dạy của bạn
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                      backgroundColor: '#ff5f38',
+                      color: '#ffffff',
+                      border: '2px solid #0f172a',
+                      borderRadius: '12px',
+                      padding: '11px 28px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '3px 3px 0px #0f172a'
+                    }}
+                  >
+                    Lưu lịch dạy
+                  </button>
                 </div>
               </div>
-
-              {/* Giới thiệu bản thân */}
+            ) : tutorNav === 'languages' ? (
+              /* TAB: NGÔN NGỮ & SỞ THÍCH */
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                    GIỚI THIỆU BẢN THÂN
-                  </label>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                    {tutorFullBio.length}/600
-                  </span>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Globe size={24} color="#ea580c" />
+                  <span>Ngôn ngữ & Sở thích cá nhân</span>
+                </h2>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                  {['Tiếng Việt (Bản ngữ)', 'Tiếng Anh (IELTS 8.0)', 'Tiếng Nhật (N3)', 'Cờ vua', 'Lập trình', 'Đọc sách'].map((tag, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        background: '#fff4cc',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '999px',
+                        padding: '6px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#0f172a'
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
-                <textarea
-                  maxLength={600}
-                  rows={5}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.92rem',
-                    lineHeight: '1.6',
-                    fontFamily: 'inherit'
-                  }}
-                  value={tutorFullBio}
-                  onChange={(e) => setTutorFullBio(e.target.value)}
-                />
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                  Kể cho học sinh nghe về bạn, phương pháp giảng dạy và kinh nghiệm của bạn
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                      backgroundColor: '#ff5f38',
+                      color: '#ffffff',
+                      border: '2px solid #0f172a',
+                      borderRadius: '12px',
+                      padding: '11px 28px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '3px 3px 0px #0f172a'
+                    }}
+                  >
+                    Lưu thông tin
+                  </button>
                 </div>
               </div>
-
-              {/* Link Video giới thiệu */}
+            ) : (
+              /* DEFAULT TAB: THÔNG TIN CÁ NHÂN */
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  LINK VIDEO GIỚI THIỆU
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://youtube.com/..."
-                  style={{
-                    width: '100%',
-                    padding: '11px 16px',
-                    borderRadius: '12px',
-                    border: '1.5px solid #cbd5e1',
-                    fontSize: '0.92rem'
-                  }}
-                  value={tutorVideoUrl}
-                  onChange={(e) => setTutorVideoUrl(e.target.value)}
-                />
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                  Tùy chọn: link đến video YouTube hoặc Loom giới thiệu khoảng 60 giây
-                </div>
-              </div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 24px 0' }}>
+                  Thông tin cá nhân
+                </h2>
 
-              {/* Bottom bar */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: '16px',
-                paddingTop: '20px',
-                borderTop: '1px solid #f1f5f9'
-              }}>
-                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                  Thay đổi được lưu ngay vào hồ sơ của bạn.
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  style={{
-                    backgroundColor: '#ff5f38',
-                    color: '#ffffff',
+                {/* Avatar Row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '28px' }}>
+                  <div style={{
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '18px',
                     border: '2px solid #0f172a',
-                    borderRadius: '12px',
-                    padding: '11px 28px',
-                    fontWeight: 800,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    boxShadow: '3px 3px 0px #0f172a'
-                  }}
-                >
-                  Lưu thay đổi
-                </button>
-              </div>
+                    backgroundColor: '#ffd600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2.4rem'
+                  }}>
+                    🐔
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '10px',
+                        padding: '8px 18px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        boxShadow: '2px 2px 0px #0f172a',
+                        marginBottom: '6px'
+                      }}
+                    >
+                      Tải ảnh mới lên
+                    </button>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                      JPG, PNG hoặc GIF · tối đa 5MB · nên dùng ảnh vuông
+                    </div>
+                  </div>
+                </div>
 
-            </div>
+                {/* Quick Certificate Summary Box in Personal Info */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '14px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  marginBottom: '24px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Award size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                        Bằng cấp & Chứng chỉ ({certificates.length}/5 ảnh)
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                        {certificates.length > 0 ? `Đã xác thực ${certificates.length} bằng cấp giảng dạy` : 'Chưa có ảnh bằng cấp nào'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCertModal(true)}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1.5px solid #0f172a',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      boxShadow: '1.5px 1.5px 0px #0f172a'
+                    }}
+                  >
+                    Quản lý bằng cấp
+                  </button>
+                </div>
+
+                {/* Form Fields */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Họ & Tên */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        HỌ *
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: '100%',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.92rem',
+                          boxSizing: 'border-box'
+                        }}
+                        value={tutorLastName}
+                        onChange={(e) => setTutorLastName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        TÊN *
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: '100%',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.92rem',
+                          boxSizing: 'border-box'
+                        }}
+                        value={tutorFirstName}
+                        onChange={(e) => setTutorFirstName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tên hiển thị */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      TÊN HIỂN THỊ
+                    </label>
+                    <input
+                      type="text"
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.92rem',
+                        boxSizing: 'border-box'
+                      }}
+                      value={tutorDisplayName}
+                      onChange={(e) => setTutorDisplayName(e.target.value)}
+                    />
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
+                      Tên học sinh nhìn thấy trên hồ sơ
+                    </div>
+                  </div>
+
+                  {/* Email & Phone */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        EMAIL
+                      </label>
+                      <input
+                        type="email"
+                        style={{
+                          width: '100%',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.92rem',
+                          boxSizing: 'border-box'
+                        }}
+                        value={tutorEmail}
+                        onChange={(e) => setTutorEmail(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        SỐ ĐIỆN THOẠI
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: '100%',
+                          padding: '11px 16px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #cbd5e1',
+                          fontSize: '0.92rem',
+                          boxSizing: 'border-box'
+                        }}
+                        value={tutorPhone}
+                        onChange={(e) => setTutorPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Giới thiệu ngắn */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                        CÂU GIỚI THIỆU NGẮN
+                      </label>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        {tutorShortBio.length}/100
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={100}
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.92rem',
+                        boxSizing: 'border-box'
+                      }}
+                      value={tutorShortBio}
+                      onChange={(e) => setTutorShortBio(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Giới thiệu bản thân */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                        GIỚI THIỆU BẢN THÂN
+                      </label>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        {tutorFullBio.length}/600
+                      </span>
+                    </div>
+                    <textarea
+                      maxLength={600}
+                      rows={5}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.92rem',
+                        lineHeight: '1.6',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                      value={tutorFullBio}
+                      onChange={(e) => setTutorFullBio(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Link Video giới thiệu */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      LINK VIDEO GIỚI THIỆU
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="https://youtube.com/..."
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.92rem',
+                        boxSizing: 'border-box'
+                      }}
+                      value={tutorVideoUrl}
+                      onChange={(e) => setTutorVideoUrl(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Bottom bar */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '16px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #f1f5f9'
+                  }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      Thay đổi được lưu ngay vào hồ sơ của bạn.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      style={{
+                        backgroundColor: '#ff5f38',
+                        color: '#ffffff',
+                        border: '2px solid #0f172a',
+                        borderRadius: '12px',
+                        padding: '11px 28px',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                        cursor: 'pointer',
+                        boxShadow: '3px 3px 0px #0f172a'
+                      }}
+                    >
+                      Lưu thay đổi
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
+
+        {/* MODAL: TUTOR CERTIFICATE MANAGER (Up to 5 photos) */}
+        {showCertModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}>
+            <div style={{
+              backgroundColor: '#ffffff',
+              border: '2.5px solid #0f172a',
+              borderRadius: '24px',
+              maxWidth: '880px',
+              width: '100%',
+              padding: '32px',
+              boxShadow: '8px 8px 0px #0f172a',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowCertModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                <X size={24} />
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#ecfdf5',
+                  border: '1.5px solid #059669',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Award size={24} color="#059669" />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                    Quản lý Bằng cấp & Chứng chỉ
+                  </h2>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+                    Gia sư đăng tải tối đa 5 ảnh bằng cấp chuyên môn (Bằng ĐH, IELTS, Nghiệp vụ...)
+                  </div>
+                </div>
+              </div>
+
+              {renderCertificateGallery()}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCertModal(false)}
+                  style={{
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '10px 24px',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LIGHTBOX MODAL: FULL SIZE IMAGE PREVIEW */}
+        {previewCert && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '24px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setPreviewCert(null)}
+              style={{
+                position: 'absolute',
+                top: '24px',
+                right: '24px',
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '44px',
+                height: '44px',
+                color: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={24} />
+            </button>
+
+            <div style={{
+              maxWidth: '900px',
+              maxHeight: '75vh',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              border: '3px solid #ffffff',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+              marginBottom: '16px',
+              backgroundColor: '#000000'
+            }}>
+              <img
+                src={previewCert.imageUrl}
+                alt={previewCert.title}
+                style={{ width: '100%', height: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block' }}
+              />
+            </div>
+
+            <div style={{ color: '#ffffff', textAlign: 'center', maxWidth: '600px' }}>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 800 }}>{previewCert.title}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCertificate(previewCert)}
+                  style={{
+                    backgroundColor: '#ff5f38',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '10px 22px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Download size={16} /> Tải ảnh về máy tính
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

@@ -9,23 +9,66 @@ import DashboardPage from './pages/DashboardPage';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentView, setCurrentView] = useState('classes');
+  const [currentView, setCurrentView] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'login';
+  });
 
-  // Set default view based on role when user logs in
+  // Handle browser Back / Forward buttons
   useEffect(() => {
-    if (user) {
-      if (user.role === 'TUTOR') {
-        setCurrentView('dashboard');
+    const handlePopState = (event) => {
+      if (event.state && event.state.view) {
+        setCurrentView(event.state.view);
       } else {
-        setCurrentView('classes');
+        const hash = window.location.hash.replace('#', '');
+        if (hash) {
+          setCurrentView(hash);
+        } else if (user) {
+          setCurrentView(user.role === 'TUTOR' ? 'dashboard' : 'classes');
+        } else {
+          setCurrentView('login');
+        }
       }
-    } else {
-      setCurrentView('login');
-    }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [user]);
 
+  // Set default view or sync hash when user auth state changes
+  useEffect(() => {
+    if (loading) return;
+
+    if (user) {
+      const hash = window.location.hash.replace('#', '');
+      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile'];
+      if (hash && validViews.includes(hash)) {
+        setCurrentView(hash);
+        window.history.replaceState({ view: hash }, '', '#' + hash);
+      } else {
+        const defaultView = user.role === 'TUTOR' ? 'dashboard' : 'classes';
+        setCurrentView(defaultView);
+        window.history.replaceState({ view: defaultView }, '', '#' + defaultView);
+      }
+    } else {
+      const authViews = ['register', 'forgot-password'];
+      const hash = window.location.hash.replace('#', '');
+      if (hash && authViews.includes(hash)) {
+        setCurrentView(hash);
+        window.history.replaceState({ view: hash }, '', '#' + hash);
+      } else {
+        setCurrentView('login');
+        window.history.replaceState({ view: 'login' }, '', '#login');
+      }
+    }
+  }, [user, loading]);
+
   const handleNavigate = (view) => {
-    setCurrentView(view);
+    if (view !== currentView) {
+      window.history.pushState({ view }, '', '#' + view);
+      setCurrentView(view);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (loading) {

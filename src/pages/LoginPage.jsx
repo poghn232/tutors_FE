@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, Eye, EyeOff, UserRound, Info, X } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
 
 export default function LoginPage({ onNavigate }) {
   const { login, loginWithGoogle } = useAuth();
-  const [email, setEmail] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => authService.isRemembered());
+  const [email, setEmail] = useState(() => authService.getRememberedEmail() || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +29,7 @@ export default function LoginPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await login({ email, password });
+      const res = await login({ email, password }, rememberMe);
       if (res.success) {
         onNavigate('dashboard');
       } else {
@@ -50,7 +52,7 @@ export default function LoginPage({ onNavigate }) {
         const res = await loginWithGoogle({
           idToken: tokenResponse.access_token,
           role: selectedRole
-        });
+        }, rememberMe);
         if (res.success) {
           onNavigate('dashboard');
         } else {
@@ -183,7 +185,13 @@ export default function LoginPage({ onNavigate }) {
             </div>
 
             <div className="form-row">
-              <label className="remember"><input type="checkbox" /> Ghi nhớ đăng nhập</label>
+              <label className="remember">
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe} 
+                  onChange={(e) => setRememberMe(e.target.checked)} 
+                /> Ghi nhớ đăng nhập
+              </label>
               <button type="button" className="link-button" onClick={() => onNavigate('forgot-password')}>Quên mật khẩu?</button>
             </div>
 

@@ -7,12 +7,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
-// Interceptor tự động gắn token JWT vào Header Authorization nếu có
+// Interceptor tự động gắn token JWT từ localStorage hoặc sessionStorage
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('giasuhq_token');
+    const token = localStorage.getItem('giasuhq_token') || sessionStorage.getItem('giasuhq_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
