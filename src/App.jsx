@@ -6,11 +6,15 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
+import PaymentResultView from './components/PaymentResultView';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState(() => {
-    const hash = window.location.hash.replace('#', '');
+    if (window.location.search.includes('vnp_ResponseCode') || window.location.hash.includes('payment-result')) {
+      return 'payment-result';
+    }
+    const hash = window.location.hash.replace('#', '').split('?')[0];
     return hash || 'login';
   });
 
@@ -20,8 +24,10 @@ function AppContent() {
       if (event.state && event.state.view) {
         setCurrentView(event.state.view);
       } else {
-        const hash = window.location.hash.replace('#', '');
-        if (hash) {
+        const hash = window.location.hash.replace('#', '').split('?')[0];
+        if (window.location.search.includes('vnp_ResponseCode') || hash === 'payment-result') {
+          setCurrentView('payment-result');
+        } else if (hash) {
           setCurrentView(hash);
         } else if (user) {
           setCurrentView(user.role === 'TUTOR' ? 'dashboard' : 'classes');
@@ -39,9 +45,18 @@ function AppContent() {
   useEffect(() => {
     if (loading) return;
 
+    const rawHash = window.location.hash.replace('#', '');
+    const hash = rawHash.split('?')[0];
+
+    // Priority 1: VNPay Payment Callback
+    if (window.location.search.includes('vnp_ResponseCode') || hash === 'payment-result') {
+      setCurrentView('payment-result');
+      window.history.replaceState({ view: 'payment-result' }, '', '#payment-result' + (window.location.search || ''));
+      return;
+    }
+
     if (user) {
-      const hash = window.location.hash.replace('#', '');
-      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile'];
+      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip'];
       if (hash && validViews.includes(hash)) {
         setCurrentView(hash);
         window.history.replaceState({ view: hash }, '', '#' + hash);
@@ -52,7 +67,6 @@ function AppContent() {
       }
     } else {
       const authViews = ['register', 'forgot-password'];
-      const hash = window.location.hash.replace('#', '');
       if (hash && authViews.includes(hash)) {
         setCurrentView(hash);
         window.history.replaceState({ view: hash }, '', '#' + hash);
@@ -105,7 +119,9 @@ function AppContent() {
       )}
 
       <main className={user ? 'main-content' : 'auth-main'}>
-        {!user ? (
+        {currentView === 'payment-result' ? (
+          <PaymentResultView onNavigate={handleNavigate} />
+        ) : !user ? (
           <>
             {currentView === 'register' ? (
               <RegisterPage onNavigate={handleNavigate} />

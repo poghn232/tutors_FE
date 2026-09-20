@@ -9,6 +9,7 @@ import ProfileView from '../components/ProfileView';
 import PaymentView from '../components/PaymentView';
 import CheckoutFlow from '../components/CheckoutFlow';
 import VipPricingView from '../components/VipPricingView';
+import PaymentResultView from '../components/PaymentResultView';
 import { 
   User, 
   Calendar, 
@@ -795,6 +796,10 @@ export default function DashboardPage({ activeTab = 'default', onNavigate }) {
 
           {currentTab === 'profile' && (
             <ProfileView onBack={() => handleTabChange(isTutor ? 'dashboard' : 'classes')} />
+          )}
+
+          {currentTab === 'payment-result' && (
+            <PaymentResultView onNavigate={handleTabChange} />
           )}
         </div>
       )}

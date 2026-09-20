@@ -16,6 +16,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import fileService from '../services/fileService';
+import VNPayCheckoutModal from './VNPayCheckoutModal';
 
 export default function MaterialView({ user, onNavigateToVip }) {
   const isTutor = user?.role === 'TUTOR';
@@ -23,6 +24,7 @@ export default function MaterialView({ user, onNavigateToVip }) {
   const [selectedType, setSelectedType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState('');
+  const [showVnpayModal, setShowVnpayModal] = useState(false);
 
   // Modal State for Tutor "+ Đăng tài liệu"
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -375,7 +377,7 @@ export default function MaterialView({ user, onNavigateToVip }) {
 
           <button
             type="button"
-            onClick={() => onNavigateToVip ? onNavigateToVip() : alert('Tính năng gói VIP')}
+            onClick={() => setShowVnpayModal(true)}
             style={{
               background: '#0f172a',
               color: '#ffffff',
@@ -387,7 +389,7 @@ export default function MaterialView({ user, onNavigateToVip }) {
               cursor: 'pointer'
             }}
           >
-            Nâng cấp ngay →
+            Nâng cấp VIP qua VNPAY →
           </button>
         </div>
       )}
@@ -663,7 +665,7 @@ export default function MaterialView({ user, onNavigateToVip }) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => onNavigateToVip ? onNavigateToVip() : alert('Tính năng gói VIP')}
+                    onClick={() => setShowVnpayModal(true)}
                     style={{
                       background: '#7c3aed',
                       color: '#ffffff',
@@ -676,7 +678,7 @@ export default function MaterialView({ user, onNavigateToVip }) {
                       boxShadow: '2px 2px 0px #0f172a'
                     }}
                   >
-                    Nâng cấp VIP
+                    Nâng cấp VIP qua VNPAY
                   </button>
                 </div>
               )}
@@ -883,6 +885,14 @@ export default function MaterialView({ user, onNavigateToVip }) {
         </div>
       )}
 
+      {/* VNPay VIP Checkout Modal */}
+      <VNPayCheckoutModal
+        isOpen={showVnpayModal}
+        onClose={() => setShowVnpayModal(false)}
+        initialPlan="yearly"
+      />
+
     </div>
   );
 }
+
