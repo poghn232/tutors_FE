@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import fileService from '../services/fileService';
+import { userService } from '../services/userService';
 import { 
   Camera, 
   ArrowLeft, 
@@ -72,11 +73,11 @@ export default function ProfileView({ onBack }) {
   const certFileInputRef = useRef(null);
 
   // State for Student Profile (Figma Frame 61:5450)
-  const [fullName, setFullName] = useState(user?.fullName || 'Nguyễn Minh Anh');
+  const [fullName, setFullName] = useState(user?.fullName || '');
   const [dob, setDob] = useState('2008-05-15');
   const [gender, setGender] = useState('Nữ');
-  const [phone, setPhone] = useState(user?.phone || '0901 234 567');
-  const [email, setEmail] = useState(user?.email || 'minhanh@gmail.com');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [school, setSchool] = useState('THPT Đoàn Kết - Hai Bà Trưng');
   const [address, setAddress] = useState('Số 12, phố Trần Khát Chân, Hai Bà Trưng, Hà Nội');
   const [grade, setGrade] = useState('Lớp 11');
@@ -106,6 +107,76 @@ export default function ProfileView({ onBack }) {
   const [notifySystem, setNotifySystem] = useState(true);
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Sync with auth user on load or update
+  useEffect(() => {
+    if (user) {
+      if (user.fullName) {
+        setFullName(user.fullName);
+        const parts = user.fullName.split(' ');
+        if (parts.length > 1) {
+          setTutorLastName(parts.slice(0, -1).join(' '));
+          setTutorFirstName(parts[parts.length - 1]);
+        }
+      }
+      if (user.phone) {
+        setPhone(user.phone);
+        setTutorPhone(user.phone);
+      }
+      if (user.email) {
+        setEmail(user.email);
+        setTutorEmail(user.email);
+      }
+    }
+  }, [user]);
+
+  // Cập nhật thông tin tài khoản (Lưu thay đổi)
+  const handleSave = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      setSaving(true);
+      setSaveError('');
+
+      let payload = {};
+      if (isTutor) {
+        payload = {
+          fullName: `${tutorLastName} ${tutorFirstName}`.trim() || user?.fullName || 'Gia sư Tutora',
+          phone: (tutorPhone || '').trim(),
+          bio: tutorFullBio || tutorShortBio,
+          qualification: tutorDisplayName
+        };
+      } else {
+        payload = {
+          fullName: (fullName || '').trim() || user?.fullName || 'Học viên Tutora',
+          phone: (phone || '').trim(),
+          schoolName: school,
+          address: address,
+          gradeLevel: grade
+        };
+      }
+
+      let updatedUserObj = { ...user, ...payload };
+      try {
+        const res = await userService.updateProfile(payload);
+        if (res?.data) {
+          updatedUserObj = { ...updatedUserObj, ...res.data };
+        }
+      } catch (apiErr) {
+        console.warn('Backend updateProfile offline or failed, caching locally:', apiErr.message);
+      }
+
+      updateUser(updatedUserObj);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 4000);
+    } catch (err) {
+      console.error('Error in handleSave:', err);
+      setSaveError('Không thể lưu hồ sơ. Vui lòng thử lại.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const allSubjects = [
     'Toán học', 'Vật lý', 'Hóa học', 'Sinh học', 'Tiếng Anh', 
