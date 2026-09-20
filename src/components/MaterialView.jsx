@@ -399,7 +399,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
               cursor: 'pointer'
             }}
           >
-            Nâng cấp VIP qua VNPAY →
+            Nâng cấp VIP ngay →
           </button>
         </div>
       )}
@@ -694,7 +694,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
                       boxShadow: '2px 2px 0px #0f172a'
                     }}
                   >
-                    Nâng cấp VIP qua VNPAY
+                    Nâng cấp VIP ngay
                   </button>
                 </div>
               )}

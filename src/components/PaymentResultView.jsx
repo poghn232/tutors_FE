@@ -43,7 +43,7 @@ export default function PaymentResultView({ onNavigate }) {
             amount: amount,
             orderInfo: decodeURIComponent(paramObj.vnp_OrderInfo || 'Thanh toán dịch vụ Tutora'),
             payDate: paramObj.vnp_PayDate,
-            message: isSuccess ? 'Giao dịch thanh toán thành công qua VNPay!' : 'Giao dịch không thành công hoặc bị hủy.'
+            message: isSuccess ? 'Giao dịch thanh toán thành công!' : 'Giao dịch không thành công hoặc bị hủy.'
           });
         }
       } else {
@@ -53,10 +53,10 @@ export default function PaymentResultView({ onNavigate }) {
           responseCode: '00',
           txnRef: 'TEST_' + Math.floor(100000 + Math.random() * 900000),
           transactionNo: '14829381',
-          bankCode: 'NCB',
+          bankCode: 'MBBANK',
           amount: 299000,
           orderInfo: 'Nang cap goi VIP Tai lieu 1 nam',
-          message: 'Giao dịch thanh toán thành công qua VNPay Sandbox!'
+          message: 'Giao dịch thanh toán thành công!'
         });
       }
       setLoading(false);
@@ -93,7 +93,7 @@ export default function PaymentResultView({ onNavigate }) {
           animation: 'spin 0.8s linear infinite',
           margin: '0 auto 16px auto'
         }} />
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>Đang xác thực giao dịch với VNPay...</h3>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>Đang xác thực giao dịch...</h3>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Vui lòng đợi trong giây lát.</p>
       </div>
     );
@@ -143,7 +143,7 @@ export default function PaymentResultView({ onNavigate }) {
         </h1>
 
         <p style={{ color: '#475569', fontSize: '0.95rem', margin: '0 0 28px 0', lineHeight: 1.5 }}>
-          {result?.message || (isSuccess ? 'Cảm ơn bạn đã tin tưởng dịch vụ của Tutora.' : 'Giao dịch qua cổng VNPay chưa được hoàn tất.')}
+          {result?.message || (isSuccess ? 'Cảm ơn bạn đã tin tưởng dịch vụ của Tutora.' : 'Giao dịch thanh toán chưa được hoàn tất.')}
         </p>
 
         {/* Transaction Details Box */}
@@ -170,7 +170,7 @@ export default function PaymentResultView({ onNavigate }) {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Mã tham chiếu đơn (TxnRef):</span>
+            <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Mã tham chiếu đơn:</span>
             <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', fontFamily: 'monospace' }}>
               #{result?.txnRef || 'N/A'}
             </span>
@@ -178,7 +178,7 @@ export default function PaymentResultView({ onNavigate }) {
 
           {result?.transactionNo && (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #e2e8f0' }}>
-              <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Mã giao dịch VNPay:</span>
+              <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Mã giao dịch:</span>
               <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', fontFamily: 'monospace' }}>
                 {result.transactionNo}
               </span>
@@ -186,9 +186,9 @@ export default function PaymentResultView({ onNavigate }) {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Ngân hàng thanh toán:</span>
+            <span style={{ color: '#64748b', fontSize: '0.88rem' }}>Phương thức:</span>
             <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#2563eb' }}>
-              {result?.bankCode || 'VNPAY'}
+              {result?.bankCode || 'VietQR'}
             </span>
           </div>
 

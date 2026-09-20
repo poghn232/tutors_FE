@@ -14,7 +14,9 @@ import {
   ExternalLink, 
   Tag, 
   CreditCard,
-  QrCode
+  QrCode,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 
@@ -40,12 +42,12 @@ export default function CheckoutFlow({
     avatarUrl: null
   };
 
-  // Booking details defaults
+  // Booking details from parent or fallbacks
   const details = bookingDetails || {
     subject: 'Toán học',
     allSubjects: 'Toán học, Vật lý, Tin học',
     date: '2026-09-14',
-    time: '9:00 SA',
+    time: '10:00 SA',
     duration: '60 phút',
     format: 'Gọi video (Google Meet)',
     lessonPrice: 250000,
@@ -53,18 +55,21 @@ export default function CheckoutFlow({
     meetLink: 'meet.google.com/abc-def-ghi'
   };
 
-  // Payment method selection in Step 2: 'vietqr' | 'vnpay' | 'card' | 'paypal' | 'apple'
+  // Payment method selection in Step 2: 'vietqr' | 'card' | 'paypal' | 'apple'
   const [paymentMethod, setPaymentMethod] = useState('vietqr');
-  const [bookingOrderCode] = useState(() => 'TUTORA' + Math.floor(100000 + Math.random() * 900000));
+  const [bookingOrderCode, setBookingOrderCode] = useState(() => 'TUTORA' + Math.floor(100000 + Math.random() * 900000));
   const [copiedField, setCopiedField] = useState(null);
   const [timeLeft, setTimeLeft] = useState(600);
-  const [vnpayLoading, setVnpayLoading] = useState(false);
-  const [vnpayError, setVnpayError] = useState('');
   const [paypalEmail, setPaypalEmail] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
+
+  const handleRegenerateQR = () => {
+    setBookingOrderCode('TUTORA' + Math.floor(100000 + Math.random() * 900000));
+    setTimeLeft(600);
+  };
 
   // MB Bank Config
   const BANK_CONFIG = {
@@ -147,32 +152,10 @@ export default function CheckoutFlow({
 
   const isPaymentValid = () => {
     if (paymentMethod === 'vietqr') return true;
-    if (paymentMethod === 'vnpay') return true;
     if (paymentMethod === 'apple') return true;
     if (paymentMethod === 'paypal') return paypalEmail.includes('@');
     if (paymentMethod === 'card') return cardNumber.trim().length >= 12 && cardExpiry.trim() && cardCvv.trim();
     return true;
-  };
-
-  const handleVNPayPayment = async () => {
-    try {
-      setVnpayLoading(true);
-      setVnpayError('');
-      const res = await paymentService.createVNPayPayment({
-        amount: finalTotal,
-        orderInfo: `Thanh toan buoi hoc ${details.subject} voi gia su ${currentTutor.fullName || 'Tutora'}`,
-        orderType: 'billpayment'
-      });
-      if (res && res.success && res.data?.paymentUrl) {
-        window.location.href = res.data.paymentUrl;
-      } else {
-        setVnpayError(res?.message || 'Không thể tạo phiên thanh toán VNPay');
-      }
-    } catch (e) {
-      setVnpayError(e.message || 'Lỗi kết nối máy chủ thanh toán');
-    } finally {
-      setVnpayLoading(false);
-    }
   };
 
   const handleCheckBookingPayment = async () => {
@@ -191,10 +174,6 @@ export default function CheckoutFlow({
   const handleProcessPayment = () => {
     if (paymentMethod === 'vietqr') {
       handleCheckBookingPayment();
-      return;
-    }
-    if (paymentMethod === 'vnpay') {
-      handleVNPayPayment();
       return;
     }
     if (!isPaymentValid()) return;
@@ -400,13 +379,6 @@ export default function CheckoutFlow({
                     </button>
                     <button
                       type="button"
-                      className={`figma-payment-tab ${paymentMethod === 'vnpay' ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod('vnpay')}
-                    >
-                      VNPay
-                    </button>
-                    <button
-                      type="button"
                       className={`figma-payment-tab ${paymentMethod === 'card' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('card')}
                     >
@@ -431,272 +403,298 @@ export default function CheckoutFlow({
                   {/* Sub-view: VietQR MB Bank */}
                   {paymentMethod === 'vietqr' && (
                     <div style={{ padding: '16px 0 10px 0' }}>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '170px 1fr',
-                        gap: '18px',
-                        background: '#f8fafc',
-                        border: '1.5px solid #0f172a',
-                        borderRadius: '18px',
-                        padding: '16px',
-                        marginBottom: '16px',
-                        alignItems: 'center'
-                      }}>
-                        {/* QR Image */}
-                        <div style={{ textAlign: 'center' }}>
+                      {timeLeft <= 0 ? (
+                        /* TIMEOUT EXPIRED NOTIFICATION */
+                        <div style={{
+                          background: '#fff1f2',
+                          border: '2px solid #e11d48',
+                          borderRadius: '18px',
+                          padding: '24px 20px',
+                          textAlign: 'center',
+                          marginBottom: '16px',
+                          boxShadow: '3px 3px 0px #0f172a'
+                        }}>
                           <div style={{
-                            background: '#ffffff',
-                            border: '1.5px solid #e2e8f0',
-                            borderRadius: '12px',
-                            padding: '6px',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                          }}>
-                            <img 
-                              src={`https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNumber}-compact2.png?amount=${finalTotal}&addInfo=${bookingOrderCode}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`} 
-                              alt="VietQR MB Bank" 
-                              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }} 
-                            />
-                          </div>
-                          <div style={{
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: '50%',
+                            backgroundColor: '#ffe4e6',
+                            color: '#e11d48',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '4px',
-                            fontSize: '0.72rem',
-                            color: '#64748b',
-                            marginTop: '6px',
-                            fontWeight: 700
+                            margin: '0 auto 12px auto'
                           }}>
-                            <Clock size={12} /> Hết hạn: <span style={{ color: '#ef4444' }}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                            <AlertTriangle size={28} />
+                          </div>
+
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 900, color: '#9f1239' }}>
+                            Mã QR thanh toán đã hết hạn!
+                          </h4>
+
+                          <p style={{ margin: '0 0 16px 0', fontSize: '0.86rem', color: '#881337', lineHeight: 1.5 }}>
+                            Phiên thanh toán học phí (Mã: <b>{bookingOrderCode}</b>) đã kết thúc sau 10 phút để đảm bảo an toàn.
+                            <br />
+                            • <b>Nếu bạn đã chuyển khoản:</b> Vui lòng bấm <i>"Kiểm tra lại giao dịch"</i> hoặc lưu lại biên lai ngân hàng để hệ thống đối soát.
+                            <br />
+                            • <b>Nếu bạn chưa chuyển:</b> Bấm <i>"Tạo mã QR mới"</i> để gia hạn thêm 10 phút.
+                          </p>
+
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={handleRegenerateQR}
+                              style={{
+                                background: '#7c3aed',
+                                color: '#ffffff',
+                                border: '2px solid #0f172a',
+                                boxShadow: '2px 2px 0px #0f172a',
+                                borderRadius: '10px',
+                                padding: '10px 18px',
+                                fontWeight: 800,
+                                fontSize: '0.88rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <RefreshCw size={16} /> Tạo mã QR mới (Gia hạn 10 phút)
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleCheckBookingPayment}
+                              style={{
+                                background: '#ffffff',
+                                color: '#0f172a',
+                                border: '2px solid #0f172a',
+                                boxShadow: '2px 2px 0px #0f172a',
+                                borderRadius: '10px',
+                                padding: '10px 18px',
+                                fontWeight: 800,
+                                fontSize: '0.88rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Kiểm tra lại giao dịch
+                            </button>
                           </div>
                         </div>
-
-                        {/* Transfer Details */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                              Ngân hàng thụ hưởng
-                            </div>
-                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#005baa' }}>
-                              MB Bank · Quân Đội
-                            </div>
-                          </div>
-
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                              Số tài khoản
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 900, fontSize: '1rem', color: '#0f172a' }}>
-                                {BANK_CONFIG.accountNumber}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(BANK_CONFIG.accountNumber, 'acc')}
-                                style={{
-                                  background: '#eff6ff',
-                                  border: '1px solid #bfdbfe',
-                                  borderRadius: '6px',
-                                  padding: '2px 6px',
-                                  cursor: 'pointer',
-                                  color: '#1d4ed8',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '3px'
-                                }}
-                              >
-                                {copiedField === 'acc' ? <CheckCheck size={11} /> : <Copy size={11} />}
-                                {copiedField === 'acc' ? 'Đã chép' : 'Chép'}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                              Chủ tài khoản
-                            </div>
-                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                              {BANK_CONFIG.accountName}
-                            </div>
-                          </div>
-
-                          <div>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                              Số tiền thanh toán
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#059669' }}>
-                                {formatVND(finalTotal)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(finalTotal.toString(), 'amount')}
-                                style={{
-                                  background: '#ecfdf5',
-                                  border: '1px solid #a7f3d0',
-                                  borderRadius: '6px',
-                                  padding: '2px 6px',
-                                  cursor: 'pointer',
-                                  color: '#047857',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '3px'
-                                }}
-                              >
-                                {copiedField === 'amount' ? <CheckCheck size={11} /> : <Copy size={11} />}
-                                {copiedField === 'amount' ? 'Đã chép' : 'Chép'}
-                              </button>
-                            </div>
-                          </div>
-
+                      ) : (
+                        <>
                           <div style={{
-                            background: '#fffbeb',
-                            border: '1px solid #fde68a',
-                            borderRadius: '8px',
-                            padding: '6px 8px'
+                            display: 'grid',
+                            gridTemplateColumns: '170px 1fr',
+                            gap: '18px',
+                            background: '#f8fafc',
+                            border: '1.5px solid #0f172a',
+                            borderRadius: '18px',
+                            padding: '16px',
+                            marginBottom: '16px',
+                            alignItems: 'center'
                           }}>
-                            <div style={{ fontSize: '0.68rem', color: '#92400e', fontWeight: 800, textTransform: 'uppercase' }}>
-                              Nội dung chuyển khoản (bắt buộc)
+                            {/* QR Image */}
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{
+                                background: '#ffffff',
+                                border: '1.5px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '6px',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                              }}>
+                                <img 
+                                  src={`https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNumber}-compact2.png?amount=${finalTotal}&addInfo=${bookingOrderCode}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`} 
+                                  alt="VietQR MB Bank" 
+                                  style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }} 
+                                />
+                              </div>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                fontSize: '0.72rem',
+                                color: '#64748b',
+                                marginTop: '6px',
+                                fontWeight: 700
+                              }}>
+                                <Clock size={12} /> Hết hạn: <span style={{ color: '#ef4444' }}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
-                              <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#b45309', fontFamily: 'monospace' }}>
-                                {bookingOrderCode}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(bookingOrderCode, 'content')}
-                                style={{
-                                  background: '#fef3c7',
-                                  border: '1px solid #fcd34d',
-                                  borderRadius: '6px',
-                                  padding: '2px 8px',
-                                  cursor: 'pointer',
-                                  color: '#b45309',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 800,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '3px'
-                                }}
-                              >
-                                {copiedField === 'content' ? <CheckCheck size={11} /> : <Copy size={11} />}
-                                {copiedField === 'content' ? 'Đã chép' : 'Chép'}
-                              </button>
+
+                            {/* Transfer Details */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                              <div>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                                  Ngân hàng thụ hưởng
+                                </div>
+                                <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#005baa' }}>
+                                  MB Bank · Quân Đội
+                                </div>
+                              </div>
+
+                              <div>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                                  Số tài khoản
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontWeight: 900, fontSize: '1rem', color: '#0f172a' }}>
+                                    {BANK_CONFIG.accountNumber}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopy(BANK_CONFIG.accountNumber, 'acc')}
+                                    style={{
+                                      background: '#eff6ff',
+                                      border: '1px solid #bfdbfe',
+                                      borderRadius: '6px',
+                                      padding: '2px 6px',
+                                      cursor: 'pointer',
+                                      color: '#1d4ed8',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}
+                                  >
+                                    {copiedField === 'acc' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                    {copiedField === 'acc' ? 'Đã chép' : 'Chép'}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                                  Chủ tài khoản
+                                </div>
+                                <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                                  {BANK_CONFIG.accountName}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                                  Số tiền thanh toán
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#059669' }}>
+                                    {formatVND(finalTotal)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopy(finalTotal.toString(), 'amount')}
+                                    style={{
+                                      background: '#ecfdf5',
+                                      border: '1px solid #a7f3d0',
+                                      borderRadius: '6px',
+                                      padding: '2px 6px',
+                                      cursor: 'pointer',
+                                      color: '#047857',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}
+                                  >
+                                    {copiedField === 'amount' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                    {copiedField === 'amount' ? 'Đã chép' : 'Chép'}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{
+                                background: '#fffbeb',
+                                border: '1px solid #fde68a',
+                                borderRadius: '8px',
+                                padding: '6px 8px'
+                              }}>
+                                <div style={{ fontSize: '0.68rem', color: '#92400e', fontWeight: 800, textTransform: 'uppercase' }}>
+                                  Nội dung chuyển khoản (bắt buộc)
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                                  <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#b45309', fontFamily: 'monospace' }}>
+                                    {bookingOrderCode}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopy(bookingOrderCode, 'content')}
+                                    style={{
+                                      background: '#fef3c7',
+                                      border: '1px solid #fcd34d',
+                                      borderRadius: '6px',
+                                      padding: '2px 8px',
+                                      cursor: 'pointer',
+                                      color: '#b45309',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}
+                                  >
+                                    {copiedField === 'content' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                    {copiedField === 'content' ? 'Đã chép' : 'Chép'}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Radar status indicator */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '12px',
-                        padding: '10px 14px',
-                        marginBottom: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                            width: '9px',
-                            height: '9px',
-                            borderRadius: '50%',
-                            backgroundColor: '#22c55e',
-                            boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.2)',
-                            animation: 'pulse 1.5s infinite'
-                          }} />
-                          <span style={{ fontSize: '0.82rem', color: '#15803d', fontWeight: 700 }}>
-                            Hệ thống tự động duyệt ngay khi MB Bank nhận tiền
-                          </span>
-                        </div>
+                          {/* Radar status indicator */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '12px',
+                            padding: '10px 14px',
+                            marginBottom: '16px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{
+                                width: '9px',
+                                height: '9px',
+                                borderRadius: '50%',
+                                backgroundColor: '#22c55e',
+                                boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.2)',
+                                animation: 'pulse 1.5s infinite'
+                              }} />
+                              <span style={{ fontSize: '0.82rem', color: '#15803d', fontWeight: 700 }}>
+                                Hệ thống tự động duyệt ngay khi MB Bank nhận tiền
+                              </span>
+                            </div>
 
-                        <button
-                          type="button"
-                          onClick={handleCheckBookingPayment}
-                          style={{
-                            background: '#ffffff',
-                            border: '1px solid #86efac',
-                            borderRadius: '8px',
-                            padding: '4px 10px',
-                            fontSize: '0.75rem',
-                            fontWeight: 800,
-                            color: '#15803d',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Kiểm tra ngay
-                        </button>
-                      </div>
+                            <button
+                              type="button"
+                              onClick={handleCheckBookingPayment}
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #86efac',
+                                borderRadius: '8px',
+                                padding: '4px 10px',
+                                fontSize: '0.75rem',
+                                fontWeight: 800,
+                                color: '#15803d',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Kiểm tra ngay
+                            </button>
+                          </div>
 
-                      <button 
-                        type="button" 
-                        className="figma-btn-primary"
-                        onClick={handleProcessPayment}
-                      >
-                        Xác nhận đã chuyển {formatVND(finalTotal)}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Sub-view: VNPay */}
-                  {paymentMethod === 'vnpay' && (
-                    <div style={{ textAlign: 'center', padding: '24px 0 10px 0' }}>
-                      <div style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '16px',
-                        backgroundColor: '#eff6ff',
-                        border: '2px solid #005baa',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 14px'
-                      }}>
-                        <CreditCard size={32} color="#005baa" />
-                      </div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginBottom: '6px' }}>
-                        Cổng thanh toán VNPay
-                      </div>
-                      <div style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: '380px', margin: '0 auto 16px', lineHeight: '1.5' }}>
-                        Hỗ trợ VNPAY-QR, Thẻ ATM nội địa (NCB, Vietcombank, BIDV...), Thẻ Quốc tế Visa / Mastercard.
-                      </div>
-
-                      {vnpayError && (
-                        <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', fontWeight: 600 }}>
-                          {vnpayError}
-                        </div>
+                          <button 
+                            type="button" 
+                            className="figma-btn-primary"
+                            onClick={handleProcessPayment}
+                          >
+                            Xác nhận đã chuyển {formatVND(finalTotal)}
+                          </button>
+                        </>
                       )}
-
-                      {/* Security Lock Note */}
-                      <div className="figma-security-note">
-                        <Lock size={13} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '6px' }} />
-                        Mã hóa HMAC-SHA512 · Kết nối cổng VNPay Sandbox · Chuyển hướng bảo mật 100%
-                      </div>
-
-                      {/* VNPay Action Button */}
-                      <button 
-                        type="button" 
-                        className="figma-btn-primary"
-                        style={{
-                          backgroundColor: '#005baa',
-                          borderColor: '#005baa',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={vnpayLoading}
-                        onClick={handleProcessPayment}
-                      >
-                        {vnpayLoading ? 'Đang kết nối cổng VNPay...' : `Thanh toán ${formatVND(finalTotal)} qua VNPay`}
-                      </button>
                     </div>
                   )}
 
