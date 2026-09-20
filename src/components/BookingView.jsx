@@ -70,14 +70,29 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
     return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
   };
 
+  const getSubjectId = (subjName) => {
+    const s = (subjName || '').toLowerCase();
+    if (s.includes('toán')) return 1;
+    if (s.includes('lý') || s.includes('vật lý')) return 2;
+    if (s.includes('hóa')) return 3;
+    if (s.includes('anh')) return 4;
+    if (s.includes('sinh')) return 5;
+    if (s.includes('tin')) return 6;
+    if (s.includes('văn')) return 7;
+    if (s.includes('sử')) return 8;
+    return 1;
+  };
+
   if (showCheckout) {
     return (
       <CheckoutFlow 
         tutor={currentTutor}
+        user={user}
         bookingDetails={{
           subject: selectedSubject,
+          subjectId: getSubjectId(selectedSubject),
           allSubjects: currentTutor.subjects?.join(', ') || 'Toán học, Vật lý, Tin học',
-          date: '2026-09-14',
+          date: selectedDay ? selectedDay + '/2026' : '14/09/2026',
           time: selectedTime,
           duration: '60 phút',
           format: 'Gọi video (Google Meet)',

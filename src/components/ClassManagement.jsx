@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { classService } from '../services/classService';
 import { 
   Calendar as CalendarIcon, 
   CheckCircle2, 
@@ -15,6 +16,25 @@ import {
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
+  const [dbClasses, setDbClasses] = useState([]);
+  const [loadingDb, setLoadingDb] = useState(false);
+
+  useEffect(() => {
+    async function loadClasses() {
+      try {
+        setLoadingDb(true);
+        const res = await classService.getClasses();
+        if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setDbClasses(res.data);
+        }
+      } catch (err) {
+        // quiet fallback
+      } finally {
+        setLoadingDb(false);
+      }
+    }
+    loadClasses();
+  }, [user]);
 
   // Lesson list matching Figma 15:2994
   const upcomingLessons = [
@@ -96,11 +116,34 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     }
   ];
 
+  const mappedDbUpcomingLessons = dbClasses.map((c) => {
+    const sDesc = c.scheduleDescription || '';
+    const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
+    const timePart = sDesc.includes('lúc') ? sDesc.split('lúc')[1].trim() : '10:00';
+    return {
+      id: 'db-' + c.id,
+      tutorName: c.tutorName || 'Gia sư chuyên môn',
+      subject: c.subjectName || 'Toán học',
+      subjectTagColor: '#e0f2fe',
+      subjectTextColor: '#0284c7',
+      date: datePart,
+      time: timePart,
+      duration: '60 phút',
+      topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
+      roomUrl: 'https://meet.google.com/tutora-class-' + c.id,
+      status: c.status === 'ACTIVE' ? 'Sắp tới' : 'Đã hoàn thành',
+      statusColor: '#059669',
+      statusBg: '#e6fffa',
+      isFromDb: true
+    };
+  });
+
+  const allUpcoming = [...mappedDbUpcomingLessons, ...upcomingLessons];
   const displayLessons = activeTab === 'upcoming' 
-    ? upcomingLessons 
+    ? allUpcoming 
     : activeTab === 'completed' 
       ? completedLessons 
-      : [...upcomingLessons, ...completedLessons];
+      : [...allUpcoming, ...completedLessons];
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>

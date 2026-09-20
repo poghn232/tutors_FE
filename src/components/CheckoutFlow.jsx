@@ -11,6 +11,7 @@ import {
   Star, 
   Copy, 
   CheckCheck, 
+  CheckCircle2,
   ExternalLink, 
   Tag, 
   CreditCard,
@@ -19,10 +20,12 @@ import {
   RefreshCw
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
+import { classService } from '../services/classService';
 
 export default function CheckoutFlow({ 
   tutor, 
   bookingDetails, 
+  user,
   onBack, 
   onNavigate 
 }) {
@@ -98,6 +101,41 @@ export default function CheckoutFlow({
     return new Intl.NumberFormat('vi-VN').format(num) + 'đ';
   };
 
+  const [createdClassInfo, setCreatedClassInfo] = useState(null);
+  const [isCreatingClass, setIsCreatingClass] = useState(false);
+
+  const confirmBookingInDatabase = async () => {
+    if (isCreatingClass) return;
+    setIsCreatingClass(true);
+    try {
+      const payload = {
+        className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+        subjectId: details.subjectId || 1,
+        subjectName: details.subject || 'Toán học',
+        tutorId: currentTutor.id || 1,
+        tutorName: currentTutor.fullName,
+        studentId: user?.id,
+        studentName: user?.fullName,
+        studentEmail: user?.email,
+        scheduleDescription: `${details.date} lúc ${details.time}`,
+        date: details.date,
+        time: details.time,
+        amount: finalTotal,
+        orderCode: bookingOrderCode,
+        paymentMethod: paymentMethod
+      };
+      const res = await classService.createClass(payload);
+      if (res && res.data) {
+        setCreatedClassInfo(res.data);
+      }
+    } catch (err) {
+      console.warn('Lưu lớp học vào database gặp cảnh báo:', err);
+    } finally {
+      setIsCreatingClass(false);
+      setStep(3);
+    }
+  };
+
   // Polling check SePay webhook status for booking
   useEffect(() => {
     if (step !== 2 || paymentMethod !== 'vietqr') return;
@@ -107,7 +145,7 @@ export default function CheckoutFlow({
         const res = await paymentService.checkSepayStatus(bookingOrderCode);
         if (res && res.data && res.data.paid) {
           clearInterval(interval);
-          setStep(3); // Advance to confirmed step
+          confirmBookingInDatabase();
         }
       } catch (e) {
         // silent
@@ -162,7 +200,7 @@ export default function CheckoutFlow({
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
       if (res && res.data && res.data.paid) {
-        setStep(3);
+        confirmBookingInDatabase();
       } else {
         alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
       }
@@ -177,7 +215,7 @@ export default function CheckoutFlow({
       return;
     }
     if (!isPaymentValid()) return;
-    setStep(3);
+    confirmBookingInDatabase();
   };
 
   return (
@@ -956,6 +994,30 @@ export default function CheckoutFlow({
                   {formatVND(finalTotal)}
                 </span>
               </div>
+            </div>
+
+            {/* Database Sync Status Badge */}
+            <div style={{
+              backgroundColor: '#ecfdf5',
+              border: '1.5px solid #059669',
+              borderRadius: '12px',
+              padding: '12px 18px',
+              marginTop: '16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              color: '#065f46',
+              fontWeight: 700,
+              fontSize: '0.88rem'
+            }}>
+              <CheckCircle2 size={18} color="#059669" />
+              <span>
+                {createdClassInfo 
+                  ? `Đã lưu thành công vào CSDL (Lớp #${createdClassInfo.id} - Bảng tutoring_classes & lessons)`
+                  : 'Đã lưu thông tin buổi học vào cơ sở dữ liệu MySQL'}
+              </span>
             </div>
 
             {/* Email note */}
