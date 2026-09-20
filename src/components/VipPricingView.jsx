@@ -11,13 +11,14 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import VNPayCheckoutModal from './VNPayCheckoutModal';
+import VietQRCheckoutModal from './VietQRCheckoutModal';
 
 export default function VipPricingView({ onBack, onSelectVip, user, onRequireAuth }) {
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [upgraded, setUpgraded] = useState(false);
-  const [showVnpayModal, setShowVnpayModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const isVip = user?.isVip || localStorage.getItem('tutora_is_vip') === 'true';
 
   const faqs = [
     {
@@ -43,7 +44,7 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
       onRequireAuth('nâng cấp gói VIP');
       return;
     }
-    setShowVnpayModal(true);
+    setShowPaymentModal(true);
   };
 
   return (
@@ -138,6 +139,45 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
         <p style={{ fontSize: '1.05rem', color: '#64748b', margin: '0 0 24px 0' }}>
           Chọn gói phù hợp với mục tiêu của bạn
         </p>
+
+        {isVip && (
+          <div style={{
+            backgroundColor: '#ecfdf5',
+            border: '2px solid #059669',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            boxShadow: '4px 4px 0px #0f172a',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '1.6rem' }}>👑</span>
+              <div>
+                <div style={{ fontWeight: 900, color: '#065f46', fontSize: '1.05rem' }}>
+                  Tài khoản của bạn đã được kích hoạt gói VIP!
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#047857', fontWeight: 600 }}>
+                  Bạn có toàn quyền truy cập tất cả tài liệu cao cấp và tính năng độc quyền của Tutora.
+                </div>
+              </div>
+            </div>
+            <span style={{
+              background: '#059669',
+              color: '#ffffff',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              fontWeight: 900,
+              fontSize: '0.82rem',
+              border: '1.5px solid #0f172a'
+            }}>
+              ĐANG HOẠT ĐỘNG ✓
+            </span>
+          </div>
+        )}
 
         {/* Pill switcher: Hàng tháng / Hàng năm */}
         <div style={{
@@ -560,10 +600,10 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
         </p>
       </div>
 
-      {showVnpayModal && (
-        <VNPayCheckoutModal 
-          initialPlan={billingCycle === 'yearly' ? 'year' : 'month'} 
-          onClose={() => setShowVnpayModal(false)} 
+      {showPaymentModal && (
+        <VietQRCheckoutModal 
+          initialPlan={billingCycle === 'yearly' ? 'yearly' : 'monthly'} 
+          onClose={() => setShowPaymentModal(false)} 
         />
       )}
 

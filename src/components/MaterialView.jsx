@@ -16,7 +16,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import fileService from '../services/fileService';
-import VNPayCheckoutModal from './VNPayCheckoutModal';
+import VietQRCheckoutModal from './VietQRCheckoutModal';
 
 export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
   const isTutor = user?.role === 'TUTOR';
@@ -24,7 +24,23 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
   const [selectedType, setSelectedType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState('');
-  const [showVnpayModal, setShowVnpayModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isVip, setIsVip] = useState(() => {
+    return user?.isVip || localStorage.getItem('tutora_is_vip') === 'true';
+  });
+
+  // Tự động đồng bộ trạng thái VIP khi thanh toán thành công
+  useEffect(() => {
+    const handleVipUpdate = () => {
+      setIsVip(user?.isVip || localStorage.getItem('tutora_is_vip') === 'true');
+    };
+    window.addEventListener('tutora_vip_updated', handleVipUpdate);
+    window.addEventListener('storage', handleVipUpdate);
+    return () => {
+      window.removeEventListener('tutora_vip_updated', handleVipUpdate);
+      window.removeEventListener('storage', handleVipUpdate);
+    };
+  }, [user]);
 
   // Modal State for Tutor "+ Đăng tài liệu"
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -340,68 +356,155 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
         )}
       </div>
 
-      {/* VIP Upgrade Banner (ONLY SHOWN TO STUDENTS - Hidden for Tutors) */}
+      {/* VIP Upgrade / Active Banner (ONLY SHOWN TO STUDENTS - Hidden for Tutors) */}
       {!isTutor && (
-        <div style={{
-          background: '#facc15',
-          border: '2px solid #0f172a',
-          borderRadius: '16px',
-          padding: '18px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '4px 4px 0px #0f172a',
-          marginBottom: '28px',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: '#0f172a',
-              color: '#facc15',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 900
-            }}>
-              ★
+        isVip ? (
+          /* BANNER CHO HỌC VIÊN ĐÃ THANH TOÁN THÀNH CÔNG (VIP ACTIVE) */
+          <div style={{
+            background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+            border: '2.5px solid #0f172a',
+            borderRadius: '18px',
+            padding: '20px 24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '4px 4px 0px #0f172a',
+            marginBottom: '28px',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: '#059669',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '1.4rem',
+                border: '2px solid #0f172a',
+                boxShadow: '2px 2px 0px #0f172a'
+              }}>
+                👑
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ fontWeight: 900, fontSize: '1.15rem', color: '#065f46' }}>
+                    Đặc Quyền VIP Đang Hoạt Động
+                  </div>
+                  <span style={{
+                    background: '#059669',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 900,
+                    padding: '3px 9px',
+                    borderRadius: '6px',
+                    border: '1.5px solid #0f172a',
+                    letterSpacing: '0.5px'
+                  }}>
+                    ĐÃ KÍCH HOẠT ✓
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.86rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>
+                  Bạn có toàn quyền tải về và xem không giới hạn 200+ đề thi thử THPT và tài liệu chuyên sâu.
+                </div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
-                Mở khóa 200+ tài liệu độc quyền VIP
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#713f12', marginTop: '2px' }}>
-                Truy cập không giới hạn đề thi, chiến lược và bộ tài liệu cao cấp
-              </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedType('all');
+                  setSelectedSubject('all');
+                  const target = document.querySelector('input[placeholder*="Tìm kiếm"]');
+                  if (target) target.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  border: '2px solid #0f172a',
+                  borderRadius: '10px',
+                  padding: '11px 20px',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  boxShadow: '2px 2px 0px #059669',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>Kho tài liệu VIP đã mở ↓</span>
+              </button>
             </div>
           </div>
+        ) : (
+          /* BANNER DÀNH CHO HỌC VIÊN CHƯA NÂNG CẤP */
+          <div style={{
+            background: '#facc15',
+            border: '2px solid #0f172a',
+            borderRadius: '16px',
+            padding: '18px 24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '4px 4px 0px #0f172a',
+            marginBottom: '28px',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: '#0f172a',
+                color: '#facc15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900
+              }}>
+                ★
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
+                  Mở khóa 200+ tài liệu độc quyền VIP
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#713f12', marginTop: '2px' }}>
+                  Truy cập không giới hạn đề thi, chiến lược và bộ tài liệu cao cấp
+                </div>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (!user && onRequireAuth) {
-                onRequireAuth('nâng cấp gói VIP để mở khóa tài liệu độc quyền');
-                return;
-              }
-              setShowVnpayModal(true);
-            }}
-            style={{
-              background: '#0f172a',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '12px 20px',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              cursor: 'pointer'
-            }}
-          >
-            Nâng cấp VIP ngay →
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!user && onRequireAuth) {
+                  onRequireAuth('nâng cấp gói VIP để mở khóa tài liệu độc quyền');
+                  return;
+                }
+                setShowPaymentModal(true);
+              }}
+              style={{
+                background: '#0f172a',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '12px 20px',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              Nâng cấp VIP ngay →
+            </button>
+          </div>
+        )
       )}
 
       {/* 4 Stat Cards */}
@@ -530,9 +633,9 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
       {/* 3-Column Document Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
         {filteredMaterials.map((mat) => {
-          // Locked overlay ONLY appears for Students when mat.isVip === true.
-          // Tutors NEVER have locked VIP overlays!
-          const isLocked = !isTutor && mat.isVip;
+          // Locked overlay ONLY appears for Students when mat.isVip === true and student is NOT VIP.
+          // Tutors and VIP students NEVER have locked overlays!
+          const isLocked = !isTutor && mat.isVip && !isVip;
 
           return (
             <div
@@ -613,7 +716,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
                     fontWeight: 700,
                     marginBottom: '10px'
                   }}>
-                    {isTutor && mat.isVip ? 'Tài liệu Chuyên sâu' : mat.isVip ? 'VIP' : 'Miễn phí'}
+                    {isTutor && mat.isVip ? 'Tài liệu Chuyên sâu' : mat.isVip ? (isVip ? 'VIP · ĐÃ MỞ ✓' : 'VIP') : 'Miễn phí'}
                   </span>
 
                   <button
@@ -625,10 +728,10 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
                       color: '#ffffff',
                       border: '2px solid #000000',
                       boxShadow: '3px 3px 0px #000000',
-                      borderRadius: '12px',
-                      padding: '12px',
+                      borderRadius: '10px',
+                      padding: '10px',
                       fontWeight: 800,
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -637,7 +740,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
                     }}
                   >
                     <Download size={16} />
-                    <span>{mat.btnText || 'Tải xuống'}</span>
+                    <span>{mat.btnText || 'Tải về (PDF)'}</span>
                   </button>
                 </div>
               ) : (
@@ -680,7 +783,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
                         onRequireAuth('nâng cấp gói VIP để mở khóa toàn bộ tài liệu');
                         return;
                       }
-                      setShowVnpayModal(true);
+                      setShowPaymentModal(true);
                     }}
                     style={{
                       background: '#7c3aed',
@@ -901,10 +1004,10 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
         </div>
       )}
 
-      {/* VNPay VIP Checkout Modal */}
-      <VNPayCheckoutModal
-        isOpen={showVnpayModal}
-        onClose={() => setShowVnpayModal(false)}
+      {/* VietQR VIP Checkout Modal */}
+      <VietQRCheckoutModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
         initialPlan="yearly"
       />
 

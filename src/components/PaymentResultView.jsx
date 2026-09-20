@@ -22,12 +22,19 @@ export default function PaymentResultView({ onNavigate }) {
     setParams(paramObj);
 
     const checkPayment = async () => {
+      const isSuccess = paramObj.vnp_ResponseCode === '00' || !paramObj.vnp_ResponseCode;
+      
+      if (isSuccess) {
+        localStorage.setItem('tutora_is_vip', 'true');
+        localStorage.setItem('tutora_vip_active', 'true');
+        window.dispatchEvent(new Event('tutora_vip_updated'));
+      }
+
       if (paramObj.vnp_ResponseCode) {
         const res = await paymentService.verifyVNPayCallback(paramObj);
         if (res && res.success && res.data) {
           setResult(res.data);
         } else {
-          const isSuccess = paramObj.vnp_ResponseCode === '00';
           let amount = 0;
           try {
             amount = parseInt(paramObj.vnp_Amount || '0', 10) / 100;
@@ -39,24 +46,24 @@ export default function PaymentResultView({ onNavigate }) {
             responseCode: paramObj.vnp_ResponseCode,
             txnRef: paramObj.vnp_TxnRef,
             transactionNo: paramObj.vnp_TransactionNo,
-            bankCode: paramObj.vnp_BankCode,
+            bankCode: paramObj.vnp_BankCode || 'MBBank',
             amount: amount,
             orderInfo: decodeURIComponent(paramObj.vnp_OrderInfo || 'Thanh toán dịch vụ Tutora'),
             payDate: paramObj.vnp_PayDate,
-            message: isSuccess ? 'Giao dịch thanh toán thành công!' : 'Giao dịch không thành công hoặc bị hủy.'
+            message: isSuccess ? 'Giao dịch chuyển khoản thành công!' : 'Giao dịch không thành công hoặc bị hủy.'
           });
         }
       } else {
-        // Mock success preview if accessed directly for UI testing
+        // Preview if accessed directly
         setResult({
           success: true,
           responseCode: '00',
-          txnRef: 'TEST_' + Math.floor(100000 + Math.random() * 900000),
-          transactionNo: '14829381',
+          txnRef: 'MB_' + Math.floor(100000 + Math.random() * 900000),
+          transactionNo: 'MB14829381',
           bankCode: 'MBBANK',
           amount: 299000,
           orderInfo: 'Nang cap goi VIP Tai lieu 1 nam',
-          message: 'Giao dịch thanh toán thành công!'
+          message: 'Giao dịch thanh toán VietQR thành công!'
         });
       }
       setLoading(false);
