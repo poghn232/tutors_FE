@@ -159,7 +159,16 @@ export default function AssignmentView({ user, onRequireAuth }) {
     try {
       localStorage.setItem(userStorageKey, JSON.stringify(assignments));
     } catch (e) {
-      console.warn('Cannot save assignments to localStorage:', e);
+      console.warn('localStorage full, saving sanitized assignments without large base64 payloads:', e);
+      try {
+        const lightweight = assignments.map(a => ({
+          ...a,
+          submittedFileUrl: (a.submittedFileUrl && a.submittedFileUrl.length > 1000) ? '' : a.submittedFileUrl
+        }));
+        localStorage.setItem(userStorageKey, JSON.stringify(lightweight));
+      } catch (innerErr) {
+        console.error('Failed to save to localStorage:', innerErr);
+      }
     }
   }, [assignments, userStorageKey]);
 
@@ -345,9 +354,19 @@ export default function AssignmentView({ user, onRequireAuth }) {
       // 1. Upload to backend
       const uploadRes = await fileService.uploadFile(file);
 
-      // 2. Read as base64 so client never loses download even if server restarts
-      const base64Url = await fileToBase64(file);
-      const fileDownloadUrl = uploadRes.data?.fileUrl || base64Url || URL.createObjectURL(file);
+      // 2. Prioritize backend server URL, fallback to local URL
+      let fileDownloadUrl = uploadRes?.data?.fileUrl;
+      if (!fileDownloadUrl) {
+        if (file.size < 500 * 1024) {
+          try {
+            fileDownloadUrl = await fileToBase64(file);
+          } catch (e) {
+            fileDownloadUrl = URL.createObjectURL(file);
+          }
+        } else {
+          fileDownloadUrl = URL.createObjectURL(file);
+        }
+      }
 
       const nowStr = new Date().toLocaleDateString('vi-VN') + ' lúc ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
