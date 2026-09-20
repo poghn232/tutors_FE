@@ -109,13 +109,6 @@ export default function ProfileView({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Modal xác nhận đã lưu thay đổi vào cơ sở dữ liệu MySQL
-  const [dbConfirmationModal, setDbConfirmationModal] = useState({
-    isOpen: false,
-    savedAt: '',
-    updatedSummary: []
-  });
-
   // Tải hồ sơ thực tế từ Backend Database khi mở trang
   useEffect(() => {
     let isMounted = true;
@@ -199,31 +192,8 @@ export default function ProfileView({ onBack }) {
       if (tutorUniversity) localStorage.setItem(`tutora_univ_${user?.id || user?.email}`, tutorUniversity);
       if (tutorSkills) localStorage.setItem(`tutora_skills_${user?.id || user?.email}`, JSON.stringify(tutorSkills));
 
-      const nowStr = new Date().toLocaleTimeString('vi-VN') + ' · ' + new Date().toLocaleDateString('vi-VN');
-      const summaryList = isTutor ? [
-        { label: 'Họ và tên gia sư', value: payload.fullName },
-        { label: 'Số điện thoại', value: payload.phone || '(Chưa cập nhật)' },
-        { label: 'Học vị / Danh xưng', value: payload.qualification || '(Chưa cập nhật)' },
-        { label: 'Trình độ đào tạo', value: tutorDegree ? `${tutorDegree} - ${tutorUniversity}` : '(Chưa cập nhật)' },
-        { label: 'Giới thiệu bản thân', value: payload.bio ? `${payload.bio.substring(0, 45)}...` : '(Chưa cập nhật)' },
-        { label: 'Ảnh bằng cấp đã tải', value: `${certificates.length} ảnh chứng chỉ` }
-      ] : [
-        { label: 'Họ và tên học sinh', value: payload.fullName },
-        { label: 'Trường đang học', value: payload.schoolName || '(Chưa cập nhật)' },
-        { label: 'Khối / Lớp', value: payload.gradeLevel || '(Chưa cập nhật)' },
-        { label: 'Số điện thoại', value: payload.phone || '(Chưa cập nhật)' },
-        { label: 'Địa chỉ cư trú', value: payload.address || '(Chưa cập nhật)' },
-        { label: 'Phụ huynh liên hệ', value: parentName ? `${parentName} (${payload.emergencyContact || 'Chưa có SĐT'})` : '(Chưa cập nhật)' }
-      ];
-
-      setDbConfirmationModal({
-        isOpen: true,
-        savedAt: nowStr,
-        updatedSummary: summaryList
-      });
-
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 5000);
+      setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err) {
       console.error('Error in handleSave:', err);
       setSaveError(err.response?.data?.message || 'Không thể lưu hồ sơ lên máy chủ. Vui lòng thử lại.');
@@ -556,152 +526,31 @@ export default function ProfileView({ onBack }) {
     </div>
   );
 
-  // Modal xác nhận lưu thành công vào cơ sở dữ liệu MySQL
-  const renderDbConfirmationModal = () => {
-    if (!dbConfirmationModal.isOpen) return null;
+  // Toast thông báo 1 dòng cập nhật hồ sơ thành công
+  const renderSuccessToast = () => {
+    if (!savedSuccess) return null;
 
     return (
       <div style={{
         position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(4px)',
+        top: '24px',
+        right: '24px',
+        backgroundColor: '#059669',
+        color: '#ffffff',
+        padding: '12px 24px',
+        borderRadius: '12px',
+        border: '2px solid #0f172a',
+        boxShadow: '4px 4px 0px #0f172a',
+        fontWeight: 800,
+        fontSize: '0.92rem',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px'
+        gap: '8px',
+        animation: 'fadeIn 0.2s ease-in-out'
       }}>
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '24px',
-          border: '3.5px solid #0f172a',
-          boxShadow: '8px 8px 0px #0f172a',
-          maxWidth: '520px',
-          width: '100%',
-          overflow: 'hidden',
-          animation: 'fadeInUp 0.25s ease-out'
-        }}>
-          {/* Modal Header */}
-          <div style={{
-            backgroundColor: '#059669',
-            color: '#ffffff',
-            padding: '20px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '3px solid #0f172a'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
-                backgroundColor: '#ffffff',
-                color: '#059669',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 900,
-                fontSize: '1.2rem',
-                border: '2px solid #0f172a',
-                boxShadow: '2px 2px 0px #0f172a'
-              }}>
-                💾
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#ffffff' }}>
-                  Đã Lưu Vào Cơ Sở Dữ Liệu
-                </h3>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: '#d1fae5', fontWeight: 600 }}>
-                  Ghi dữ liệu MySQL hoàn tất lúc: {dbConfirmationModal.savedAt}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDbConfirmationModal(prev => ({ ...prev, isOpen: false }))}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <X size={22} />
-            </button>
-          </div>
-
-          {/* Modal Content */}
-          <div style={{ padding: '24px' }}>
-            <div style={{
-              backgroundColor: '#ecfdf5',
-              border: '2px solid #a7f3d0',
-              borderRadius: '14px',
-              padding: '14px 16px',
-              marginBottom: '20px',
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'flex-start'
-            }}>
-              <Check size={20} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: '0.85rem', color: '#065f46', lineHeight: 1.5 }}>
-                <strong>Xác nhận đồng bộ thành công!</strong> Mọi thông tin cập nhật của bạn đã được lưu trữ an toàn vào cơ sở dữ liệu ({isTutor ? 'Bảng `users` & `tutors`' : 'Bảng `users` & `students`'}).
-              </div>
-            </div>
-
-            <h4 style={{ fontSize: '0.82rem', fontWeight: 900, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', marginBottom: '12px' }}>
-              Chi tiết dữ liệu vừa được ghi nhận:
-            </h4>
-
-            <div style={{
-              border: '2px solid #e2e8f0',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              marginBottom: '24px'
-            }}>
-              {dbConfirmationModal.updatedSummary.map((item, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#ffffff',
-                    borderBottom: idx === dbConfirmationModal.updatedSummary.length - 1 ? 'none' : '1px solid #f1f5f9',
-                    fontSize: '0.86rem'
-                  }}
-                >
-                  <span style={{ fontWeight: 700, color: '#475569' }}>{item.label}:</span>
-                  <span style={{ fontWeight: 800, color: '#0f172a', textAlign: 'right', maxWidth: '60%' }}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setDbConfirmationModal(prev => ({ ...prev, isOpen: false }))}
-              style={{
-                width: '100%',
-                backgroundColor: '#0f172a',
-                color: '#ffffff',
-                border: '2px solid #0f172a',
-                borderRadius: '12px',
-                padding: '12px',
-                fontWeight: 900,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                boxShadow: '4px 4px 0px rgba(15, 23, 42, 0.2)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Đã hiểu & Đóng xác nhận
-            </button>
-          </div>
-        </div>
+        <Check size={18} strokeWidth={3} />
+        <span>Cập nhật hồ sơ thành công!</span>
       </div>
     );
   };
@@ -776,7 +625,12 @@ export default function ProfileView({ onBack }) {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {savedSuccess && (
+              <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Check size={18} strokeWidth={3} /> Cập nhật hồ sơ thành công!
+              </span>
+            )}
             <button
               type="button"
               onClick={() => setShowCertModal(true)}
@@ -826,9 +680,13 @@ export default function ProfileView({ onBack }) {
             fontWeight: 700,
             marginBottom: '20px',
             position: 'relative',
-            zIndex: 1
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            ✓ Đã lưu thay đổi hồ sơ gia sư thành công!
+            <Check size={18} strokeWidth={2.5} />
+            <span>Cập nhật hồ sơ thành công!</span>
           </div>
         )}
 
@@ -1690,8 +1548,8 @@ export default function ProfileView({ onBack }) {
           </div>
         )}
 
-        {/* Modal xác nhận lưu Database MySQL */}
-        {renderDbConfirmationModal()}
+        {/* Thông báo cập nhật hồ sơ thành công */}
+        {renderSuccessToast()}
       </div>
     );
   }
@@ -1784,9 +1642,13 @@ export default function ProfileView({ onBack }) {
           fontWeight: 700,
           marginBottom: '24px',
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
         }}>
-          ✓ Đã lưu thay đổi thông tin thành công!
+          <Check size={18} strokeWidth={2.5} />
+          <span>Cập nhật hồ sơ thành công!</span>
         </div>
       )}
 
@@ -2223,7 +2085,12 @@ export default function ProfileView({ onBack }) {
           </div>
 
           {/* Bottom Save Button */}
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px' }}>
+            {savedSuccess && (
+              <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Check size={18} strokeWidth={3} /> Cập nhật hồ sơ thành công!
+              </span>
+            )}
             <button
               type="button"
               onClick={handleSave}
@@ -2247,8 +2114,8 @@ export default function ProfileView({ onBack }) {
 
       </div>
 
-      {/* Modal xác nhận lưu Database MySQL */}
-      {renderDbConfirmationModal()}
+      {/* Thông báo cập nhật hồ sơ thành công */}
+      {renderSuccessToast()}
     </div>
   );
 }
