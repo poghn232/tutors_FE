@@ -11,8 +11,10 @@ import {
   RefreshCw
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
+import { useAuth } from '../context/AuthContext';
 
 export default function VietQRCheckoutModal({ isOpen, onClose, initialPlan = 'yearly', invoice = null }) {
+  const { user, updateUser } = useAuth();
   const methodTab = 'vietqr';
   const [selectedPlan, setSelectedPlan] = useState(initialPlan); // 'monthly', 'yearly', or 'invoice'
   const [loading, setLoading] = useState(false);
@@ -72,7 +74,11 @@ export default function VietQRCheckoutModal({ isOpen, onClose, initialPlan = 'ye
           setIsPaid(true);
           setPaidData(res.data);
           
-          // Kích hoạt trạng thái VIP ngay lập tức vào localStorage
+          // Kích hoạt trạng thái VIP vào Database và AuthContext
+          if (user) {
+            updateUser({ ...user, isVip: true });
+            paymentService.activateVip().catch(() => {});
+          }
           localStorage.setItem('tutora_is_vip', 'true');
           localStorage.setItem('tutora_vip_active', 'true');
           window.dispatchEvent(new Event('tutora_vip_updated'));
@@ -90,7 +96,7 @@ export default function VietQRCheckoutModal({ isOpen, onClose, initialPlan = 'ye
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [isOpen, isPaid, methodTab, orderCode, currentPrice, orderTitle]);
+  }, [isOpen, isPaid, methodTab, orderCode, currentPrice, orderTitle, user, updateUser]);
 
   // Countdown timer
   useEffect(() => {
@@ -134,6 +140,10 @@ export default function VietQRCheckoutModal({ isOpen, onClose, initialPlan = 'ye
       if (res && res.data && res.data.paid) {
         setIsPaid(true);
         setPaidData(res.data);
+        if (user) {
+          updateUser({ ...user, isVip: true });
+          paymentService.activateVip().catch(() => {});
+        }
         localStorage.setItem('tutora_is_vip', 'true');
         localStorage.setItem('tutora_vip_active', 'true');
         window.dispatchEvent(new Event('tutora_vip_updated'));

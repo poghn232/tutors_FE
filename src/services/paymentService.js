@@ -79,6 +79,19 @@ export const paymentService = {
       console.error('Error checking SePay status:', error);
       return { success: false, data: { paid: false } };
     }
+  },
+
+  /**
+   * Activate VIP status in database for current logged-in user
+   */
+  async activateVip() {
+    try {
+      const response = await api.post('/payments/activate-vip');
+      return response.data;
+    } catch (error) {
+      console.error('Error activating VIP in database:', error);
+      return { success: false };
+    }
   }
 };
 

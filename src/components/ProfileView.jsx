@@ -28,18 +28,24 @@ export default function ProfileView({ onBack }) {
   const { user, updateUser } = useAuth();
   const isTutor = user?.role === 'TUTOR';
 
-  // State for Tutor Profile (Figma Frame 16:1610)
+  // State for Tutor Profile
   const [tutorNav, setTutorNav] = useState('personal'); // 'personal', 'expertise', 'rates', 'schedule', 'languages'
-  const [tutorLastName, setTutorLastName] = useState('Hoàng');
-  const [tutorFirstName, setTutorFirstName] = useState('Thiên Ứng');
-  const [tutorDisplayName, setTutorDisplayName] = useState('Chú chim nho nhỏ');
-  const [tutorEmail, setTutorEmail] = useState(user?.email || 'chuchimnho@email.com');
-  const [tutorPhone, setTutorPhone] = useState(user?.phone || '+84 (123)456789');
+  const [tutorLastName, setTutorLastName] = useState(() => {
+    if (!user?.fullName) return '';
+    const parts = user.fullName.trim().split(' ');
+    return parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+  });
+  const [tutorFirstName, setTutorFirstName] = useState(() => {
+    if (!user?.fullName) return '';
+    const parts = user.fullName.trim().split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  });
+  const [tutorDisplayName, setTutorDisplayName] = useState(user?.qualification || '');
+  const [tutorEmail, setTutorEmail] = useState(user?.email || '');
+  const [tutorPhone, setTutorPhone] = useState(user?.phone || '');
   const [tutorGender, setTutorGender] = useState('Nam');
-  const [tutorShortBio, setTutorShortBio] = useState('Đẳng cấp ở mọi môn học.');
-  const [tutorFullBio, setTutorFullBio] = useState(
-    'Với hơn 5 năm kinh nghiệm thực chiến, mình tự tin đảm nhận giảng dạy xuất sắc TẤT CẢ các môn học từ Tiểu học đến THPT. Phương pháp dạy tư duy logic đa môn của mình đã giúp hàng trăm học sinh xóa mất gốc, bứt phá toàn diện và đỗ các trường top đầu. Dù là Toán, Văn, Anh hay các môn Khoa học, mình cam kết sẽ giúp các em làm chủ kiến thức nhanh nhất và chinh phục điểm 9, 10 một cách dễ dàng!'
-  );
+  const [tutorShortBio, setTutorShortBio] = useState('');
+  const [tutorFullBio, setTutorFullBio] = useState(user?.bio || '');
   const [tutorVideoUrl, setTutorVideoUrl] = useState('');
 
   // Tutor Certificates State (Up to 5 photos)
@@ -72,21 +78,21 @@ export default function ProfileView({ onBack }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const certFileInputRef = useRef(null);
 
-  // State for Student Profile (Figma Frame 61:5450)
+  // State for Student Profile (Lấy đúng thông tin từ user đăng nhập, không dùng dữ liệu giả)
   const [fullName, setFullName] = useState(user?.fullName || '');
-  const [dob, setDob] = useState('2008-05-15');
-  const [gender, setGender] = useState('Nữ');
+  const [dob, setDob] = useState(() => localStorage.getItem(`tutora_dob_${user?.id || user?.email}`) || '');
+  const [gender, setGender] = useState('Nam');
   const [phone, setPhone] = useState(user?.phone || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [school, setSchool] = useState('THPT Đoàn Kết - Hai Bà Trưng');
-  const [address, setAddress] = useState('Số 12, phố Trần Khát Chân, Hai Bà Trưng, Hà Nội');
-  const [grade, setGrade] = useState('Lớp 11');
+  const [school, setSchool] = useState(user?.schoolName || '');
+  const [address, setAddress] = useState(user?.address || '');
+  const [grade, setGrade] = useState(user?.gradeLevel || 'Lớp 10');
 
   // Parent info
-  const [parentName, setParentName] = useState('Nguyễn Văn Bình');
+  const [parentName, setParentName] = useState(() => localStorage.getItem(`tutora_parent_name_${user?.id || user?.email}`) || '');
   const [parentRelation, setParentRelation] = useState('Bố');
-  const [parentPhone, setParentPhone] = useState('0912345678');
-  const [parentEmail, setParentEmail] = useState('phuhuynh@gmail.com');
+  const [parentPhone, setParentPhone] = useState(user?.emergencyContact || '');
+  const [parentEmail, setParentEmail] = useState(() => localStorage.getItem(`tutora_parent_email_${user?.id || user?.email}`) || '');
   const [reportEmail, setReportEmail] = useState(true);
   const [reportSms, setReportSms] = useState(true);
 
@@ -110,29 +116,50 @@ export default function ProfileView({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Sync with auth user on load or update
+  // Tải hồ sơ thực tế từ Backend Database khi mở trang
   useEffect(() => {
-    if (user) {
-      if (user.fullName) {
-        setFullName(user.fullName);
-        const parts = user.fullName.split(' ');
-        if (parts.length > 1) {
-          setTutorLastName(parts.slice(0, -1).join(' '));
-          setTutorFirstName(parts[parts.length - 1]);
-        }
-      }
-      if (user.phone) {
-        setPhone(user.phone);
-        setTutorPhone(user.phone);
-      }
-      if (user.email) {
-        setEmail(user.email);
-        setTutorEmail(user.email);
-      }
-    }
-  }, [user]);
+    let isMounted = true;
+    const fetchProfile = async () => {
+      try {
+        const res = await userService.getProfile();
+        if (res?.success && res.data && isMounted) {
+          const d = res.data;
+          if (d.fullName) {
+            setFullName(d.fullName);
+            const parts = d.fullName.trim().split(' ');
+            if (parts.length > 1) {
+              setTutorLastName(parts.slice(0, -1).join(' '));
+              setTutorFirstName(parts[parts.length - 1]);
+            } else {
+              setTutorFirstName(d.fullName);
+            }
+          }
+          if (d.phone) {
+            setPhone(d.phone);
+            setTutorPhone(d.phone);
+          }
+          if (d.email) {
+            setEmail(d.email);
+            setTutorEmail(d.email);
+          }
+          if (d.schoolName !== undefined && d.schoolName !== null) setSchool(d.schoolName);
+          if (d.gradeLevel !== undefined && d.gradeLevel !== null) setGrade(d.gradeLevel);
+          if (d.address !== undefined && d.address !== null) setAddress(d.address);
+          if (d.emergencyContact !== undefined && d.emergencyContact !== null) setParentPhone(d.emergencyContact);
+          if (d.bio !== undefined && d.bio !== null) setTutorFullBio(d.bio);
+          if (d.qualification !== undefined && d.qualification !== null) setTutorDisplayName(d.qualification);
 
-  // Cập nhật thông tin tài khoản (Lưu thay đổi)
+          updateUser(d);
+        }
+      } catch (err) {
+        console.warn('Could not load profile from backend:', err);
+      }
+    };
+    fetchProfile();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Cập nhật thông tin tài khoản vào MySQL Database (Lưu thay đổi)
   const handleSave = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
@@ -153,26 +180,27 @@ export default function ProfileView({ onBack }) {
           phone: (phone || '').trim(),
           schoolName: school,
           address: address,
-          gradeLevel: grade
+          gradeLevel: grade,
+          emergencyContact: parentPhone
         };
       }
 
-      let updatedUserObj = { ...user, ...payload };
-      try {
-        const res = await userService.updateProfile(payload);
-        if (res?.data) {
-          updatedUserObj = { ...updatedUserObj, ...res.data };
-        }
-      } catch (apiErr) {
-        console.warn('Backend updateProfile offline or failed, caching locally:', apiErr.message);
-      }
+      const res = await userService.updateProfile(payload);
+      const savedData = (res && res.data) ? res.data : payload;
+      const updatedUserObj = { ...user, ...savedData };
 
       updateUser(updatedUserObj);
+
+      // Lưu các trường phụ phía client vào localStorage
+      if (dob) localStorage.setItem(`tutora_dob_${user?.id || user?.email}`, dob);
+      if (parentName) localStorage.setItem(`tutora_parent_name_${user?.id || user?.email}`, parentName);
+      if (parentEmail) localStorage.setItem(`tutora_parent_email_${user?.id || user?.email}`, parentEmail);
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err) {
       console.error('Error in handleSave:', err);
-      setSaveError('Không thể lưu hồ sơ. Vui lòng thử lại.');
+      setSaveError(err.response?.data?.message || 'Không thể lưu hồ sơ lên máy chủ. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -1527,11 +1555,17 @@ export default function ProfileView({ onBack }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2rem',
+                fontSize: '1.6rem',
                 fontWeight: 900,
                 color: '#7c3aed'
               }}>
-                MA
+                {(fullName || user?.fullName || 'HV')
+                  .trim()
+                  .split(' ')
+                  .map(n => n[0])
+                  .slice(-2)
+                  .join('')
+                  .toUpperCase()}
               </div>
               <button
                 type="button"
@@ -1556,27 +1590,27 @@ export default function ProfileView({ onBack }) {
             </div>
 
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-              {fullName}
+              {fullName || user?.fullName || 'Học viên Tutora'}
             </h3>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '14px' }}>
-              {grade} · {school}
+              {grade || 'Học sinh'} {school ? `· ${school}` : ''}
             </div>
 
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: '#fffce8',
+              backgroundColor: (user?.isVip || localStorage.getItem('tutora_is_vip') === 'true') ? '#ecfdf5' : '#fffce8',
               border: '1.5px solid #0f172a',
               borderRadius: '999px',
               padding: '4px 14px',
               fontSize: '0.8rem',
               fontWeight: 800,
-              color: '#854d0e',
+              color: (user?.isVip || localStorage.getItem('tutora_is_vip') === 'true') ? '#065f46' : '#854d0e',
               marginBottom: '18px'
             }}>
-              <Crown size={14} color="#eab308" />
-              Gói VIP — Còn 45 ngày
+              <Crown size={14} color={(user?.isVip || localStorage.getItem('tutora_is_vip') === 'true') ? '#059669' : '#eab308'} />
+              {(user?.isVip || localStorage.getItem('tutora_is_vip') === 'true') ? 'Gói VIP — Đang kích hoạt' : 'Gói Tiêu chuẩn (Chưa VIP)'}
             </div>
 
             <div style={{
@@ -1621,28 +1655,10 @@ export default function ProfileView({ onBack }) {
                 <span style={{ fontWeight: 700, color: '#0f172a' }}>Học sinh / Phụ huynh</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                <span style={{ color: '#64748b' }}>Đăng nhập</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>Google Account</span>
+                <span style={{ color: '#64748b' }}>Email tài khoản</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{user?.email || email || 'Chưa cập nhật'}</span>
               </div>
             </div>
-
-            <button
-              type="button"
-              style={{
-                width: '100%',
-                marginTop: '16px',
-                padding: '10px',
-                borderRadius: '12px',
-                border: '1.5px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#0f172a',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              Đổi mật khẩu
-            </button>
           </div>
         </div>
 
@@ -1667,6 +1683,7 @@ export default function ProfileView({ onBack }) {
                 </label>
                 <input
                   type="text"
+                  placeholder="Nhập họ và tên học sinh..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -1692,6 +1709,7 @@ export default function ProfileView({ onBack }) {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ví dụ: THPT Lê Hồng Phong, THPT Đoàn Kết..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={school}
                   onChange={(e) => setSchool(e.target.value)}
@@ -1703,6 +1721,7 @@ export default function ProfileView({ onBack }) {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ví dụ: Lớp 10, Lớp 11, Lớp 12..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
@@ -1716,6 +1735,7 @@ export default function ProfileView({ onBack }) {
               </label>
               <input
                 type="text"
+                placeholder="Nhập địa chỉ cư trú của học sinh..."
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -1737,10 +1757,11 @@ export default function ProfileView({ onBack }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  Họ và tên phụ huynh *
+                  Họ và tên phụ huynh
                 </label>
                 <input
                   type="text"
+                  placeholder="Nhập họ và tên phụ huynh..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={parentName}
                   onChange={(e) => setParentName(e.target.value)}
@@ -1752,6 +1773,7 @@ export default function ProfileView({ onBack }) {
                 </label>
                 <input
                   type="text"
+                  placeholder="Ví dụ: Bố, Mẹ, Người giám hộ..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={parentRelation}
                   onChange={(e) => setParentRelation(e.target.value)}
@@ -1762,10 +1784,11 @@ export default function ProfileView({ onBack }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  Số điện thoại nhận báo cáo
+                  Số điện thoại phụ huynh / liên lạc khẩn cấp
                 </label>
                 <input
                   type="text"
+                  placeholder="Nhập số điện thoại..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={parentPhone}
                   onChange={(e) => setParentPhone(e.target.value)}
@@ -1777,6 +1800,7 @@ export default function ProfileView({ onBack }) {
                 </label>
                 <input
                   type="email"
+                  placeholder="Nhập email phụ huynh..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={parentEmail}
                   onChange={(e) => setParentEmail(e.target.value)}
