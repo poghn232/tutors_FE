@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   UploadCloud, 
   CheckCircle2, 
@@ -10,19 +10,19 @@ import {
   X, 
   Download, 
   Award,
-  Check
+  Check,
+  FileCheck,
+  Send,
+  RefreshCw,
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 import fileService from '../services/fileService';
 
-export default function AssignmentView({ user }) {
-  const isTutor = user?.role === 'TUTOR';
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'submitted', 'graded', 'overdue'
-  
-  // State for assignments
-  const [assignments, setAssignments] = useState([
-    {
-      id: 1,
-      title: 'Bài tập tích phân từng phần',
+const DEFAULT_ASSIGNMENTS = [
+  {
+    id: 1,
+    title: 'Bài tập tích phân từng phần',
       subject: 'Toán học',
       tutor: 'TS. Nguyễn Thị Hoa',
       studentName: 'Nguyễn Minh Anh',
@@ -130,12 +130,50 @@ export default function AssignmentView({ user }) {
       submittedFile: 'hoa_huu_co_tong_hop.pdf',
       submittedTime: '20/08/2026 lúc 20:00'
     }
-  ]);
+];
+
+export default function AssignmentView({ user }) {
+  const isTutor = user?.role === 'TUTOR';
+  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'submitted', 'graded', 'overdue'
+
+  const userStorageKey = `tutora_assignments_${user?.id || user?.email || 'default'}`;
+
+  // Persistent assignments state using localStorage
+  const [assignments, setAssignments] = useState(() => {
+    try {
+      const saved = localStorage.getItem(userStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Cannot read assignments from localStorage:', e);
+    }
+    return DEFAULT_ASSIGNMENTS;
+  });
+
+  // Save assignments whenever modified
+  useEffect(() => {
+    try {
+      localStorage.setItem(userStorageKey, JSON.stringify(assignments));
+    } catch (e) {
+      console.warn('Cannot save assignments to localStorage:', e);
+    }
+  }, [assignments, userStorageKey]);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [gradingAssignment, setGradingAssignment] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Submission Confirmation Modal States
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitModalData, setSubmitModalData] = useState(null); // { assignment, file, note, isResubmit }
+  const [isSubmittingFile, setIsSubmittingFile] = useState(false);
+  const [isResubmitMode, setIsResubmitMode] = useState(false);
+  const [dragOverId, setDragOverId] = useState(null);
 
   // Create Assignment Form State
   const [newTitle, setNewTitle] = useState('');
@@ -155,6 +193,20 @@ export default function AssignmentView({ user }) {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  // Convert file to Base64 so offline / reload download never breaks
+  const fileToBase64 = (file) => {
+    return new Promise((resolve) => {
+      if (!file || file.size > 8 * 1024 * 1024) {
+        resolve(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   };
 
   // Tutor: Handle Create Assignment
@@ -230,39 +282,94 @@ export default function AssignmentView({ user }) {
     showToast(`Đã lưu chấm điểm (${gradeScore}) cho bài tập!`);
   };
 
-  // Student: Trigger File Input
-  const handleStudentUploadClick = (asgId) => {
+  // Student: Trigger File Input (Clicking dropzone or Re-submit button)
+  const handleStudentUploadClick = (asgId, isResubmit = false) => {
     setUploadTargetId(asgId);
+    setIsResubmitMode(isResubmit);
     if (studentFileInputRef.current) {
       studentFileInputRef.current.value = '';
       studentFileInputRef.current.click();
     }
   };
 
-  // Student: Handle File Selected
-  const handleStudentFileChange = async (e) => {
+  // Student: When file selected from file picker -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
+  const handleStudentFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTargetId) return;
 
-    const res = await fileService.uploadFile(file);
-    const nowStr = new Date().toLocaleDateString('vi-VN') + ' lúc ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const targetAsg = assignments.find(a => a.id === uploadTargetId);
+    if (!targetAsg) return;
 
-    setAssignments(assignments.map(a => {
-      if (a.id === uploadTargetId) {
-        return {
-          ...a,
-          status: 'submitted',
-          statusLabel: 'Đã nộp',
-          submittedFile: file.name,
-          submittedFileUrl: res.data?.fileUrl,
-          submittedTime: nowStr
-        };
-      }
-      return a;
-    }));
+    setSubmitModalData({
+      assignment: targetAsg,
+      file: file,
+      note: '',
+      isResubmit: isResubmitMode || targetAsg.status === 'submitted'
+    });
+    setShowSubmitModal(true);
+  };
 
-    showToast(`Đã nộp bài tập "${file.name}" thành công!`);
-    setUploadTargetId(null);
+  // Student: When file dropped on dropzone -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
+  const handleDropFile = (asg, e) => {
+    e.preventDefault();
+    setDragOverId(null);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    setUploadTargetId(asg.id);
+    setSubmitModalData({
+      assignment: asg,
+      file: file,
+      note: '',
+      isResubmit: asg.status === 'submitted'
+    });
+    setShowSubmitModal(true);
+  };
+
+  // Student: CONFIRMED SUBMIT in Modal
+  const handleConfirmSubmit = async () => {
+    if (!submitModalData || !submitModalData.file) return;
+
+    try {
+      setIsSubmittingFile(true);
+      const { assignment, file, note } = submitModalData;
+
+      // 1. Upload to backend
+      const uploadRes = await fileService.uploadFile(file);
+
+      // 2. Read as base64 so client never loses download even if server restarts
+      const base64Url = await fileToBase64(file);
+      const fileDownloadUrl = uploadRes.data?.fileUrl || base64Url || URL.createObjectURL(file);
+
+      const nowStr = new Date().toLocaleDateString('vi-VN') + ' lúc ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+      // 3. Update assignment state & persist
+      setAssignments(prev => prev.map(a => {
+        if (a.id === assignment.id) {
+          return {
+            ...a,
+            status: 'submitted',
+            statusLabel: 'Đã nộp',
+            submittedFile: file.name,
+            submittedFileSize: fileService.formatBytes(file.size),
+            submittedFileUrl: fileDownloadUrl,
+            submittedTime: nowStr,
+            studentNote: note
+          };
+        }
+        return a;
+      }));
+
+      setShowSubmitModal(false);
+      setSubmitModalData(null);
+      setUploadTargetId(null);
+      showToast(`Đã nộp bài tập "${file.name}" thành công!`);
+    } catch (err) {
+      console.error('Error submitting assignment:', err);
+      alert('Có lỗi khi nộp bài. Vui lòng thử lại.');
+    } finally {
+      setIsSubmittingFile(false);
+    }
   };
 
   // File Download Action
@@ -715,7 +822,7 @@ export default function AssignmentView({ user }) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleStudentUploadClick(asg.id)}
+                      onClick={() => handleStudentUploadClick(asg.id, true)}
                       style={{
                         background: '#ffffff',
                         color: '#0f172a',
@@ -729,6 +836,20 @@ export default function AssignmentView({ user }) {
                     >
                       Nộp lại
                     </button>
+                  </div>
+                )}
+
+                {/* Display Student Note if provided */}
+                {asg.studentNote && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '0.8rem',
+                    color: '#475569'
+                  }}>
+                    💬 <b>Lời nhắn của bạn:</b> "{asg.studentNote}"
                   </div>
                 )}
               </div>
@@ -760,23 +881,33 @@ export default function AssignmentView({ user }) {
             {/* PENDING / OVERDUE: ONLY STUDENTS HAVE UPLOAD DROPZONE */}
             {!isTutor && (asg.status === 'pending' || asg.status === 'overdue') && (
               <div 
-                onClick={() => handleStudentUploadClick(asg.id)}
+                onClick={() => handleStudentUploadClick(asg.id, false)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverId(asg.id);
+                }}
+                onDragLeave={() => setDragOverId(null)}
+                onDrop={(e) => handleDropFile(asg, e)}
                 style={{
-                  border: '2px dashed #cbd5e1',
+                  border: dragOverId === asg.id ? '2.5px dashed #ff5f38' : '2px dashed #cbd5e1',
                   borderRadius: '14px',
                   padding: '24px',
                   textAlign: 'center',
-                  background: '#fafafa',
+                  background: dragOverId === asg.id ? '#fff7ed' : '#fafafa',
                   cursor: 'pointer',
-                  transition: 'border-color 0.15s'
+                  transition: 'all 0.15s ease'
                 }}
               >
-                <UploadCloud size={24} color="#64748b" style={{ margin: '0 auto 6px auto', display: 'block' }} />
-                <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                  Tải lên bài làm
+                <UploadCloud 
+                  size={26} 
+                  color={dragOverId === asg.id ? "#ff5f38" : "#64748b"} 
+                  style={{ margin: '0 auto 6px auto', display: 'block' }} 
+                />
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: dragOverId === asg.id ? '#ea580c' : '#0f172a' }}>
+                  {dragOverId === asg.id ? 'Thả tệp vào đây để nộp bài!' : 'Tải lên hoặc Kéo thả bài làm'}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
-                  Nhấn vào đây để chọn tệp (PDF, DOC, DOCX, JPG, ZIP)
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '3px' }}>
+                  Nhấn vào để chọn tệp hoặc kéo thả (PDF, DOC, DOCX, JPG, ZIP) · Có bước xem lại xác nhận
                 </div>
               </div>
             )}
@@ -1140,6 +1271,230 @@ export default function AssignmentView({ user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: STUDENT CONFIRM SUBMISSION (Xem lại & Xác nhận nộp bài) */}
+      {showSubmitModal && submitModalData && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            border: '2.5px solid #0f172a',
+            borderRadius: '24px',
+            maxWidth: '540px',
+            width: '100%',
+            padding: '28px',
+            boxShadow: '8px 8px 0px #0f172a',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowSubmitModal(false);
+                setSubmitModalData(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748b'
+              }}
+            >
+              <X size={22} />
+            </button>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '14px',
+                backgroundColor: '#ecfdf5',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                border: '2px solid #0f172a'
+              }}>
+                <FileCheck size={24} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
+                  {submitModalData.isResubmit ? 'Xác nhận Nộp lại bài tập' : 'Xác nhận Nộp bài tập'}
+                </h2>
+                <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                  Bài tập: <b>{submitModalData.assignment.title}</b> ({submitModalData.assignment.subject})
+                </div>
+              </div>
+            </div>
+
+            {/* File Info Card */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1.5px solid #0f172a',
+              borderRadius: '16px',
+              padding: '16px',
+              marginBottom: '18px'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
+                Tệp bài làm bạn đã chọn:
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#e0f2fe',
+                    color: '#0284c7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    border: '1.5px solid #0284c7'
+                  }}>
+                    {submitModalData.file.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a', wordBreak: 'break-all' }}>
+                      {submitModalData.file.name}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                      Kích thước: {fileService.formatBytes(submitModalData.file.size)}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (studentFileInputRef.current) {
+                      studentFileInputRef.current.click();
+                    }
+                  }}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đổi tệp khác
+                </button>
+              </div>
+            </div>
+
+            {/* Note Textarea */}
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                Ghi chú / Lời nhắn gửi cho gia sư (Tùy chọn)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Ví dụ: Em đã hoàn thành 10 bài tập, phần câu hỏi số 7 em có ghi chú lời giải chi tiết ở trang cuối..."
+                value={submitModalData.note}
+                onChange={(e) => setSubmitModalData({ ...submitModalData, note: e.target.value })}
+                style={{
+                  width: '100%',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  fontSize: '0.88rem',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Reassurance note */}
+            <div style={{
+              background: '#fefce8',
+              border: '1px solid #fef08a',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              fontSize: '0.8rem',
+              color: '#854d0e',
+              marginBottom: '20px',
+              lineHeight: 1.4
+            }}>
+              💡 <b>Lưu ý:</b> Sau khi nộp, bài tập sẽ được lưu vĩnh viễn trên hệ thống. Bạn vẫn có thể bấm <b>Nộp lại</b> bất kỳ lúc nào trước khi gia sư bắt đầu chấm bài.
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubmitModal(false);
+                  setSubmitModalData(null);
+                }}
+                disabled={isSubmittingFile}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #0f172a',
+                  background: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy bỏ
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={isSubmittingFile}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '12px',
+                  border: '2px solid #0f172a',
+                  background: '#059669',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  cursor: isSubmittingFile ? 'wait' : 'pointer',
+                  boxShadow: '3px 3px 0px #0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isSubmittingFile ? (
+                  <>Đang lưu bài làm...</>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    {submitModalData.isResubmit ? 'Xác nhận Nộp lại' : 'Xác nhận Nộp bài'}
+                  </>
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
