@@ -8,7 +8,11 @@ export const paymentService = {
    */
   async createVNPayPayment(data) {
     try {
-      const response = await api.post('/payments/vnpay/create-payment', data);
+      const payload = {
+        ...data,
+        returnUrl: data?.returnUrl || `${window.location.origin}/#payment-result`
+      };
+      const response = await api.post('/payments/vnpay/create-payment', payload);
       if (response.data && response.data.success) {
         return {
           success: true,

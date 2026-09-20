@@ -30,9 +30,9 @@ export default function PaymentResultView({ onNavigate }) {
           const isSuccess = paramObj.vnp_ResponseCode === '00';
           let amount = 0;
           try {
-            amount = Long.parseLong(paramObj.vnp_Amount) / 100;
+            amount = parseInt(paramObj.vnp_Amount || '0', 10) / 100;
           } catch (e) {
-            amount = parseInt(paramObj.vnp_Amount || '0') / 100;
+            amount = 0;
           }
           setResult({
             success: isSuccess,
