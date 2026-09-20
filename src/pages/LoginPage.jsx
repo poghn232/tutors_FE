@@ -29,7 +29,7 @@ export default function LoginPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await login({ email, password }, rememberMe);
+      const res = await login({ email: email.trim(), password }, rememberMe);
       if (res.success) {
         onNavigate('dashboard');
       } else {
@@ -158,7 +158,7 @@ export default function LoginPage({ onNavigate }) {
               id="email"
               type="email"
               className="auth-input"
-              placeholder="Email / Số điện thoại"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
