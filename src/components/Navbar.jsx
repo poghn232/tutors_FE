@@ -1,21 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import TutoraLogo from './TutoraLogo';
 import { 
   LogOut, 
-  BookOpen, 
-  Search, 
-  GraduationCap, 
-  FileText, 
-  CheckSquare, 
-  Calendar, 
   UserCheck, 
   CreditCard,
-  LayoutDashboard
+  User,
+  Settings,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const { user, logout } = useAuth();
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const isTutor = user?.role === 'TUTOR';
+
+  // Define tabs matching Figma screenshots: [Tìm Gia Sư] [Lớp Học Của Tôi] [Tài Liệu] [Bài Tập]
+  const studentNavItems = [
+    { id: 'tutors', label: 'Tìm Gia Sư' },
+    { id: 'classes', label: 'Lớp Học Của Tôi' },
+    { id: 'materials', label: 'Tài Liệu' },
+    { id: 'assignments', label: 'Bài Tập' },
+  ];
+
+  const tutorNavItems = [
+    { id: 'dashboard', label: 'Tổng Quan' },
+    { id: 'lessons', label: 'Lịch Dạy' },
+    { id: 'materials', label: 'Tài Liệu' },
+    { id: 'assignments', label: 'Bài Tập' },
+    { id: 'profile', label: 'Hồ Sơ' },
+    { id: 'payment', label: 'Thanh Toán' },
+  ];
+
+  const navItems = isTutor ? tutorNavItems : studentNavItems;
 
   const getRoleBadge = (role) => {
     switch (role) {
@@ -30,35 +48,15 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     }
   };
 
-  // Define tabs based on role matching Figma EXE-2 design
-  const isTutor = user?.role === 'TUTOR';
-
-  const navItems = isTutor
-    ? [
-        { id: 'dashboard', label: 'Tổng Quan', icon: <LayoutDashboard size={18} /> },
-        { id: 'lessons', label: 'Lịch Dạy', icon: <Calendar size={18} /> },
-        { id: 'materials', label: 'Tài Liệu', icon: <FileText size={18} /> },
-        { id: 'assignments', label: 'Bài Tập', icon: <CheckSquare size={18} /> },
-        { id: 'profile', label: 'Hồ Sơ', icon: <UserCheck size={18} /> },
-        { id: 'payment', label: 'Thanh Toán', icon: <CreditCard size={18} /> },
-      ]
-    : [
-        { id: 'tutors', label: 'Tìm Gia Sư', icon: <Search size={18} /> },
-        { id: 'classes', label: 'Lớp Học Của Tôi', icon: <GraduationCap size={18} /> },
-        { id: 'materials', label: 'Tài Liệu', icon: <FileText size={18} /> },
-        { id: 'assignments', label: 'Bài Tập', icon: <CheckSquare size={18} /> },
-        { id: 'profile', label: 'Hồ Sơ', icon: <UserCheck size={18} /> },
-      ];
-
   return (
     <header style={{
       backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e2e8f0',
+      borderBottom: '1px solid #eef2f6',
       padding: '12px 24px',
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)'
     }}>
       <div style={{
         maxWidth: '1200px',
@@ -68,65 +66,214 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
         alignItems: 'center',
         gap: '20px'
       }}>
-        {/* Brand Logo */}
+        {/* Brand Logo (Figma totora style) */}
         <div 
           onClick={() => onNavigate(isTutor ? 'dashboard' : 'classes')} 
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
-          <TutoraLogo size="md" subtitleText="Dạy kèm & AI Note" />
+          <TutoraLogo size="md" />
         </div>
 
-        {/* Role-based Nav Tabs */}
+        {/* Centered Pill Nav Tabs (Figma style) */}
         {user && (
-          <nav className="nav-links-wrap">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-tab-btn ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => onNavigate(item.id)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
+          <nav style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'transparent',
+            padding: '2px'
+          }}>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id || (item.id === 'tutors' && activeTab === 'checkout');
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate(item.id)}
+                  style={{
+                    border: 'none',
+                    padding: '8px 18px',
+                    borderRadius: '999px',
+                    fontSize: '0.92rem',
+                    fontWeight: isActive ? 700 : 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    backgroundColor: isActive ? '#f3e8ff' : 'transparent',
+                    color: isActive ? '#7c3aed' : '#475569',
+                    letterSpacing: '-0.01em'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.color = '#0f172a';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#475569';
+                    }
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
         )}
 
-        {/* User Status / Logout */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Right Side: User Avatar matching Figma Circular Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '700', fontSize: '0.92rem', color: '#0f172a' }}>
-                  {user.fullName}
-                </div>
-                <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                  {getRoleBadge(user.role)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Profile Avatar circle with border */}
+              <div 
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: '2px solid #e2e8f0',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%)',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)'
+                }}
+                title={`${user.fullName} (${getRoleBadge(user.role)})`}
+              >
+                {/* User avatar or photo representation */}
+                <div style={{
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  color: '#7c3aed'
+                }}>
+                  {user.fullName?.charAt(0) || 'U'}
                 </div>
               </div>
-              <button 
-                onClick={logout}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px', fontSize: '0.85rem', gap: '6px' }}
-                title="Đăng xuất khỏi hệ thống"
-              >
-                <LogOut size={16} />
-                Đăng xuất
-              </button>
+
+              {/* User Dropdown Menu */}
+              {showUserDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: '48px',
+                  right: 0,
+                  width: '220px',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '14px',
+                  boxShadow: '4px 4px 0px #000000',
+                  padding: '12px',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}>
+                  <div style={{ padding: '4px 8px 8px 8px', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                      {user.fullName}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                      {user.email}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onNavigate('profile');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <UserCheck size={16} color="#7c3aed" /> Hồ sơ cá nhân
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onNavigate('checkout');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <CreditCard size={16} color="#059669" /> Thanh toán (Figma)
+                  </button>
+
+                  <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '4px 0' }} />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      logout();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px',
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <LogOut size={16} /> Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
               <button 
                 onClick={() => onNavigate('login')} 
-                className="btn btn-secondary"
+                className="btn btn-secondary" 
                 style={{ padding: '8px 16px', fontSize: '0.9rem' }}
               >
                 Đăng nhập
               </button>
               <button 
                 onClick={() => onNavigate('register')} 
-                className="btn btn-primary"
+                className="btn btn-primary" 
                 style={{ padding: '8px 16px', fontSize: '0.9rem' }}
               >
                 Đăng ký ngay

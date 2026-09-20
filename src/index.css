@@ -1831,3 +1831,637 @@ h1, h2, h3, h4 {
   font-weight: 600;
   border: 1px solid rgba(99, 102, 241, 0.25);
 }
+
+/* ==========================================================================
+   FIGMA CHECKOUT & BOOKING FLOW (3-STEP STANDARD FIGMA IMPLEMENTATION)
+   ========================================================================== */
+
+.figma-checkout-wrapper {
+  position: relative;
+  overflow: hidden;
+  min-height: 85vh;
+  padding: 28px 20px 80px 20px;
+  background-color: #ffffff;
+}
+
+/* Floating Geometric Shapes (Exact Figma Aesthetic) */
+.figma-shape {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shape-yellow-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #fef08a;
+  top: 30px;
+  left: 45px;
+  opacity: 0.85;
+}
+
+.shape-peach-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #fed7aa;
+  top: 130px;
+  left: 170px;
+  transform: rotate(24deg);
+  opacity: 0.85;
+}
+
+.shape-pink-pill {
+  width: 20px;
+  height: 64px;
+  border-radius: 10px;
+  background: #fce7f3;
+  top: 480px;
+  left: 36px;
+}
+
+.shape-peach-wireframe {
+  width: 150px;
+  height: 150px;
+  border: 3px solid #ffedd5;
+  border-radius: 14px;
+  bottom: 80px;
+  left: -35px;
+  transform: rotate(-12deg);
+}
+
+.shape-lavender-diamond {
+  width: 95px;
+  height: 95px;
+  border-radius: 16px;
+  background: #ede9fe;
+  top: 35px;
+  right: 70px;
+  transform: rotate(45deg);
+}
+
+.shape-yellow-black-square {
+  width: 32px;
+  height: 32px;
+  background: #facc15;
+  border: 2px solid #000000;
+  border-radius: 4px;
+  top: 530px;
+  right: 175px;
+  transform: rotate(18deg);
+  z-index: 2;
+}
+
+.shape-mint-circle {
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: #ccfbf1;
+  bottom: 20px;
+  right: -50px;
+  opacity: 0.75;
+}
+
+/* Checkout Container & Typography */
+.figma-checkout-container {
+  position: relative;
+  z-index: 3;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.figma-back-link {
+  background: none;
+  border: none;
+  font-size: 0.92rem;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+
+.figma-back-link:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.figma-checkout-title {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 6px 0 20px 0;
+  letter-spacing: -0.015em;
+}
+
+/* Figma Stepper (1 Xem lại, 2 Thanh toán, 3 Xác nhận) */
+.figma-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  user-select: none;
+}
+
+.figma-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.figma-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  color: #64748b;
+  background: #ffffff;
+  transition: all 0.2s;
+}
+
+.figma-step-item.active .figma-step-circle {
+  background: #7c3aed;
+  color: #ffffff;
+  border-color: #7c3aed;
+}
+
+.figma-step-item.completed .figma-step-circle {
+  background: #00c288;
+  color: #ffffff;
+  border-color: #00c288;
+}
+
+.figma-step-label {
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.figma-step-item.active .figma-step-label {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.figma-step-connector {
+  width: 36px;
+  height: 2px;
+  background: #e2e8f0;
+  margin: 0 4px;
+}
+
+.figma-step-connector.completed {
+  background: #00c288;
+}
+
+/* 2-Column Checkout Grid */
+.figma-checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
+  gap: 28px;
+  align-items: flex-start;
+}
+
+@media (max-width: 860px) {
+  .figma-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.figma-main-card {
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  border-radius: 20px;
+  padding: 28px 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.figma-summary-card {
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  border-radius: 20px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.figma-card-heading {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 18px 0;
+}
+
+/* Tutor Box in Step 1 */
+.figma-tutor-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  background: #fafafa;
+}
+
+.figma-tutor-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-tutor-name {
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.figma-tutor-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.figma-tutor-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+/* Detail Table Rows */
+.figma-detail-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.figma-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.figma-detail-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.figma-detail-value {
+  font-weight: 700;
+  color: #0f172a;
+  text-align: right;
+}
+
+.figma-subject-pill {
+  display: inline-block;
+  background: #fee2e2;
+  color: #ea580c;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Neo-Brutalist / Modern Figma Action Buttons */
+.figma-btn-primary {
+  background-color: #7c3aed;
+  color: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  width: 100%;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  display: block;
+}
+
+.figma-btn-primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.figma-btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.figma-btn-apple-green {
+  background-color: #00e599;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  width: 100%;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  display: block;
+}
+
+.figma-btn-apple-green:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.figma-btn-apple-green:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.figma-btn-outline {
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  width: 100%;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  display: block;
+}
+
+.figma-btn-outline:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.figma-btn-outline:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.figma-btn-disabled {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  width: 100%;
+  padding: 14px 20px;
+  cursor: not-allowed;
+  text-align: center;
+  display: block;
+}
+
+/* Payment Method Tabs & Inputs (Step 2) */
+.figma-payment-tabs {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.figma-payment-tab {
+  background: transparent;
+  border: none;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.figma-payment-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.figma-security-note {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  text-align: center;
+  margin: 32px 0 20px 0;
+  line-height: 1.5;
+}
+
+.figma-input-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.figma-input-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.figma-text-input {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.15s;
+}
+
+.figma-text-input:focus {
+  border-color: #7c3aed;
+}
+
+/* Order Summary Box */
+.figma-summary-heading {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+}
+
+.figma-summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.92rem;
+}
+
+.figma-summary-label {
+  color: #64748b;
+}
+
+.figma-summary-val {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.figma-summary-divider {
+  height: 1.5px;
+  background: #0f172a;
+  margin: 16px 0;
+}
+
+.figma-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+
+.figma-cancel-box {
+  background: #e6fffa;
+  border: 1.5px solid #34d399;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: #065f46;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.figma-cancel-box strong {
+  color: #059669;
+  font-weight: 800;
+}
+
+.figma-discount-link {
+  background: none;
+  border: none;
+  color: #7c3aed;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.figma-discount-link:hover {
+  text-decoration: underline;
+}
+
+/* Step 3: Success Card (Exact Figma Image 4 with Solid Mint Shadow) */
+.figma-success-card {
+  max-width: 520px;
+  margin: 20px auto 40px auto;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+  border-radius: 24px;
+  box-shadow: 8px 8px 0px #00e599;
+  padding: 38px 32px;
+  text-align: center;
+}
+
+.figma-success-icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.figma-success-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.figma-success-subtitle {
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.figma-success-box {
+  background: #e6fffa;
+  border: 1.5px solid #34d399;
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.figma-success-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.figma-success-row:last-child {
+  border-bottom: none;
+  padding-top: 10px;
+}
+
+.figma-success-box-label {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.figma-success-box-val {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.figma-meet-link {
+  color: #7c3aed;
+  font-weight: 700;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.figma-paid-amount {
+  color: #059669;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.figma-success-note {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+

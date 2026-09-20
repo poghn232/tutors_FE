@@ -1,453 +1,665 @@
-import React, { useState, useEffect } from 'react';
-import { classService } from '../services/classService';
-import { subjectService } from '../services/subjectService';
+import React, { useState } from 'react';
 import { 
-  BookOpen, 
-  Plus, 
-  User, 
-  Calendar, 
-  Clock, 
+  Calendar as CalendarIcon, 
   CheckCircle2, 
-  Video, 
-  GraduationCap, 
-  Layers, 
+  User, 
+  BookOpen, 
+  Clock, 
+  Hourglass, 
+  Lightbulb, 
+  Star, 
   ArrowRight,
-  X
+  Plus
 } from 'lucide-react';
 
-export default function ClassManagement({ user, onNavigateToTutors }) {
-  const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('upcoming'); // 'upcoming', 'completed', 'all'
+export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip }) {
+  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
+  const [calendarDay, setCalendarDay] = useState(10);
 
-  // Modal tạo lớp học
-  const [showModal, setShowModal] = useState(false);
-  const [classNameInput, setClassNameInput] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
-  const [studentNameInput, setStudentNameInput] = useState('');
-  const [studentEmailInput, setStudentEmailInput] = useState('');
-  const [scheduleInput, setScheduleInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  // Sample classes matching Figma EXE-2 frame 15:2994
-  const defaultClasses = [
+  // Lesson list matching Figma 15:2994
+  const upcomingLessons = [
     {
-      id: 101,
-      className: 'Toán 12 - Luyện thi Đại học Chuyên sâu',
-      subjectName: 'Toán học',
+      id: 1,
       tutorName: 'TS. Nguyễn Thị Hoa',
-      date: '16/09/2026',
-      time: '19:00',
-      durationMinutes: 90,
-      topic: 'Chương 5: Phương pháp Tích phân từng phần và ứng dụng thể tích khối tròn xoay',
-      status: 'upcoming',
-      roomUrl: 'https://meet.google.com/abc-defg-hij',
+      subject: 'Toán học',
+      subjectTagColor: '#fee2e2',
+      subjectTextColor: '#ea580c',
+      date: '12/09/2026',
+      time: '10:00',
+      duration: '60 phút',
+      topic: 'Ôn tập Chương 5 - Tích phân từng phần',
+      roomUrl: 'https://meet.google.com/abc-def-ghi',
+      status: 'Sắp tới',
+      statusColor: '#059669',
+      statusBg: '#e6fffa'
     },
     {
-      id: 102,
-      className: 'Hóa học 11 - Phản ứng este hóa nâng cao',
-      subjectName: 'Hóa học',
+      id: 2,
       tutorName: 'TS. Phạm Thị Lan',
-      date: '18/09/2026',
+      subject: 'Hóa học',
+      subjectTagColor: '#e0f2fe',
+      subjectTextColor: '#0284c7',
+      date: '15/09/2026',
       time: '18:00',
-      durationMinutes: 90,
-      topic: 'Hóa hữu cơ: Cơ chế phản ứng xà phòng hóa và dạng bài toán đốt cháy este tạp chức',
-      status: 'upcoming',
-      roomUrl: 'https://meet.google.com/xyz-uvwx-rst',
+      duration: '90 phút',
+      topic: 'Hóa hữu cơ - Cơ chế phản ứng',
+      roomUrl: 'https://meet.google.com/hjk-lmno-pqr',
+      status: 'Sắp tới',
+      statusColor: '#059669',
+      statusBg: '#e6fffa'
     },
     {
-      id: 103,
-      className: 'Tiếng Anh 12 - Chiến thuật Đọc hiểu',
-      subjectName: 'Tiếng Anh',
-      tutorName: 'Trần Minh Đức',
-      date: '20/09/2026',
-      time: '20:00',
-      durationMinutes: 60,
-      topic: 'Skimming & Scanning trong các bài đọc văn hóa xã hội dài 800 từ',
-      status: 'upcoming',
-      roomUrl: 'https://meet.google.com/eng-read-101',
-    },
-    {
-      id: 104,
-      className: 'Vật lý 12 - Dao động điều hòa cơ bản',
-      subjectName: 'Vật lý',
-      tutorName: 'ThS. Hoàng Thiên Ưng',
-      date: '10/09/2026',
-      time: '15:00',
-      durationMinutes: 90,
-      topic: 'Khảo sát con lắc lò xo và bài toán năng lượng cơ học',
-      status: 'completed',
-      roomUrl: null,
-    },
-    {
-      id: 105,
-      className: 'Toán 12 - Khảo sát và vẽ đồ thị hàm số',
-      subjectName: 'Toán học',
-      tutorName: 'TS. Nguyễn Thị Hoa',
-      date: '08/09/2026',
-      time: '19:00',
-      durationMinutes: 90,
-      topic: 'Cực trị của hàm số chứa dấu giá trị tuyệt đối',
-      status: 'completed',
-      roomUrl: null,
+      id: 3,
+      tutorName: 'TS. Lê Thị Thu',
+      subject: 'Sinh học',
+      subjectTagColor: '#dcfce7',
+      subjectTextColor: '#15803d',
+      date: '19/09/2026',
+      time: '09:00',
+      duration: '90 phút',
+      topic: 'Phân bào và di truyền học',
+      roomUrl: 'https://meet.google.com/stu-vwxy-zab',
+      status: 'Sắp tới',
+      statusColor: '#059669',
+      statusBg: '#e6fffa'
     }
   ];
 
-  const fetchClassesAndSubjects = async () => {
-    try {
-      setLoading(true);
-      const [classRes, subjectRes] = await Promise.all([
-        classService.getClasses(),
-        subjectService.getSubjects()
-      ]);
-
-      if (classRes.success && classRes.data && classRes.data.length > 0) {
-        setClasses(classRes.data);
-      } else {
-        setClasses(defaultClasses);
-      }
-
-      if (subjectRes.success && subjectRes.data) {
-        setSubjects(subjectRes.data);
-        if (subjectRes.data.length > 0) {
-          setSelectedSubjectId(subjectRes.data[0].id);
-        }
-      }
-    } catch (err) {
-      console.error('Dùng dữ liệu mẫu Figma do backend chưa có lớp học:', err);
-      setClasses(defaultClasses);
-    } finally {
-      setLoading(false);
+  const completedLessons = [
+    {
+      id: 4,
+      tutorName: 'Trần Minh Đức',
+      subject: 'Tiếng Anh',
+      subjectTagColor: '#fee2e2',
+      subjectTextColor: '#ea580c',
+      date: '08/09/2026',
+      time: '19:30',
+      duration: '60 phút',
+      topic: 'Skimming & Scanning trong các bài đọc xã hội dài 800 từ',
+      status: 'Đã hoàn thành',
+      statusColor: '#64748b',
+      statusBg: '#f1f5f9'
+    },
+    {
+      id: 5,
+      tutorName: 'TS. Nguyễn Thị Hoa',
+      subject: 'Toán học',
+      subjectTagColor: '#fee2e2',
+      subjectTextColor: '#ea580c',
+      date: '05/09/2026',
+      time: '10:00',
+      duration: '60 phút',
+      topic: 'Cực trị của hàm số bậc ba và bài toán tham số m',
+      status: 'Đã hoàn thành',
+      statusColor: '#64748b',
+      statusBg: '#f1f5f9'
     }
-  };
+  ];
 
-  useEffect(() => {
-    fetchClassesAndSubjects();
-  }, []);
-
-  const handleCreateClass = async (e) => {
-    e.preventDefault();
-    if (!classNameInput.trim() || !selectedSubjectId) {
-      alert('Vui lòng nhập tên lớp và chọn môn học.');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      const payload = {
-        className: classNameInput.trim(),
-        subjectId: Number(selectedSubjectId),
-        studentName: studentNameInput.trim(),
-        studentEmail: studentEmailInput.trim(),
-        scheduleDescription: scheduleInput.trim() || 'Thứ 2 & Thứ 4 (19:00 - 21:00)'
-      };
-
-      const res = await classService.createClass(payload);
-      if (res.success) {
-        alert('Tạo lớp học thành công!');
-        setShowModal(false);
-        setClassNameInput('');
-        setStudentNameInput('');
-        setStudentEmailInput('');
-        setScheduleInput('');
-        fetchClassesAndSubjects();
-      } else {
-        alert(res.message || 'Tạo lớp học thất bại.');
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const upcomingList = classes.filter(c => c.status === 'upcoming');
-  const completedList = classes.filter(c => c.status === 'completed');
-
-  const filteredClasses = classes.filter((item) => {
-    if (statusFilter === 'all') return true;
-    return item.status === statusFilter;
-  });
+  const displayLessons = activeTab === 'upcoming' 
+    ? upcomingLessons 
+    : activeTab === 'completed' 
+      ? completedLessons 
+      : [...upcomingLessons, ...completedLessons];
 
   return (
-    <div>
-      {/* Header matching Figma 15:2994 */}
-      <div className="section-header">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
+      {/* Top Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="section-title">Lớp Học Của Tôi</h2>
-          <p className="section-desc">Theo dõi buổi học, lịch giảng dạy và tiến trình học tập chi tiết</p>
+          <h1 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: '2.2rem',
+            fontWeight: 800,
+            color: '#0f172a',
+            margin: '0 0 6px 0'
+          }}>
+            Lớp Học Của Tôi
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
+            Theo dõi buổi học và tiến trình học tập
+          </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {(user?.role === 'TUTOR' || user?.role === 'PARENT') && (
-            <button 
-              type="button" 
-              onClick={() => setShowModal(true)} 
-              className="btn btn-secondary" 
-              style={{ gap: '6px' }}
+        <button 
+          type="button"
+          className="figma-btn-primary"
+          style={{ width: 'auto', padding: '12px 24px', fontSize: '0.95rem' }}
+          onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
+        >
+          + Đặt Lịch Học Mới
+        </button>
+      </div>
+
+      {/* 4 Top Stat Cards (Exact Figma 15:2994) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        {/* Card 1: Mint */}
+        <div style={{
+          background: '#e6fffa',
+          border: '1.5px solid #34d399',
+          borderRadius: '16px',
+          padding: '20px 24px'
+        }}>
+          <CalendarIcon size={20} color="#059669" style={{ marginBottom: '8px' }} />
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>3</div>
+          <div style={{ fontSize: '0.82rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>Buổi học sắp tới</div>
+        </div>
+
+        {/* Card 2: Lavender */}
+        <div style={{
+          background: '#f3e8ff',
+          border: '1.5px solid #a855f7',
+          borderRadius: '16px',
+          padding: '20px 24px'
+        }}>
+          <CheckCircle2 size={20} color="#7c3aed" style={{ marginBottom: '8px' }} />
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7c3aed', lineHeight: 1.1 }}>2</div>
+          <div style={{ fontSize: '0.82rem', color: '#6d28d9', marginTop: '4px', fontWeight: 600 }}>Buổi đã hoàn thành</div>
+        </div>
+
+        {/* Card 3: Peach */}
+        <div style={{
+          background: '#ffedd5',
+          border: '1.5px solid #fb923c',
+          borderRadius: '16px',
+          padding: '20px 24px'
+        }}>
+          <User size={20} color="#ea580c" style={{ marginBottom: '8px' }} />
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>4</div>
+          <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>Gia sư đang học</div>
+        </div>
+
+        {/* Card 4: Light Blue */}
+        <div style={{
+          background: '#e0f2fe',
+          border: '1.5px solid #38bdf8',
+          borderRadius: '16px',
+          padding: '20px 24px'
+        }}>
+          <BookOpen size={20} color="#0284c7" style={{ marginBottom: '8px' }} />
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0284c7', lineHeight: 1.1 }}>5</div>
+          <div style={{ fontSize: '0.82rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>Môn đang học</div>
+        </div>
+      </div>
+
+      {/* Main 2-Column Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(320px, 1fr)', gap: '28px', alignItems: 'flex-start' }}>
+        {/* LEFT COLUMN: TABS + LESSON CARDS + NOTIFICATIONS */}
+        <div>
+          {/* Tabs Filter */}
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '14px',
+            padding: '4px',
+            display: 'inline-flex',
+            gap: '4px',
+            marginBottom: '20px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('upcoming')}
+              style={{
+                border: 'none',
+                background: activeTab === 'upcoming' ? '#0f172a' : 'transparent',
+                color: activeTab === 'upcoming' ? '#ffffff' : '#64748b',
+                padding: '8px 20px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
             >
-              <Plus size={16} /> Tạo lớp mới
+              Sắp tới (3)
             </button>
-          )}
-
-          {onNavigateToTutors && (
-            <button 
-              type="button" 
-              onClick={onNavigateToTutors} 
-              className="btn btn-primary" 
-              style={{ gap: '6px' }}
+            <button
+              type="button"
+              onClick={() => setActiveTab('completed')}
+              style={{
+                border: 'none',
+                background: activeTab === 'completed' ? '#0f172a' : 'transparent',
+                color: activeTab === 'completed' ? '#ffffff' : '#64748b',
+                padding: '8px 20px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
             >
-              <Plus size={16} /> Đặt Lịch Học Mới
+              Đã hoàn thành (2)
             </button>
-          )}
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              style={{
+                border: 'none',
+                background: activeTab === 'all' ? '#0f172a' : 'transparent',
+                color: activeTab === 'all' ? '#ffffff' : '#64748b',
+                padding: '8px 20px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              Tất cả
+            </button>
+          </div>
 
-      {/* 4 Metric Cards matching Figma 15:2994 */}
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
-            <Calendar size={26} />
-          </div>
-          <div>
-            <strong>{upcomingList.length}</strong>
-            <span>Buổi học sắp tới</span>
-          </div>
-        </div>
+          {/* Lesson Cards List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+            {displayLessons.map((item) => (
+              <div 
+                key={item.id}
+                style={{
+                  background: '#ffffff',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '20px',
+                  padding: '24px 28px',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                }}
+              >
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      color: '#2563eb',
+                      fontSize: '1.2rem'
+                    }}>
+                      {item.tutorName.charAt(item.tutorName.lastIndexOf(' ') + 1)}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>{item.tutorName}</div>
+                      <span style={{
+                        display: 'inline-block',
+                        background: item.subjectTagColor,
+                        color: item.subjectTextColor,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        borderRadius: '999px',
+                        padding: '2px 10px',
+                        marginTop: '3px'
+                      }}>
+                        {item.subject}
+                      </span>
+                    </div>
+                  </div>
 
-        <div className="metric-card">
-          <div className="metric-icon-wrap" style={{ background: '#ecfdf5', color: '#10b981' }}>
-            <CheckCircle2 size={26} />
-          </div>
-          <div>
-            <strong>{completedList.length}</strong>
-            <span>Buổi đã hoàn thành</span>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-wrap" style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
-            <GraduationCap size={26} />
-          </div>
-          <div>
-            <strong>3</strong>
-            <span>Gia sư đang học</span>
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-wrap" style={{ background: '#fffbeb', color: '#d97706' }}>
-            <Layers size={26} />
-          </div>
-          <div>
-            <strong>4</strong>
-            <span>Môn đang học</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Tabs matching Figma 15:2994 */}
-      <div className="sub-tabs">
-        <button
-          type="button"
-          className={`sub-tab-btn ${statusFilter === 'upcoming' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('upcoming')}
-        >
-          Sắp tới ({upcomingList.length})
-        </button>
-        <button
-          type="button"
-          className={`sub-tab-btn ${statusFilter === 'completed' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('completed')}
-        >
-          Đã hoàn thành ({completedList.length})
-        </button>
-        <button
-          type="button"
-          className={`sub-tab-btn ${statusFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('all')}
-        >
-          Tất cả ({classes.length})
-        </button>
-      </div>
-
-      {/* Class Cards Grid matching Figma 15:2994 */}
-      {filteredClasses.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
-          <BookOpen size={42} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-          <p style={{ fontSize: '1rem', fontWeight: 600 }}>Không có lớp học nào trong danh mục này.</p>
-        </div>
-      ) : (
-        <div className="class-grid">
-          {filteredClasses.map((item) => (
-            <div key={item.id} className="class-card">
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span className="tutor-tag">{item.subjectName || item.className}</span>
-                  <span className={`class-status-pill ${item.status === 'upcoming' ? 'status-upcoming' : 'status-completed'}`}>
-                    {item.status === 'upcoming' ? 'Sắp tới' : 'Đã hoàn thành'}
+                  <span style={{
+                    background: item.statusBg,
+                    color: item.statusColor,
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    borderRadius: '999px',
+                    padding: '4px 12px',
+                    border: `1px solid ${item.statusColor}33`
+                  }}>
+                    {item.status}
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
-                  {item.tutorName || item.className}
-                </h3>
+                {/* Time row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.88rem', color: '#64748b', marginBottom: '14px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    📅 {item.date}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    🕒 {item.time}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    ⏳ {item.duration}
+                  </span>
+                </div>
 
-                {item.topic && (
-                  <p style={{ color: '#475569', fontSize: '0.88rem', marginBottom: '14px', lineHeight: 1.5 }}>
-                    {item.topic}
-                  </p>
-                )}
-
+                {/* Topic container */}
                 <div style={{
-                  padding: '12px',
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  fontSize: '0.85rem',
-                  display: 'grid',
-                  gap: '6px',
-                  color: '#475569'
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  fontSize: '0.88rem',
+                  color: '#475569',
+                  marginBottom: '18px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Calendar size={15} color="#2563eb" />
-                    <span>Ngày học: <strong>{item.date || 'Theo thỏa thuận'}</strong></span>
+                  {item.topic}
+                </div>
+
+                {/* Action button */}
+                {item.roomUrl && (
+                  <a
+                    href={item.roomUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="figma-btn-primary"
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-block',
+                      width: 'auto',
+                      padding: '10px 22px',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    Tham gia buổi học
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* "Thông báo" Section (Figma 15:2994) */}
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+            Thông báo
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Box 1: Purple */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #a855f7',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <CheckCircle2 size={18} color="#a855f7" />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                    TS. Nguyễn Thị Hoa xác nhận lịch học Toán ngày 12/09
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={15} color="#10b981" />
-                    <span>Thời gian: <strong>{item.time || '19:00'} ({item.durationMinutes || 90} phút)</strong></span>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>1 giờ trước</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Box 2: Orange */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #fb923c',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Lightbulb size={18} color="#ea580c" />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                    Mẹo học: Ôn tập Hóa học 20 phút mỗi ngày sẽ giúp bạn tiến bộ nhanh hơn
                   </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>Hôm nay</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Box 3: Yellow */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #facc15',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Star size={18} color="#ca8a04" />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                    Đánh giá buổi học Vật lý với TS. Nguyễn Thị Hoa
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>2 ngày trước</div>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div>
-                {item.status === 'upcoming' ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-block"
-                    style={{ gap: '8px' }}
-                    onClick={() => {
-                      if (item.roomUrl) {
-                        window.open(item.roomUrl, '_blank');
-                      } else {
-                        alert('Phòng học trực tuyến sẽ mở trước 10 phút giờ học.');
-                      }
-                    }}
-                  >
-                    <Video size={16} /> Tham gia buổi học
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-block"
-                    style={{ gap: '6px' }}
-                    onClick={() => alert('Đang mở bản ghi hình và AI Note của buổi học...')}
-                  >
-                    Xem lại ghi chú AI
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Modal tạo lớp học */}
-      {showModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="card" style={{ maxWidth: '520px', width: '100%', position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Tạo Lớp Học Mới</h3>
               <button 
                 type="button" 
-                onClick={() => setShowModal(false)}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
+                className="figma-btn-primary" 
+                style={{ width: 'auto', padding: '8px 18px', fontSize: '0.85rem' }}
               >
-                <X size={20} />
+                Đánh giá ngay
               </button>
             </div>
-
-            <form onSubmit={handleCreateClass}>
-              <div className="form-group">
-                <label>Tên lớp học / Mục tiêu:</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Ví dụ: Ôn thi Đại học môn Toán 12"
-                  value={classNameInput}
-                  onChange={(e) => setClassNameInput(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Môn học:</label>
-                <select
-                  className="form-control"
-                  value={selectedSubjectId}
-                  onChange={(e) => setSelectedSubjectId(e.target.value)}
-                >
-                  {subjects.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Tên học sinh:</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Họ và tên học sinh"
-                  value={studentNameInput}
-                  onChange={(e) => setStudentNameInput(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Lịch học mong muốn:</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Ví dụ: Thứ 3 & Thứ 6 (19:30 - 21:00)"
-                  value={scheduleInput}
-                  onChange={(e) => setScheduleInput(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={submitting}
-                >
-                  {submitting ? 'Đang tạo...' : 'Tạo lớp học'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
-      )}
+
+        {/* RIGHT COLUMN: WIDGETS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Widget 1: Tuần này (Mini Calendar) */}
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '20px',
+            padding: '24px'
+          }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
+              Tuần này
+            </h4>
+
+            {/* Day labels */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '0.75rem', color: '#64748b', fontWeight: 700, marginBottom: '8px' }}>
+              <span>CN</span>
+              <span>T2</span>
+              <span>T3</span>
+              <span>T4</span>
+              <span>T5</span>
+              <span>T6</span>
+              <span>T7</span>
+            </div>
+
+            {/* Dates */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', marginBottom: '16px' }}>
+              {[6, 7, 8, 9, 10, 11, 12].map((d) => (
+                <div key={d} style={{ display: 'flex', justifyContent: 'center' }}>
+                  <span 
+                    onClick={() => setCalendarDay(d)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      background: calendarDay === d ? '#0f172a' : 'transparent',
+                      color: calendarDay === d ? '#ffffff' : '#0f172a'
+                    }}
+                  >
+                    {d}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Event dots list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c' }} />
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>12/09/2026 10:00</span>
+                <span style={{ color: '#64748b' }}>Toán học</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }} />
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>15/09/2026 18:00</span>
+                <span style={{ color: '#64748b' }}>Hóa học</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Widget 2: Tiến trình học tập */}
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '20px',
+            padding: '24px'
+          }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
+              Tiến trình học tập
+            </h4>
+
+            {/* Item 1: Toán học */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                <span style={{ color: '#0f172a' }}>Toán học</span>
+                <span style={{ color: '#ea580c' }}>75%</span>
+              </div>
+              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
+                <div style={{ width: '75%', height: '100%', background: '#ea580c', borderRadius: '4px' }} />
+              </div>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Đang tiến bộ tốt</span>
+            </div>
+
+            {/* Item 2: Hóa học */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                <span style={{ color: '#0f172a' }}>Hóa học</span>
+                <span style={{ color: '#0284c7' }}>45%</span>
+              </div>
+              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
+                <div style={{ width: '45%', height: '100%', background: '#0284c7', borderRadius: '4px' }} />
+              </div>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Cần cải thiện</span>
+            </div>
+
+            {/* Item 3: Sinh học */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                <span style={{ color: '#0f172a' }}>Sinh học</span>
+                <span style={{ color: '#059669' }}>20%</span>
+              </div>
+              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
+                <div style={{ width: '20%', height: '100%', background: '#059669', borderRadius: '4px' }} />
+              </div>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Mới bắt đầu</span>
+            </div>
+          </div>
+
+          {/* Widget 3: Lộ trình Toán học (VIP Yellow Card) */}
+          <div style={{
+            background: '#facc15',
+            border: '2px solid #0f172a',
+            borderRadius: '20px',
+            padding: '24px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Lộ trình Toán học
+              </h4>
+              <span style={{ background: '#0f172a', color: '#ffffff', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '999px' }}>
+                Cao cấp
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} color="#059669" />
+                <span>Hiểu cơ bản Tích phân</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} color="#059669" />
+                <span>Bài tập Tích phân từng phần</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed' }}>
+                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }} />
+                <span>Tích phân suy rộng</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#71717a' }}>
+                <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid #71717a', display: 'inline-block' }} />
+                <span>Phương trình vi phân</span>
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => onNavigateToVip && onNavigateToVip()}
+              style={{
+                width: '100%',
+                background: '#0f172a',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '12px',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              Nâng cấp gói VIP →
+            </button>
+          </div>
+
+          {/* Widget 4: Gia sư Của Tôi */}
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px solid #0f172a',
+            borderRadius: '20px',
+            padding: '24px'
+          }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
+              Gia sư Của Tôi
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {[
+                { name: 'TS. Nguyễn Thị Hoa' },
+                { name: 'TS. Phạm Thị Lan' },
+                { name: 'Trần Minh Đức' },
+                { name: 'TS. Lê Thị Thu' }
+              ].map((tut, i) => (
+                <div 
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: '#ede9fe',
+                      color: '#7c3aed',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.88rem'
+                    }}>
+                      {tut.name.charAt(tut.name.lastIndexOf(' ') + 1)}
+                    </div>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                      {tut.name}
+                    </span>
+                  </div>
+                  <ArrowRight size={14} color="#94a3b8" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

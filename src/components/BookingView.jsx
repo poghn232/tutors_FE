@@ -1,384 +1,543 @@
 import React, { useState } from 'react';
+import CheckoutFlow from './CheckoutFlow';
 import { 
   Star, 
-  ShieldCheck, 
-  CheckCircle2, 
   ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Award, 
-  User, 
-  BookOpen, 
-  Check, 
-  Sparkles 
+  Globe, 
+  Laptop, 
+  Zap, 
+  ShieldCheck 
 } from 'lucide-react';
 
-export default function BookingView({ tutor, onBack }) {
-  // Use passed tutor or fallback to Figma 61:2053 default
+export default function BookingView({ tutor, onBack, onNavigate }) {
   const currentTutor = tutor || {
     id: 1,
-    fullName: 'Hoàng Thiên Ưng',
-    school: 'Đại học Bách Khoa Hà Nội',
+    fullName: 'Hoàng Thiên Ứng',
+    school: 'Đại học Bách Khoa',
     experienceYears: 8,
     rating: 4.9,
     reviewsCount: 127,
     studentsCount: 243,
     hourlyRate: 250000,
     subjects: ['Toán học', 'Vật lý', 'Tin học'],
+    hobbies: ['Cờ vua', 'Leo núi', 'Origami', 'Vật lý thiên văn'],
     bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
-    hobbies: ['Cờ vua', 'Leo núi', 'Origami', 'Vật lý thiên văn', 'Thống kê'],
   };
 
   const [activeTab, setActiveTab] = useState('intro'); // 'intro', 'reviews', 'slots'
   const [selectedSubject, setSelectedSubject] = useState(currentTutor.subjects?.[0] || 'Toán học');
-  const [selectedDay, setSelectedDay] = useState('Thứ 2 (16/09)');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [selectedDay, setSelectedDay] = useState('T2 14/09');
+  const [selectedTime, setSelectedTime] = useState('9:00 SA');
+  const [showCheckout, setShowCheckout] = useState(false);
 
   const availableDays = [
-    'Thứ 2 (16/09)',
-    'Thứ 4 (18/09)',
-    'Thứ 6 (20/09)',
-    'Thứ 7 (21/09)',
-    'Chủ nhật (22/09)'
+    'T2 14/09',
+    'T4 16/09',
+    'T6 18/09',
+    'T7 19/09',
+    'T2 21/09'
   ];
 
   const availableTimes = [
-    '09:00 - 10:30',
-    '10:30 - 12:00',
-    '14:00 - 15:30',
-    '16:00 - 17:30',
-    '18:00 - 19:30',
-    '19:30 - 21:00'
+    '9:00 SA',
+    '10:00 SA',
+    '11:00 SA',
+    '2:00 CH',
+    '3:00 CH',
+    '4:00 CH',
+    '6:00 CH',
+    '7:00 CH'
   ];
 
   const reviews = [
     {
       id: 1,
-      studentName: 'Trần Văn Minh (Lớp 12A1)',
+      name: 'Trần Văn Minh (Lớp 12)',
       rating: 5,
       date: '10/09/2026',
-      content: 'Thầy dạy cực kỳ có tâm! Các bài toán tích phân và lượng giác khó thầy hướng dẫn phương pháp giải rất ngắn gọn và dễ hiểu.',
+      content: 'Thầy dạy cực kỳ có tâm! Các bài toán tích phân và lượng giác khó thầy hướng dẫn phương pháp giải rất ngắn gọn và dễ hiểu.'
     },
     {
       id: 2,
-      studentName: 'Nguyễn Phương Thảo (Lớp 11)',
+      name: 'Nguyễn Phương Thảo (Lớp 11)',
       rating: 5,
       date: '04/09/2026',
-      content: 'Em từ mất gốc môn Vật lý mà sau 2 tháng học cùng thầy đã đạt 8.5 điểm kiểm tra 1 tiết. Cảm ơn thầy rất nhiều ạ!',
+      content: 'Em từ mất gốc môn Vật lý mà sau 2 tháng học cùng thầy đã đạt 8.5 điểm kiểm tra 1 tiết. Cảm ơn thầy rất nhiều ạ!'
     }
   ];
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
+  const formatVND = (val) => {
+    return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
   };
 
-  const handleConfirmBooking = () => {
-    if (!selectedTime) return;
-    setBookingConfirmed(true);
-  };
+  if (showCheckout) {
+    return (
+      <CheckoutFlow 
+        tutor={currentTutor}
+        bookingDetails={{
+          subject: selectedSubject,
+          allSubjects: currentTutor.subjects?.join(', ') || 'Toán học, Vật lý, Tin học',
+          date: '2026-09-14',
+          time: selectedTime,
+          duration: '60 phút',
+          format: 'Gọi video (Google Meet)',
+          lessonPrice: currentTutor.hourlyRate || 250000,
+          bookingFeeRate: 0.05,
+          meetLink: 'meet.google.com/abc-def-ghi'
+        }}
+        onBack={() => setShowCheckout(false)}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   return (
-    <div>
-      {/* Back button */}
-      <button 
-        type="button" 
-        className="btn btn-secondary" 
-        style={{ marginBottom: '20px', gap: '8px', padding: '8px 16px', fontSize: '0.9rem' }}
-        onClick={onBack}
-      >
-        <ArrowLeft size={16} /> Quay lại Danh sách Gia sư
-      </button>
+    <div style={{ position: 'relative', overflow: 'hidden', minHeight: '85vh', padding: '16px 0 60px 0' }}>
+      {/* Floating Geometric Shapes (Figma 61:2053) */}
+      <div className="figma-shape shape-yellow-circle" />
+      <div className="figma-shape shape-peach-box" />
+      <div className="figma-shape shape-pink-pill" />
+      <div className="figma-shape shape-peach-wireframe" />
+      <div className="figma-shape shape-lavender-diamond" />
+      <div className="figma-shape shape-yellow-black-square" />
+      <div className="figma-shape shape-mint-circle" />
 
-      {/* Main Grid: Left Profile + Right Booking Box (Figma 61:2053) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(320px, 1.2fr)', gap: '28px', alignItems: 'flex-start' }}>
-        {/* Left Profile Details */}
-        <div className="booking-detail-card">
-          {/* Hero Profile Info */}
-          <div className="tutor-hero-profile">
-            <div className="tutor-hero-avatar" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 900,
-              fontSize: '2.5rem',
-              color: '#2563eb',
-              background: '#eff6ff'
-            }}>
-              {currentTutor.fullName.charAt(0)}
-            </div>
-
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                  {currentTutor.fullName}
-                </h2>
-                <span className="badge badge-tutor" style={{ textTransform: 'none' }}>Đã xác minh</span>
-              </div>
-
-              <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0 0 10px 0' }}>
-                {currentTutor.school} • {currentTutor.experienceYears} năm kinh nghiệm
-              </p>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem', color: '#475569' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontWeight: 800 }}>
-                  <Star size={16} fill="#f59e0b" /> {currentTutor.rating}
-                </span>
-                <span>({currentTutor.reviewsCount} đánh giá)</span>
-                <span>•</span>
-                <span><strong>{currentTutor.studentsCount}</strong> học sinh đã dạy</span>
-              </div>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
-                {currentTutor.subjects?.map((sub, i) => (
-                  <span key={i} className="tutor-tag">
-                    {sub}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Sub Navigation Tabs */}
-          <div className="sub-tabs">
-            <button
-              type="button"
-              className={`sub-tab-btn ${activeTab === 'intro' ? 'active' : ''}`}
-              onClick={() => setActiveTab('intro')}
-            >
-              Giới thiệu
-            </button>
-            <button
-              type="button"
-              className={`sub-tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-              onClick={() => setActiveTab('reviews')}
-            >
-              Đánh giá ({reviews.length})
-            </button>
-            <button
-              type="button"
-              className={`sub-tab-btn ${activeTab === 'slots' ? 'active' : ''}`}
-              onClick={() => setActiveTab('slots')}
-            >
-              Lịch trống
-            </button>
-          </div>
-
-          {/* Tab Content: Giới thiệu */}
-          {activeTab === 'intro' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', marginBottom: '8px' }}>
-                  GIỚI THIỆU CHUYÊN MÔN
-                </h4>
-                <p style={{ color: '#475569', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  {currentTutor.bio}
-                </p>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', marginBottom: '10px' }}>
-                  SỞ THÍCH & ĐAM MÊ
-                </h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {currentTutor.hobbies ? (
-                    currentTutor.hobbies.map((h, idx) => (
-                      <span key={idx} className="filter-chip" style={{ background: '#f1f5f9', cursor: 'default' }}>
-                        {h}
-                      </span>
-                    ))
-                  ) : (
-                    <>
-                      <span className="filter-chip" style={{ background: '#f1f5f9' }}>Cờ vua</span>
-                      <span className="filter-chip" style={{ background: '#f1f5f9' }}>Leo núi</span>
-                      <span className="filter-chip" style={{ background: '#f1f5f9' }}>Origami</span>
-                      <span className="filter-chip" style={{ background: '#f1f5f9' }}>Vật lý thiên văn</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f172a', marginBottom: '10px' }}>
-                  THỐNG KÊ GIẢNG DẠY
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'center' }}>
-                  <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                    <strong style={{ display: 'block', fontSize: '1.5rem', color: '#2563eb' }}>{currentTutor.studentsCount}</strong>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Học sinh</span>
-                  </div>
-                  <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                    <strong style={{ display: 'block', fontSize: '1.5rem', color: '#f59e0b' }}>{currentTutor.reviewsCount}</strong>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Đánh giá 5★</span>
-                  </div>
-                  <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                    <strong style={{ display: 'block', fontSize: '1.5rem', color: '#10b981' }}>{currentTutor.experienceYears}</strong>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Năm kinh nghiệm</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab Content: Đánh giá */}
-          {activeTab === 'reviews' && (
-            <div>
-              {reviews.map((r) => (
-                <div key={r.id} style={{ padding: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{r.studentName}</strong>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{r.date}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '3px', color: '#f59e0b', marginBottom: '8px' }}>
-                    {[...Array(r.rating)].map((_, i) => (
-                      <Star key={i} size={14} fill="#f59e0b" />
-                    ))}
-                  </div>
-                  <p style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.5, margin: 0 }}>
-                    "{r.content}"
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Tab Content: Lịch trống */}
-          {activeTab === 'slots' && (
-            <div>
-              <p style={{ color: '#475569', fontSize: '0.92rem', marginBottom: '16px' }}>
-                Lịch dạy khả dụng trong tuần này của gia sư. Bạn có thể chọn ngày và giờ ở bảng đặt lịch bên phải:
-              </p>
-              <div style={{ display: 'grid', gap: '12px' }}>
-                {availableDays.map((d, i) => (
-                  <div key={i} style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong>{d}</strong>
-                    <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>Còn 3 khung giờ trống</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <div style={{ position: 'relative', zIndex: 3, maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Breadcrumb back link */}
+        <div style={{ marginBottom: '20px' }}>
+          <button 
+            type="button" 
+            className="figma-back-link"
+            onClick={onBack}
+          >
+            ← Quay lại Tìm kiếm
+          </button>
         </div>
 
-        {/* Right Checkout / Booking Sidebar */}
-        <aside className="card" style={{ padding: '28px', border: '2px solid #2563eb' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-            <div>
-              <span style={{ fontSize: '1.65rem', fontWeight: 900, color: '#2563eb', fontFamily: 'var(--font-display)' }}>
-                {formatCurrency(currentTutor.hourlyRate)}
-              </span>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}> / buổi (90 phút)</span>
+        {/* Main Grid: Left Profile Details + Right Booking Box */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(320px, 1.15fr)', gap: '28px', alignItems: 'flex-start' }}>
+          {/* LEFT COLUMN: PROFILE CARD + SUBTABS */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Top Profile Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '20px',
+              padding: '24px 28px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' }}>
+                {/* Avatar with Chicken illustration */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '76px',
+                    height: '76px',
+                    borderRadius: '16px',
+                    border: '1.5px solid #0f172a',
+                    background: '#fef08a',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <svg width="56" height="56" viewBox="0 0 42 42" fill="none">
+                      <rect width="42" height="42" rx="10" fill="#fef08a" />
+                      <circle cx="21" cy="17" r="8" fill="#f59e0b" />
+                      <path d="M10 35C10 29.5 15 26 21 26C27 26 32 29.5 32 35" fill="#f59e0b" />
+                      <circle cx="18" cy="16" r="1.5" fill="#ffffff" />
+                      <circle cx="24" cy="16" r="1.5" fill="#ffffff" />
+                      <path d="M19 20C20 21 22 21 23 20" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <span style={{
+                    background: '#e6fffa',
+                    color: '#059669',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    borderRadius: '999px',
+                    padding: '2px 8px',
+                    border: '1px solid #34d399'
+                  }}>
+                    Đã xác minh
+                  </span>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
+                    {currentTutor.fullName}
+                  </h2>
+                  <div style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '8px' }}>
+                    {currentTutor.school} · {currentTutor.experienceYears} năm kinh nghiệm
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', marginBottom: '12px' }}>
+                    <span style={{ color: '#f59e0b' }}>★★★★★</span>
+                    <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentTutor.rating}</span>
+                    <span style={{ color: '#64748b' }}>({currentTutor.reviewsCount} đánh giá)</span>
+                    <span style={{ color: '#cbd5e1' }}>·</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{currentTutor.studentsCount} học sinh đã dạy</span>
+                  </div>
+
+                  {/* Subject Pills */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {currentTutor.subjects.map((sub, i) => (
+                      <span 
+                        key={i}
+                        style={{
+                          background: i === 0 ? '#fee2e2' : i === 1 ? '#f3e8ff' : '#e0f2fe',
+                          color: i === 0 ? '#ea580c' : i === 1 ? '#7c3aed' : '#0284c7',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          borderRadius: '999px',
+                          padding: '3px 12px'
+                        }}
+                      >
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Meta row */}
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: '#64748b', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Globe size={14} /> Tiếng Việt, Tiếng Anh
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Laptop size={14} /> Trực tuyến
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Zap size={14} /> Thường trả lời trong 1h
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontWeight: 800 }}>
-              <Star size={15} fill="#f59e0b" /> {currentTutor.rating}
+
+            {/* Sub Tabs Container */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '14px',
+              padding: '4px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: '4px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('intro')}
+                style={{
+                  border: 'none',
+                  background: activeTab === 'intro' ? '#0f172a' : 'transparent',
+                  color: activeTab === 'intro' ? '#ffffff' : '#64748b',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                Giới thiệu
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('reviews')}
+                style={{
+                  border: 'none',
+                  background: activeTab === 'reviews' ? '#0f172a' : 'transparent',
+                  color: activeTab === 'reviews' ? '#ffffff' : '#64748b',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                Đánh giá ({reviews.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('slots')}
+                style={{
+                  border: 'none',
+                  background: activeTab === 'slots' ? '#0f172a' : 'transparent',
+                  color: activeTab === 'slots' ? '#ffffff' : '#64748b',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                Lịch trống
+              </button>
+            </div>
+
+            {/* Sub Tab Content Card */}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '20px',
+              padding: '28px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)'
+            }}>
+              {activeTab === 'intro' && (
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '8px' }}>
+                    GIỚI THIỆU
+                  </div>
+                  <p style={{ fontSize: '0.92rem', color: '#334155', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+                    {currentTutor.bio}
+                  </p>
+
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '10px' }}>
+                    SỞ THÍCH
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '28px' }}>
+                    {currentTutor.hobbies.map((hb, i) => (
+                      <span 
+                        key={i}
+                        style={{
+                          border: '1.5px solid #0f172a',
+                          borderRadius: '999px',
+                          padding: '4px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          color: '#0f172a'
+                        }}
+                      >
+                        {hb}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '12px' }}>
+                    THỐNG KÊ
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                    <div style={{
+                      background: '#f3e8ff',
+                      border: '1.5px solid #0f172a',
+                      borderRadius: '14px',
+                      padding: '16px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#7c3aed', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                        {currentTutor.studentsCount}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
+                        Học sinh
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: '#ffedd5',
+                      border: '1.5px solid #0f172a',
+                      borderRadius: '14px',
+                      padding: '16px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                        {currentTutor.reviewsCount}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
+                        Đánh giá
+                      </div>
+                    </div>
+
+                    <div style={{
+                      background: '#e6fffa',
+                      border: '1.5px solid #0f172a',
+                      borderRadius: '14px',
+                      padding: '16px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#059669', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                        {currentTutor.experienceYears}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
+                        Năm KN
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {reviews.map((rev) => (
+                    <div key={rev.id} style={{ padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>{rev.name}</span>
+                        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{rev.date}</span>
+                      </div>
+                      <div style={{ color: '#f59e0b', fontSize: '0.85rem', marginBottom: '6px' }}>★★★★★</div>
+                      <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                        {rev.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'slots' && (
+                <div>
+                  <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '16px' }}>
+                    Gia sư đang mở các khung giờ cố định trong tuần. Hãy chọn thời gian bạn mong muốn ở bảng bên phải để đặt lịch học ngay.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {availableDays.map((d) => (
+                      <div key={d} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', fontSize: '0.88rem' }}>
+                        <strong style={{ color: '#0f172a' }}>{d}</strong>
+                        <span style={{ color: '#059669', fontWeight: 700 }}>9:00 - 11:00 SA & 2:00 - 7:00 CH</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {bookingConfirmed ? (
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                background: '#dcfce7',
-                color: '#16a34a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px'
-              }}>
-                <Check size={32} />
-              </div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-                Đặt lịch thành công!
-              </h3>
-              <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: '16px' }}>
-                Lớp học <strong>{selectedSubject}</strong> cùng <strong>{currentTutor.fullName}</strong> vào <strong>{selectedDay}</strong> lúc <strong>{selectedTime}</strong> đã được xác nhận.
-              </p>
-              <button
-                type="button"
-                className="btn btn-secondary btn-block"
-                onClick={onBack}
-              >
-                Quay lại Tìm gia sư
-              </button>
-            </div>
-          ) : (
-            <div>
-              {/* Select Subject */}
-              <div className="form-group">
-                <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>MÔN HỌC MUỐN ĐĂNG KÝ</label>
-                <select
-                  className="form-control"
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                >
-                  {currentTutor.subjects?.map((sub, i) => (
-                    <option key={i} value={sub}>{sub}</option>
-                  ))}
-                </select>
+          {/* RIGHT COLUMN: BOOKING BOX (Exact Figma 61:2053 with Neo-Brutalist Shadow) */}
+          <aside style={{
+            background: '#ffffff',
+            border: '2px solid #0f172a',
+            borderRadius: '20px',
+            boxShadow: '4px 4px 0px #000000',
+            padding: '24px 28px'
+          }}>
+            {/* Price Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a' }}>
+                  {formatVND(currentTutor.hourlyRate)}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/giờ</span>
               </div>
 
-              {/* Select Day */}
-              <div className="form-group">
-                <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>CHỌN NGÀY HỌC</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                  {availableDays.map((d) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.88rem' }}>
+                <span style={{ color: '#f59e0b' }}>★★★★★</span>
+                <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentTutor.rating}</span>
+              </div>
+            </div>
+
+            {/* MÔN HỌC */}
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                MÔN HỌC
+              </label>
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '46px',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '10px',
+                  padding: '0 14px',
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  background: '#ffffff',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {currentTutor.subjects.map((sub, i) => (
+                  <option key={i} value={sub}>{sub}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* NGÀY */}
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '8px' }}>
+                NGÀY
+              </label>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {availableDays.map((d) => {
+                  const isSel = selectedDay === d;
+                  return (
                     <button
                       key={d}
                       type="button"
-                      className={`slot-btn ${selectedDay === d ? 'selected' : ''}`}
                       onClick={() => setSelectedDay(d)}
+                      style={{
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        background: isSel ? '#0f172a' : '#ffffff',
+                        color: isSel ? '#ffffff' : '#0f172a',
+                        cursor: 'pointer'
+                      }}
                     >
                       {d}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Select Time */}
-              <div className="form-group">
-                <label style={{ fontWeight: 700, fontSize: '0.85rem' }}>CHỌN KHUNG GIỜ</label>
-                <div className="slots-grid">
-                  {availableTimes.map((t) => (
+            {/* GIỜ (2-Column Grid) */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.04em', marginBottom: '8px' }}>
+                GIỜ
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {availableTimes.map((t) => {
+                  const isSel = selectedTime === t;
+                  return (
                     <button
                       key={t}
                       type="button"
-                      className={`slot-btn ${selectedTime === t ? 'selected' : ''}`}
                       onClick={() => setSelectedTime(t)}
+                      style={{
+                        height: '40px',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        background: isSel ? '#7c3aed' : '#ffffff',
+                        color: isSel ? '#ffffff' : '#0f172a',
+                        cursor: 'pointer',
+                        transition: 'all 0.1s'
+                      }}
                     >
                       {t}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Submit Action */}
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                style={{ height: '48px', fontSize: '1rem', fontWeight: 800, marginTop: '16px' }}
-                disabled={!selectedTime}
-                onClick={handleConfirmBooking}
-              >
-                {selectedTime ? 'Xác nhận Đặt Lịch Ngay' : 'Vui lòng chọn khung giờ'}
-              </button>
-
-              <div style={{
-                marginTop: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#64748b',
-                fontSize: '0.8rem',
-                justifyContent: 'center'
-              }}>
-                <ShieldCheck size={16} color="#10b981" />
-                <span>Thanh toán an toàn • Hủy miễn phí trước 24 giờ</span>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </aside>
+
+            {/* Submit button */}
+            <button
+              type="button"
+              className={selectedTime ? "figma-btn-primary" : "figma-btn-disabled"}
+              disabled={!selectedTime}
+              onClick={() => setShowCheckout(true)}
+            >
+              Đặt lịch ngay
+            </button>
+
+            {/* Guarantee note */}
+            <div style={{
+              marginTop: '16px',
+              fontSize: '0.78rem',
+              color: '#64748b',
+              textAlign: 'center',
+              lineHeight: '1.4'
+            }}>
+              Thanh toán an toàn · Hủy miễn phí trước 24 giờ
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
