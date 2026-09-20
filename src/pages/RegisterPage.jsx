@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, UserRound, Info, X } from 'lucide-react';
+import TutoraLogo from '../components/TutoraLogo';
 
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
@@ -105,6 +106,9 @@ export default function RegisterPage({ onNavigate }) {
 
       <section className="auth-hero">
         <div className="auth-copy">
+          <div style={{ marginBottom: '28px' }}>
+            <TutoraLogo size="lg" subtitleText="Nền tảng Gia sư & AI" />
+          </div>
           <div className="title-wrap">
             <span className="title-marker" />
             <h1>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, Eye, EyeOff, UserRound, Info, X } from 'lucide-react';
+import TutoraLogo from '../components/TutoraLogo';
 
 export default function LoginPage({ onNavigate }) {
   const { login, loginWithGoogle } = useAuth();
@@ -88,6 +89,9 @@ export default function LoginPage({ onNavigate }) {
 
       <section className="auth-hero">
         <div className="auth-copy">
+          <div style={{ marginBottom: '28px' }}>
+            <TutoraLogo size="lg" subtitleText="Nền tảng Gia sư & AI" />
+          </div>
           <div className="title-wrap">
             <span className="title-marker" />
             <h1>
@@ -247,24 +251,6 @@ export default function LoginPage({ onNavigate }) {
           </p>
         </div>
       </section>
-
-      <footer className="auth-footer">
-        <div className="footer-grid">
-          <div>
-            <div className="footer-logo"><BookOpen size={24} /> TutorA</div>
-            <p>Nền tảng kết nối gia sư - học sinh hàng đầu Việt Nam. Học tốt hơn, tiến bộ nhanh hơn cùng 2.400+ gia sư chuyên nghiệp.</p>
-            <div className="footer-socials"><span>f</span><span>Zalo</span><span>M</span></div>
-          </div>
-          <div><h4>Dành cho Học sinh</h4><p>Tìm gia sư</p><p>Các môn học</p><p>Lộ trình học</p><p>Gói VIP</p><p>Đánh giá gia sư</p></div>
-          <div><h4>Dành cho Gia sư</h4><p>Đăng ký dạy học</p><p>Quản lý lịch dạy</p><p>Tải tài liệu</p><p>Thanh toán</p><p>Chính sách gia sư</p></div>
-          <div><h4>Liên hệ</h4><p><b>Email hỗ trợ</b><br />hotro@giasu.vn</p><p><b>Zalo hỗ trợ</b><br />0901 234 567</p><p><b>Fanpage Facebook</b><br />facebook.com/giasu.vn</p><p><b>Giờ hỗ trợ</b><br />7:00 - 22:00 hàng ngày</p></div>
-        </div>
-        <div className="footer-bottom">
-          <span>© 2026 GiaSư.vn. Bảo lưu mọi quyền.</span>
-          <span>Điều khoản sử dụng&nbsp;&nbsp;&nbsp; Chính sách bảo mật&nbsp;&nbsp;&nbsp; Quy chế hoạt động</span>
-          <span className="status-dot">Hệ thống đang hoạt động tốt</span>
-        </div>
-      </footer>
-      </div>
+    </div>
   );
 }

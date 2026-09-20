@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import TutoraLogo from './TutoraLogo';
 import { 
   LogOut, 
   BookOpen, 
@@ -70,15 +71,9 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
         {/* Brand Logo */}
         <div 
           onClick={() => onNavigate(isTutor ? 'dashboard' : 'classes')} 
-          className="navbar-brand"
+          style={{ cursor: 'pointer' }}
         >
-          <div className="brand-icon">
-            <BookOpen size={22} />
-          </div>
-          <div>
-            <div className="brand-title">GiaSuHQ</div>
-            <div className="brand-subtitle">Nền tảng Dạy kèm & AI Note</div>
-          </div>
+          <TutoraLogo size="md" subtitleText="Dạy kèm & AI Note" />
         </div>
 
         {/* Role-based Nav Tabs */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -46,7 +47,7 @@ function AppContent() {
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }} />
-        <span style={{ fontWeight: 600 }}>Đang tải ứng dụng GiaSuHQ...</span>
+        <span style={{ fontWeight: 600 }}>Đang tải ứng dụng Tutora...</span>
       </div>
     );
   }
@@ -79,25 +80,7 @@ function AppContent() {
         )}
       </main>
 
-      {user && (
-        <footer style={{
-          borderTop: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff',
-          padding: '24px 20px',
-          textAlign: 'center',
-          color: '#64748b',
-          fontSize: '0.875rem'
-        }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <span>© {new Date().getFullYear()} <strong>GiaSuHQ</strong> • Nền tảng Dạy kèm & AI Note hàng đầu Việt Nam.</span>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem' }}>
-              <span>Điều khoản sử dụng</span>
-              <span>Chính sách bảo mật</span>
-              <span style={{ color: '#10b981', fontWeight: 600 }}>● Hệ thống hoạt động tốt</span>
-            </div>
-          </div>
-        </footer>
-      )}
+      <Footer onNavigate={handleNavigate} />
     </div>
   );
 }

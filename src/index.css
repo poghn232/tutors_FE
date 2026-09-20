@@ -1,7 +1,7 @@
-/* Reset & Base Styles - GiaSuHQ Clean Non-AI UI */
+/* Reset & Base Styles - Tutora Education Platform */
 :root {
-  --font-main: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: 'Fraunces', Georgia, serif;
+  --font-main: 'Plus Jakarta Sans', 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Nunito', sans-serif;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --text-main: #0f172a;
@@ -27,14 +27,17 @@
   padding: 0;
 }
 
-body {
+body, button, input, select, textarea {
   font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
   background-color: var(--bg-main);
   color: var(--text-main);
   line-height: 1.6;
   min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Common Layout Components */
@@ -242,7 +245,7 @@ h1, h2, h3, h4 {
   overflow: hidden;
   background: var(--cream);
   color: var(--ink);
-  font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-main);
 }
 
 .auth-hero {
@@ -452,14 +455,17 @@ h1, h2, h3, h4 {
 }
 
 .role-card strong {
-  font-size: 12.5px;
-  font-weight: 900;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 700;
   text-align: center;
+  letter-spacing: -0.01em;
 }
 
 .role-card span {
-  color: rgba(26, 26, 46, 0.56);
-  font-size: 11px;
+  font-family: var(--font-main);
+  color: rgba(26, 26, 46, 0.65);
+  font-size: 11.5px;
   text-align: center;
 }
 
@@ -1597,4 +1603,231 @@ h1, h2, h3, h4 {
   .assignment-card {
     grid-template-columns: 1fr;
   }
+}
+
+/* =========================================================
+   TUTORA DARK FOOTER (Tương phản cao, sang trọng, đa cột)
+   ========================================================= */
+.tutora-footer {
+  background-color: #0b0f19;
+  color: #94a3b8;
+  border-top: 1px solid #1e293b;
+  margin-top: auto;
+  font-family: var(--font-main);
+  position: relative;
+  z-index: 10;
+}
+
+.tutora-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 24px 28px;
+}
+
+.tutora-footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 40px;
+}
+
+@media (max-width: 960px) {
+  .tutora-footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 580px) {
+  .tutora-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+.brand-col .footer-desc {
+  color: #94a3b8;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin-top: 14px;
+}
+
+.footer-contact-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+}
+
+.contact-item .contact-icon {
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.contact-item a {
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.contact-item a:hover {
+  color: #c7d2fe;
+  text-decoration: underline;
+}
+
+.footer-col-title {
+  color: #f8fafc;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 18px;
+  position: relative;
+  display: inline-block;
+}
+
+.footer-col-title::after {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #6366f1;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.footer-links button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #94a3b8;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-links button:hover {
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.footer-links span {
+  color: #94a3b8;
+  font-size: 13.5px;
+}
+
+.footer-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.legal-links {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.legal-links span {
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.legal-links span:hover {
+  color: #94a3b8;
+}
+
+.tutora-footer-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 40px 0 24px;
+}
+
+.tutora-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.tutora-footer-bottom strong {
+  color: #f1f5f9;
+}
+
+.footer-bottom-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-dot-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.domain-pill {
+  display: inline-flex;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(99, 102, 241, 0.25);
 }

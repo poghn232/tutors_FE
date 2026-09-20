@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Check, KeyRound, LockKeyhole, MailCheck, ShieldCheck } from 'lucide-react';
+import TutoraLogo from '../components/TutoraLogo';
 
 export default function ForgotPasswordPage({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -46,7 +47,9 @@ export default function ForgotPasswordPage({ onNavigate }) {
       <div className="memphis shape-e" />
       <section className="forgot-shell">
         <div className="forgot-topbar">
-          <button type="button" onClick={() => onNavigate('login')}>GiaSư.vn</button>
+          <div onClick={() => onNavigate('login')} style={{ cursor: 'pointer' }}>
+            <TutoraLogo size="sm" showSubtitle={false} />
+          </div>
           <span>Bước {step}/4</span>
         </div>
 

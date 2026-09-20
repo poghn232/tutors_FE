@@ -65,7 +65,7 @@ export default function MaterialView({ user }) {
     }
   ];
 
-  const subjects = ['all', 'Toán học', 'Vật lý', 'Hóa học', 'Tiếng Anh'];
+  const subjects = ['all', 'Toán học', 'Ngữ văn', 'Tiếng Anh', 'Vật lý', 'Hóa học', 'Sinh học', 'Lịch sử', 'Địa lý', 'Tin học / Lập trình', 'Luyện thi THPT'];
 
   const filteredMaterials = materials.filter((item) => {
     const matchSubject = selectedSubject === 'all' || item.subject === selectedSubject;
