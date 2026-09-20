@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Check, 
   ArrowLeft, 
@@ -11,9 +11,10 @@ import {
   Star, 
   Copy, 
   CheckCheck, 
-  ExternalLink,
-  Tag,
-  CreditCard
+  ExternalLink, 
+  Tag, 
+  CreditCard,
+  QrCode
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 
@@ -52,8 +53,11 @@ export default function CheckoutFlow({
     meetLink: 'meet.google.com/abc-def-ghi'
   };
 
-  // Payment method selection in Step 2: 'vnpay' | 'card' | 'paypal' | 'apple'
-  const [paymentMethod, setPaymentMethod] = useState('vnpay');
+  // Payment method selection in Step 2: 'vietqr' | 'vnpay' | 'card' | 'paypal' | 'apple'
+  const [paymentMethod, setPaymentMethod] = useState('vietqr');
+  const [bookingOrderCode] = useState(() => 'TUTORA' + Math.floor(100000 + Math.random() * 900000));
+  const [copiedField, setCopiedField] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(600);
   const [vnpayLoading, setVnpayLoading] = useState(false);
   const [vnpayError, setVnpayError] = useState('');
   const [paypalEmail, setPaypalEmail] = useState('');
@@ -61,6 +65,14 @@ export default function CheckoutFlow({
   const [cardHolder, setCardHolder] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
+
+  // MB Bank Config
+  const BANK_CONFIG = {
+    bankId: 'MB',
+    bankName: 'MB Bank (Ngân hàng Quân Đội)',
+    accountNumber: '0913511637',
+    accountName: 'PHAM GIA PHONG'
+  };
 
   // Discount code
   const [showDiscountInput, setShowDiscountInput] = useState(false);
@@ -79,6 +91,39 @@ export default function CheckoutFlow({
 
   const formatVND = (num) => {
     return new Intl.NumberFormat('vi-VN').format(num) + 'đ';
+  };
+
+  // Polling check SePay webhook status for booking
+  useEffect(() => {
+    if (step !== 2 || paymentMethod !== 'vietqr') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await paymentService.checkSepayStatus(bookingOrderCode);
+        if (res && res.data && res.data.paid) {
+          clearInterval(interval);
+          setStep(3); // Advance to confirmed step
+        }
+      } catch (e) {
+        // silent
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [step, paymentMethod, bookingOrderCode]);
+
+  useEffect(() => {
+    if (step !== 2 || timeLeft <= 0) return;
+    const timer = setInterval(() => setTimeLeft(t => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [step, timeLeft]);
+
+  const handleCopy = (text, fieldName) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
   };
 
   const handleApplyDiscount = () => {
@@ -101,6 +146,7 @@ export default function CheckoutFlow({
   };
 
   const isPaymentValid = () => {
+    if (paymentMethod === 'vietqr') return true;
     if (paymentMethod === 'vnpay') return true;
     if (paymentMethod === 'apple') return true;
     if (paymentMethod === 'paypal') return paypalEmail.includes('@');
@@ -129,7 +175,24 @@ export default function CheckoutFlow({
     }
   };
 
+  const handleCheckBookingPayment = async () => {
+    try {
+      const res = await paymentService.checkSepayStatus(bookingOrderCode);
+      if (res && res.data && res.data.paid) {
+        setStep(3);
+      } else {
+        alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
+      }
+    } catch (e) {
+      alert('Chưa nhận được giao dịch. Vui lòng quét mã QR chuyển tiền đúng cú pháp.');
+    }
+  };
+
   const handleProcessPayment = () => {
+    if (paymentMethod === 'vietqr') {
+      handleCheckBookingPayment();
+      return;
+    }
     if (paymentMethod === 'vnpay') {
       handleVNPayPayment();
       return;
@@ -330,10 +393,17 @@ export default function CheckoutFlow({
                   <div className="figma-payment-tabs">
                     <button
                       type="button"
+                      className={`figma-payment-tab ${paymentMethod === 'vietqr' ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod('vietqr')}
+                    >
+                      VietQR MB Bank
+                    </button>
+                    <button
+                      type="button"
                       className={`figma-payment-tab ${paymentMethod === 'vnpay' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('vnpay')}
                     >
-                      VNPay (ATM / QR)
+                      VNPay
                     </button>
                     <button
                       type="button"
@@ -357,6 +427,222 @@ export default function CheckoutFlow({
                       Apple Pay
                     </button>
                   </div>
+
+                  {/* Sub-view: VietQR MB Bank */}
+                  {paymentMethod === 'vietqr' && (
+                    <div style={{ padding: '16px 0 10px 0' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '170px 1fr',
+                        gap: '18px',
+                        background: '#f8fafc',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '18px',
+                        padding: '16px',
+                        marginBottom: '16px',
+                        alignItems: 'center'
+                      }}>
+                        {/* QR Image */}
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '6px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                          }}>
+                            <img 
+                              src={`https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNumber}-compact2.png?amount=${finalTotal}&addInfo=${bookingOrderCode}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`} 
+                              alt="VietQR MB Bank" 
+                              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }} 
+                            />
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            fontSize: '0.72rem',
+                            color: '#64748b',
+                            marginTop: '6px',
+                            fontWeight: 700
+                          }}>
+                            <Clock size={12} /> Hết hạn: <span style={{ color: '#ef4444' }}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                          </div>
+                        </div>
+
+                        {/* Transfer Details */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                              Ngân hàng thụ hưởng
+                            </div>
+                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#005baa' }}>
+                              MB Bank · Quân Đội
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                              Số tài khoản
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: 900, fontSize: '1rem', color: '#0f172a' }}>
+                                {BANK_CONFIG.accountNumber}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(BANK_CONFIG.accountNumber, 'acc')}
+                                style={{
+                                  background: '#eff6ff',
+                                  border: '1px solid #bfdbfe',
+                                  borderRadius: '6px',
+                                  padding: '2px 6px',
+                                  cursor: 'pointer',
+                                  color: '#1d4ed8',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}
+                              >
+                                {copiedField === 'acc' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                {copiedField === 'acc' ? 'Đã chép' : 'Chép'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                              Chủ tài khoản
+                            </div>
+                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                              {BANK_CONFIG.accountName}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                              Số tiền thanh toán
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#059669' }}>
+                                {formatVND(finalTotal)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(finalTotal.toString(), 'amount')}
+                                style={{
+                                  background: '#ecfdf5',
+                                  border: '1px solid #a7f3d0',
+                                  borderRadius: '6px',
+                                  padding: '2px 6px',
+                                  cursor: 'pointer',
+                                  color: '#047857',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}
+                              >
+                                {copiedField === 'amount' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                {copiedField === 'amount' ? 'Đã chép' : 'Chép'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: '8px',
+                            padding: '6px 8px'
+                          }}>
+                            <div style={{ fontSize: '0.68rem', color: '#92400e', fontWeight: 800, textTransform: 'uppercase' }}>
+                              Nội dung chuyển khoản (bắt buộc)
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                              <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#b45309', fontFamily: 'monospace' }}>
+                                {bookingOrderCode}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(bookingOrderCode, 'content')}
+                                style={{
+                                  background: '#fef3c7',
+                                  border: '1px solid #fcd34d',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  cursor: 'pointer',
+                                  color: '#b45309',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}
+                              >
+                                {copiedField === 'content' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                                {copiedField === 'content' ? 'Đã chép' : 'Chép'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Radar status indicator */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '12px',
+                        padding: '10px 14px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            width: '9px',
+                            height: '9px',
+                            borderRadius: '50%',
+                            backgroundColor: '#22c55e',
+                            boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.2)',
+                            animation: 'pulse 1.5s infinite'
+                          }} />
+                          <span style={{ fontSize: '0.82rem', color: '#15803d', fontWeight: 700 }}>
+                            Hệ thống tự động duyệt ngay khi MB Bank nhận tiền
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleCheckBookingPayment}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #86efac',
+                            borderRadius: '8px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            color: '#15803d',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Kiểm tra ngay
+                        </button>
+                      </div>
+
+                      <button 
+                        type="button" 
+                        className="figma-btn-primary"
+                        onClick={handleProcessPayment}
+                      >
+                        Xác nhận đã chuyển {formatVND(finalTotal)}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Sub-view: VNPay */}
                   {paymentMethod === 'vnpay' && (

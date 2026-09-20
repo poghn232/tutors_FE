@@ -63,6 +63,22 @@ export const paymentService = {
       console.error('Error fetching payments:', error);
       return null;
     }
+  },
+
+  /**
+   * Check SePay payment status for an order
+   * @param {string} orderCode
+   */
+  async checkSepayStatus(orderCode) {
+    try {
+      const response = await api.get('/payments/sepay/check-status', {
+        params: { orderCode }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking SePay status:', error);
+      return { success: false, data: { paid: false } };
+    }
   }
 };
 

@@ -1,13 +1,39 @@
-import React, { useState } from 'react';
-import { X, ShieldCheck, Check, CreditCard, Sparkles, ExternalLink, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  X, 
+  ShieldCheck, 
+  Check, 
+  CreditCard, 
+  Sparkles, 
+  ExternalLink, 
+  Info, 
+  Copy, 
+  CheckCheck, 
+  Loader2, 
+  QrCode, 
+  ArrowRight,
+  Clock
+} from 'lucide-react';
 import paymentService from '../services/paymentService';
 
 export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yearly', invoice = null }) {
+  const [methodTab, setMethodTab] = useState('vietqr'); // 'vietqr' | 'vnpay'
   const [selectedPlan, setSelectedPlan] = useState(initialPlan); // 'monthly', 'yearly', or 'invoice'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copiedField, setCopiedField] = useState(null);
+  const [orderCode] = useState(() => 'TUTORA' + Math.floor(100000 + Math.random() * 900000));
+  const [isPaid, setIsPaid] = useState(false);
+  const [paidData, setPaidData] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes countdown
 
-  if (!isOpen) return null;
+  // MB Bank Config from User
+  const BANK_CONFIG = {
+    bankId: 'MB',
+    bankName: 'MB Bank (Ngân hàng Quân Đội)',
+    accountNumber: '0913511637',
+    accountName: 'PHAM GIA PHONG'
+  };
 
   const plans = {
     monthly: {
@@ -36,6 +62,63 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
     ? `Thanh toan hoc phi ${invoice.className || 'lop hoc'}` 
     : `Nang cap ${plans[selectedPlan].name}`;
 
+  // Official VietQR URL standard Napas 247
+  const vietQrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNumber}-compact2.png?amount=${currentPrice}&addInfo=${orderCode}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
+
+  // Polling check SePay webhook status
+  useEffect(() => {
+    if (!isOpen || isPaid || methodTab !== 'vietqr') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await paymentService.checkSepayStatus(orderCode);
+        if (res && res.data && res.data.paid) {
+          setIsPaid(true);
+          setPaidData(res.data);
+          clearInterval(interval);
+          // Redirect to success screen after 2s
+          setTimeout(() => {
+            const redirectUrl = `/#payment-result?vnp_Amount=${currentPrice * 100}&vnp_ResponseCode=00&vnp_TxnRef=${orderCode}&vnp_BankCode=MBBank&vnp_OrderInfo=${encodeURIComponent(orderTitle)}&vnp_TransactionNo=${res.data.referenceCode || 'MB_' + Date.now()}`;
+            window.location.href = redirectUrl;
+          }, 2000);
+        }
+      } catch (err) {
+        // silent polling error
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [isOpen, isPaid, methodTab, orderCode, currentPrice, orderTitle]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!isOpen || isPaid || timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft(t => Math.max(0, t - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isOpen, isPaid, timeLeft]);
+
+  if (!isOpen) return null;
+
+  const handleCopy = (text, fieldName) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const formatVND = (num) => {
+    return new Intl.NumberFormat('vi-VN').format(num) + 'đ';
+  };
+
+  const formatTimer = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const handleVNPayCheckout = async () => {
     try {
       setLoading(true);
@@ -51,7 +134,6 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
 
       const res = await paymentService.createVNPayPayment(paymentData);
       if (res && res.success && res.data?.paymentUrl) {
-        // Redirect browser directly to VNPay Sandbox
         window.location.href = res.data.paymentUrl;
       } else {
         setError(res?.message || 'Không thể tạo phiên thanh toán VNPay. Vui lòng thử lại.');
@@ -63,12 +145,32 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
     }
   };
 
+  const handleManualCheck = async () => {
+    setLoading(true);
+    try {
+      const res = await paymentService.checkSepayStatus(orderCode);
+      if (res && res.data && res.data.paid) {
+        setIsPaid(true);
+        setPaidData(res.data);
+        setTimeout(() => {
+          window.location.href = `/#payment-result?vnp_Amount=${currentPrice * 100}&vnp_ResponseCode=00&vnp_TxnRef=${orderCode}&vnp_BankCode=MBBank&vnp_OrderInfo=${encodeURIComponent(orderTitle)}`;
+        }, 1500);
+      } else {
+        alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng hoàn tất chuyển khoản và chờ trong giây lát.');
+      }
+    } catch (e) {
+      alert('Chưa nhận được giao dịch. Vui lòng quét mã QR chuyển tiền đúng cú pháp.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      backdropFilter: 'blur(4px)',
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      backdropFilter: 'blur(5px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -79,12 +181,12 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
         background: '#ffffff',
         border: '2.5px solid #0f172a',
         borderRadius: '24px',
-        maxWidth: '560px',
+        maxWidth: '580px',
         width: '100%',
-        padding: '32px',
+        padding: '28px',
         boxShadow: '8px 8px 0px #0f172a',
         position: 'relative',
-        maxHeight: '90vh',
+        maxHeight: '92vh',
         overflowY: 'auto'
       }}>
         <button
@@ -104,12 +206,12 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
         </button>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
           <div style={{
             width: '46px',
             height: '46px',
             borderRadius: '14px',
-            backgroundColor: '#005baa',
+            backgroundColor: methodTab === 'vietqr' ? '#005baa' : '#005baa',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
@@ -118,16 +220,85 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
             fontSize: '1.2rem',
             border: '2px solid #0f172a'
           }}>
-            V
+            {methodTab === 'vietqr' ? <QrCode size={24} /> : 'V'}
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>
-              {isInvoicePayment ? 'Thanh toán Học phí qua VNPAY' : 'Nâng cấp Gói VIP qua VNPAY'}
+            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#0f172a' }}>
+              {isInvoicePayment ? 'Thanh toán Học phí Tutora' : 'Nâng cấp Tài khoản VIP'}
             </h2>
             <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
-              Cổng thanh toán quốc gia VNPay (Sandbox Thử nghiệm)
+              Nhận tiền tự động 24/7 qua VietQR MB Bank & Cổng VNPay
             </div>
           </div>
+        </div>
+
+        {/* Segmented Payment Tabs */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '8px',
+          background: '#f1f5f9',
+          padding: '4px',
+          borderRadius: '14px',
+          marginBottom: '20px'
+        }}>
+          <button
+            type="button"
+            onClick={() => setMethodTab('vietqr')}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              border: methodTab === 'vietqr' ? '1.5px solid #0f172a' : 'none',
+              background: methodTab === 'vietqr' ? '#ffffff' : 'transparent',
+              color: methodTab === 'vietqr' ? '#0f172a' : '#64748b',
+              fontWeight: 800,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: methodTab === 'vietqr' ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <QrCode size={16} color="#005baa" />
+            VietQR MB Bank
+            <span style={{
+              background: '#dcfce7',
+              color: '#15803d',
+              fontSize: '0.65rem',
+              fontWeight: 800,
+              padding: '2px 6px',
+              borderRadius: '999px'
+            }}>
+              Tiền thật
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMethodTab('vnpay')}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              border: methodTab === 'vnpay' ? '1.5px solid #0f172a' : 'none',
+              background: methodTab === 'vnpay' ? '#ffffff' : 'transparent',
+              color: methodTab === 'vnpay' ? '#0f172a' : '#64748b',
+              fontWeight: 800,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: methodTab === 'vnpay' ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <CreditCard size={16} color="#ef4444" />
+            Cổng VNPay
+          </button>
         </div>
 
         {error && (
@@ -147,7 +318,7 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
 
         {/* Plan Selection (if VIP upgrade) */}
         {!isInvoicePayment ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             {Object.values(plans).map((p) => {
               const isSelected = selectedPlan === p.id;
               return (
@@ -156,25 +327,25 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
                   onClick={() => setSelectedPlan(p.id)}
                   style={{
                     border: isSelected ? '2px solid #0f172a' : '1.5px solid #cbd5e1',
-                    borderRadius: '16px',
-                    padding: '16px',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
                     cursor: 'pointer',
                     background: isSelected ? '#f8fafc' : '#ffffff',
                     position: 'relative',
-                    boxShadow: isSelected ? '3px 3px 0px #0f172a' : 'none',
+                    boxShadow: isSelected ? '2px 2px 0px #0f172a' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                 >
                   {p.popular && (
                     <span style={{
                       position: 'absolute',
-                      top: '-10px',
-                      right: '16px',
+                      top: '-9px',
+                      right: '14px',
                       background: '#ff5f38',
                       color: '#ffffff',
                       borderRadius: '999px',
-                      padding: '2px 10px',
-                      fontSize: '0.72rem',
+                      padding: '2px 8px',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
                       border: '1px solid #0f172a'
                     }}>
@@ -182,11 +353,11 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
                     </span>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{
-                        width: '18px',
-                        height: '18px',
+                        width: '16px',
+                        height: '16px',
                         borderRadius: '50%',
                         border: '2px solid #0f172a',
                         display: 'flex',
@@ -194,19 +365,15 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
                         justifyContent: 'center',
                         background: isSelected ? '#0f172a' : '#ffffff'
                       }}>
-                        {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffffff' }} />}
+                        {isSelected && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ffffff' }} />}
                       </div>
                       {p.name}
                     </div>
 
-                    <div style={{ fontWeight: 900, fontSize: '1.15rem', color: '#059669' }}>
+                    <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#059669' }}>
                       {p.priceFormatted}
                     </div>
                   </div>
-
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b', paddingLeft: '26px', lineHeight: 1.4 }}>
-                    {p.desc}
-                  </p>
                 </div>
               );
             })}
@@ -217,78 +384,346 @@ export default function VNPayCheckoutModal({ isOpen, onClose, initialPlan = 'yea
             background: '#f8fafc',
             border: '1.5px solid #0f172a',
             borderRadius: '16px',
-            padding: '16px 20px',
-            marginBottom: '20px'
+            padding: '14px 18px',
+            marginBottom: '18px'
           }}>
             <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Hóa đơn học phí:</div>
             <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', marginTop: '2px' }}>
               {invoice.className}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
-              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Kỳ học: {invoice.period}</span>
-              <span style={{ fontWeight: 900, fontSize: '1.15rem', color: '#ea580c' }}>
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px' }}>
+              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Kỳ học: {invoice.period}</span>
+              <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#ea580c' }}>
+                {formatVND(currentPrice)}
               </span>
             </div>
           </div>
         )}
 
-        {/* Sandbox Test Card Credentials Callout */}
-        <div style={{
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          borderRadius: '14px',
-          padding: '14px 18px',
-          marginBottom: '24px',
-          fontSize: '0.82rem',
-          color: '#1e40af',
-          lineHeight: 1.5
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, marginBottom: '6px' }}>
-            <Info size={16} /> Thông tin thẻ thử nghiệm VNPay Sandbox:
+        {/* TAB 1: VIETQR MB BANK (SEPAY REAL MONEY) */}
+        {methodTab === 'vietqr' && (
+          <div>
+            {isPaid ? (
+              <div style={{
+                background: '#ecfdf5',
+                border: '2px solid #059669',
+                borderRadius: '16px',
+                padding: '32px 20px',
+                textAlign: 'center',
+                boxShadow: '4px 4px 0px #059669',
+                margin: '10px 0 20px'
+              }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}>
+                  <Check size={32} strokeWidth={3} />
+                </div>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.3rem', fontWeight: 900, color: '#065f46' }}>
+                  Thanh toán thành công!
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#047857' }}>
+                  Tiền đã được chuyển vào tài khoản <b>MB Bank</b> của <b>{BANK_CONFIG.accountName}</b>.
+                </p>
+                <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#065f46' }}>
+                  Đang chuyển hướng đến biên lai đơn hàng...
+                </div>
+              </div>
+            ) : (
+              <div>
+                {/* QR Code and Bank Details Box */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '180px 1fr',
+                  gap: '18px',
+                  background: '#f8fafc',
+                  border: '1.5px solid #0f172a',
+                  borderRadius: '18px',
+                  padding: '16px',
+                  marginBottom: '16px',
+                  alignItems: 'center'
+                }}>
+                  {/* Left: QR Image */}
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '6px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                    }}>
+                      <img 
+                        src={vietQrUrl} 
+                        alt="VietQR MB Bank" 
+                        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }} 
+                      />
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      fontSize: '0.72rem',
+                      color: '#64748b',
+                      marginTop: '6px',
+                      fontWeight: 700
+                    }}>
+                      <Clock size={12} /> Hết hạn: <span style={{ color: '#ef4444' }}>{formatTimer(timeLeft)}</span>
+                    </div>
+                  </div>
+
+                  {/* Right: Transfer Info Fields */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Ngân hàng */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Ngân hàng thụ hưởng
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#005baa' }}>
+                        MB Bank · Quân Đội
+                      </div>
+                    </div>
+
+                    {/* Số tài khoản */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Số tài khoản
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a', letterSpacing: '0.5px' }}>
+                          {BANK_CONFIG.accountNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(BANK_CONFIG.accountNumber, 'acc')}
+                          style={{
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '6px',
+                            padding: '2px 6px',
+                            cursor: 'pointer',
+                            color: '#1d4ed8',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          {copiedField === 'acc' ? <CheckCheck size={12} /> : <Copy size={12} />}
+                          {copiedField === 'acc' ? 'Đã chép' : 'Chép'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Chủ tài khoản */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Chủ tài khoản
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                        {BANK_CONFIG.accountName}
+                      </div>
+                    </div>
+
+                    {/* Số tiền */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Số tiền cần chuyển
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 900, fontSize: '1.15rem', color: '#059669' }}>
+                          {formatVND(currentPrice)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(currentPrice.toString(), 'amount')}
+                          style={{
+                            background: '#ecfdf5',
+                            border: '1px solid #a7f3d0',
+                            borderRadius: '6px',
+                            padding: '2px 6px',
+                            cursor: 'pointer',
+                            color: '#047857',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          {copiedField === 'amount' ? <CheckCheck size={12} /> : <Copy size={12} />}
+                          {copiedField === 'amount' ? 'Đã chép' : 'Chép'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Cú pháp chuyển khoản */}
+                    <div style={{
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: '8px',
+                      padding: '6px 10px'
+                    }}>
+                      <div style={{ fontSize: '0.7rem', color: '#92400e', fontWeight: 800, textTransform: 'uppercase' }}>
+                        Nội dung chuyển khoản (bắt buộc)
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ fontWeight: 900, fontSize: '1rem', color: '#b45309', fontFamily: 'monospace' }}>
+                          {orderCode}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(orderCode, 'content')}
+                          style={{
+                            background: '#fef3c7',
+                            border: '1px solid #fcd34d',
+                            borderRadius: '6px',
+                            padding: '2px 8px',
+                            cursor: 'pointer',
+                            color: '#b45309',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          {copiedField === 'content' ? <CheckCheck size={12} /> : <Copy size={12} />}
+                          {copiedField === 'content' ? 'Đã chép' : 'Chép'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Waiting indicator with Radar Pulse */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  marginBottom: '18px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      backgroundColor: '#22c55e',
+                      boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.2)',
+                      animation: 'pulse 1.5s infinite'
+                    }} />
+                    <span style={{ fontSize: '0.84rem', color: '#15803d', fontWeight: 700 }}>
+                      Hệ thống tự động kích hoạt ngay khi nhận tiền
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleManualCheck}
+                    disabled={loading}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #86efac',
+                      borderRadius: '8px',
+                      padding: '4px 10px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      color: '#15803d',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {loading ? 'Đang kiểm tra...' : 'Kiểm tra ngay'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div>• <b>Ngân hàng:</b> NCB</div>
-          <div>• <b>Số thẻ:</b> 9704198526191432198</div>
-          <div>• <b>Tên chủ thẻ:</b> NGUYEN VAN A | <b>Ngày phát hành:</b> 07/15</div>
-          <div>• <b>Mã OTP:</b> 123456</div>
+        )}
+
+        {/* TAB 2: VNPAY SANDBOX */}
+        {methodTab === 'vnpay' && (
+          <div>
+            {/* Sandbox Test Card Credentials Callout */}
+            <div style={{
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '14px',
+              padding: '14px 18px',
+              marginBottom: '20px',
+              fontSize: '0.82rem',
+              color: '#1e40af',
+              lineHeight: 1.5
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, marginBottom: '6px' }}>
+                <Info size={16} /> Thông tin thẻ thử nghiệm VNPay Sandbox:
+              </div>
+              <div>• <b>Ngân hàng:</b> NCB</div>
+              <div>• <b>Số thẻ:</b> 9704198526191432198</div>
+              <div>• <b>Tên chủ thẻ:</b> NGUYEN VAN A | <b>Ngày phát hành:</b> 07/15</div>
+              <div>• <b>Mã OTP:</b> 123456</div>
+            </div>
+
+            {/* Checkout Button */}
+            <button
+              type="button"
+              onClick={handleVNPayCheckout}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '14px',
+                border: 'none',
+                backgroundColor: '#005baa',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 0 #003a6c',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {loading ? (
+                <>Đang kết nối cổng VNPay...</>
+              ) : (
+                <>
+                  <CreditCard size={18} />
+                  Thanh toán {formatVND(currentPrice)} qua VNPay
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Security footer */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          fontSize: '0.78rem',
+          color: '#64748b',
+          marginTop: '16px'
+        }}>
+          <ShieldCheck size={16} color="#059669" />
+          Giao dịch được bảo mật bởi SePay Webhook & Cổng thanh toán quốc gia
         </div>
 
-        {/* Checkout Button */}
-        <button
-          type="button"
-          onClick={handleVNPayCheckout}
-          disabled={loading}
-          style={{
-            width: '100%',
-            backgroundColor: '#005baa',
-            color: '#ffffff',
-            border: '2px solid #0f172a',
-            borderRadius: '14px',
-            padding: '14px',
-            fontWeight: 900,
-            fontSize: '1rem',
-            cursor: 'pointer',
-            boxShadow: '3px 3px 0px #0f172a',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px'
-          }}
-        >
-          {loading ? (
-            <span>Đang chuyển sang cổng VNPay...</span>
-          ) : (
-            <>
-              <span>Thanh toán {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(currentPrice)} qua VNPAY</span>
-              <ExternalLink size={18} />
-            </>
-          )}
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '14px', color: '#64748b', fontSize: '0.78rem' }}>
-          <ShieldCheck size={14} color="#059669" />
-          <span>Bảo mật 256-bit SSL chuẩn VNPay Sandbox 2.1.0</span>
-        </div>
       </div>
     </div>
   );
