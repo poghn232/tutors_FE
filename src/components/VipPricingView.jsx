@@ -11,11 +11,13 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
+import VNPayCheckoutModal from './VNPayCheckoutModal';
 
 export default function VipPricingView({ onBack, onSelectVip }) {
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [upgraded, setUpgraded] = useState(false);
+  const [showVnpayModal, setShowVnpayModal] = useState(false);
 
   const faqs = [
     {
@@ -37,10 +39,7 @@ export default function VipPricingView({ onBack, onSelectVip }) {
   ];
 
   const handleUpgrade = () => {
-    setUpgraded(true);
-    if (onSelectVip) {
-      onSelectVip();
-    }
+    setShowVnpayModal(true);
   };
 
   return (
@@ -556,6 +555,13 @@ export default function VipPricingView({ onBack, onSelectVip }) {
           support@giasu.vn · 1900 1234 · 8:00 - 22:00
         </p>
       </div>
+
+      {showVnpayModal && (
+        <VNPayCheckoutModal 
+          initialPlan={billingCycle === 'yearly' ? 'year' : 'month'} 
+          onClose={() => setShowVnpayModal(false)} 
+        />
+      )}
 
     </div>
   );

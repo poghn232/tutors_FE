@@ -15,6 +15,7 @@ import {
   Tag,
   CreditCard
 } from 'lucide-react';
+import paymentService from '../services/paymentService';
 
 export default function CheckoutFlow({ 
   tutor, 
@@ -51,8 +52,10 @@ export default function CheckoutFlow({
     meetLink: 'meet.google.com/abc-def-ghi'
   };
 
-  // Payment method selection in Step 2: 'card' | 'paypal' | 'apple'
-  const [paymentMethod, setPaymentMethod] = useState('apple');
+  // Payment method selection in Step 2: 'vnpay' | 'card' | 'paypal' | 'apple'
+  const [paymentMethod, setPaymentMethod] = useState('vnpay');
+  const [vnpayLoading, setVnpayLoading] = useState(false);
+  const [vnpayError, setVnpayError] = useState('');
   const [paypalEmail, setPaypalEmail] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolder, setCardHolder] = useState('');
@@ -98,13 +101,39 @@ export default function CheckoutFlow({
   };
 
   const isPaymentValid = () => {
+    if (paymentMethod === 'vnpay') return true;
     if (paymentMethod === 'apple') return true;
     if (paymentMethod === 'paypal') return paypalEmail.includes('@');
     if (paymentMethod === 'card') return cardNumber.trim().length >= 12 && cardExpiry.trim() && cardCvv.trim();
     return true;
   };
 
+  const handleVNPayPayment = async () => {
+    try {
+      setVnpayLoading(true);
+      setVnpayError('');
+      const res = await paymentService.createVNPayPayment({
+        amount: finalTotal,
+        orderInfo: `Thanh toan buoi hoc ${details.subject} voi gia su ${currentTutor.fullName || 'Tutora'}`,
+        orderType: 'billpayment'
+      });
+      if (res && res.success && res.data?.paymentUrl) {
+        window.location.href = res.data.paymentUrl;
+      } else {
+        setVnpayError(res?.message || 'Không thể tạo phiên thanh toán VNPay');
+      }
+    } catch (e) {
+      setVnpayError(e.message || 'Lỗi kết nối máy chủ thanh toán');
+    } finally {
+      setVnpayLoading(false);
+    }
+  };
+
   const handleProcessPayment = () => {
+    if (paymentMethod === 'vnpay') {
+      handleVNPayPayment();
+      return;
+    }
     if (!isPaymentValid()) return;
     setStep(3);
   };
@@ -301,6 +330,13 @@ export default function CheckoutFlow({
                   <div className="figma-payment-tabs">
                     <button
                       type="button"
+                      className={`figma-payment-tab ${paymentMethod === 'vnpay' ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod('vnpay')}
+                    >
+                      VNPay (ATM / QR)
+                    </button>
+                    <button
+                      type="button"
                       className={`figma-payment-tab ${paymentMethod === 'card' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('card')}
                     >
@@ -321,6 +357,62 @@ export default function CheckoutFlow({
                       Apple Pay
                     </button>
                   </div>
+
+                  {/* Sub-view: VNPay */}
+                  {paymentMethod === 'vnpay' && (
+                    <div style={{ textAlign: 'center', padding: '24px 0 10px 0' }}>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '16px',
+                        backgroundColor: '#eff6ff',
+                        border: '2px solid #005baa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 14px'
+                      }}>
+                        <CreditCard size={32} color="#005baa" />
+                      </div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginBottom: '6px' }}>
+                        Cổng thanh toán VNPay
+                      </div>
+                      <div style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: '380px', margin: '0 auto 16px', lineHeight: '1.5' }}>
+                        Hỗ trợ VNPAY-QR, Thẻ ATM nội địa (NCB, Vietcombank, BIDV...), Thẻ Quốc tế Visa / Mastercard.
+                      </div>
+
+                      {vnpayError && (
+                        <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', fontWeight: 600 }}>
+                          {vnpayError}
+                        </div>
+                      )}
+
+                      {/* Security Lock Note */}
+                      <div className="figma-security-note">
+                        <Lock size={13} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '6px' }} />
+                        Mã hóa HMAC-SHA512 · Kết nối cổng VNPay Sandbox · Chuyển hướng bảo mật 100%
+                      </div>
+
+                      {/* VNPay Action Button */}
+                      <button 
+                        type="button" 
+                        className="figma-btn-primary"
+                        style={{
+                          backgroundColor: '#005baa',
+                          borderColor: '#005baa',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
+                        disabled={vnpayLoading}
+                        onClick={handleProcessPayment}
+                      >
+                        {vnpayLoading ? 'Đang kết nối cổng VNPay...' : `Thanh toán ${formatVND(finalTotal)} qua VNPay`}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Sub-view: Apple Pay (Figma Image 1) */}
                   {paymentMethod === 'apple' && (
