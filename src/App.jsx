@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import PaymentResultView from './components/PaymentResultView';
+import AuthRequiredModal from './components/AuthRequiredModal';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -15,8 +16,20 @@ function AppContent() {
       return 'payment-result';
     }
     const hash = window.location.hash.replace('#', '').split('?')[0];
-    return hash || 'login';
+    return hash || 'tutors';
   });
+
+  const [authModal, setAuthModal] = useState({ isOpen: false, actionName: '' });
+
+  const handleRequireAuth = (actionName) => {
+    setAuthModal({
+      isOpen: true,
+      actionName: actionName || 'sử dụng dịch vụ này'
+    });
+  };
+
+  const publicViews = ['tutors', 'classes', 'materials', 'vip', 'assignments', 'checkout'];
+  const authViews = ['login', 'register', 'forgot-password'];
 
   // Handle browser Back / Forward buttons
   useEffect(() => {
@@ -32,7 +45,7 @@ function AppContent() {
         } else if (user) {
           setCurrentView(user.role === 'TUTOR' ? 'dashboard' : 'classes');
         } else {
-          setCurrentView('login');
+          setCurrentView('tutors');
         }
       }
     };
@@ -56,7 +69,7 @@ function AppContent() {
     }
 
     if (user) {
-      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip'];
+      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
       if (hash && validViews.includes(hash)) {
         setCurrentView(hash);
         window.history.replaceState({ view: hash }, '', '#' + hash);
@@ -66,13 +79,15 @@ function AppContent() {
         window.history.replaceState({ view: defaultView }, '', '#' + defaultView);
       }
     } else {
-      const authViews = ['register', 'forgot-password'];
       if (hash && authViews.includes(hash)) {
         setCurrentView(hash);
         window.history.replaceState({ view: hash }, '', '#' + hash);
+      } else if (hash && publicViews.includes(hash)) {
+        setCurrentView(hash);
+        window.history.replaceState({ view: hash }, '', '#' + hash);
       } else {
-        setCurrentView('login');
-        window.history.replaceState({ view: 'login' }, '', '#login');
+        setCurrentView('tutors');
+        window.history.replaceState({ view: 'tutors' }, '', '#tutors');
       }
     }
   }, [user, loading]);
@@ -109,19 +124,19 @@ function AppContent() {
     );
   }
 
+  const isAuthPage = authViews.includes(currentView);
+
   return (
     <div className="app-container">
-      {user && (
-        <Navbar 
-          activeTab={currentView} 
-          onNavigate={handleNavigate} 
-        />
-      )}
+      <Navbar 
+        activeTab={currentView} 
+        onNavigate={handleNavigate} 
+      />
 
-      <main className={user ? 'main-content' : 'auth-main'}>
+      <main className={user || !isAuthPage ? 'main-content' : 'auth-main'}>
         {currentView === 'payment-result' ? (
           <PaymentResultView onNavigate={handleNavigate} />
-        ) : !user ? (
+        ) : isAuthPage && !user ? (
           <>
             {currentView === 'register' ? (
               <RegisterPage onNavigate={handleNavigate} />
@@ -135,11 +150,19 @@ function AppContent() {
           <DashboardPage 
             activeTab={currentView} 
             onNavigate={handleNavigate} 
+            onRequireAuth={handleRequireAuth}
           />
         )}
       </main>
 
       <Footer onNavigate={handleNavigate} />
+
+      <AuthRequiredModal
+        isOpen={authModal.isOpen}
+        onClose={() => setAuthModal({ isOpen: false, actionName: '' })}
+        onNavigate={handleNavigate}
+        actionName={authModal.actionName}
+      />
     </div>
   );
 }

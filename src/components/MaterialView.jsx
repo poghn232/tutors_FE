@@ -18,7 +18,7 @@ import {
 import fileService from '../services/fileService';
 import VNPayCheckoutModal from './VNPayCheckoutModal';
 
-export default function MaterialView({ user, onNavigateToVip }) {
+export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
   const isTutor = user?.role === 'TUTOR';
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -189,6 +189,10 @@ export default function MaterialView({ user, onNavigateToVip }) {
   };
 
   const handleDownloadMaterial = (mat) => {
+    if (!user && onRequireAuth) {
+      onRequireAuth(`tải tài liệu học tập "${mat.title}"`);
+      return;
+    }
     const ext = mat.type === 'video' ? 'mp4' : mat.type === 'quiz' ? 'pdf' : 'pdf';
     const fileName = `${mat.title.toLowerCase().replace(/[^a-z0-9]/gi, '_')}.${ext}`;
     fileService.downloadFile(mat.fileUrl, fileName);
@@ -377,7 +381,13 @@ export default function MaterialView({ user, onNavigateToVip }) {
 
           <button
             type="button"
-            onClick={() => setShowVnpayModal(true)}
+            onClick={() => {
+              if (!user && onRequireAuth) {
+                onRequireAuth('nâng cấp gói VIP để mở khóa tài liệu độc quyền');
+                return;
+              }
+              setShowVnpayModal(true);
+            }}
             style={{
               background: '#0f172a',
               color: '#ffffff',
@@ -665,7 +675,13 @@ export default function MaterialView({ user, onNavigateToVip }) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowVnpayModal(true)}
+                    onClick={() => {
+                      if (!user && onRequireAuth) {
+                        onRequireAuth('nâng cấp gói VIP để mở khóa toàn bộ tài liệu');
+                        return;
+                      }
+                      setShowVnpayModal(true);
+                    }}
                     style={{
                       background: '#7c3aed',
                       color: '#ffffff',

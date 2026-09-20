@@ -16,7 +16,14 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const isTutor = user?.role === 'TUTOR';
 
-  // Define tabs matching Figma screenshots: [Tìm Gia Sư] [Lớp Học Của Tôi] [Tài Liệu] [Bài Tập]
+  // Define tabs matching Figma screenshots
+  const guestNavItems = [
+    { id: 'tutors', label: 'Tìm Gia Sư' },
+    { id: 'classes', label: 'Khóa Học' },
+    { id: 'materials', label: 'Tài Liệu' },
+    { id: 'vip', label: 'Bảng Giá VIP' },
+  ];
+
   const studentNavItems = [
     { id: 'tutors', label: 'Tìm Gia Sư' },
     { id: 'classes', label: 'Lớp Học Của Tôi' },
@@ -33,7 +40,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'payment', label: 'Thanh Toán' },
   ];
 
-  const navItems = isTutor ? tutorNavItems : studentNavItems;
+  const navItems = !user ? guestNavItems : (isTutor ? tutorNavItems : studentNavItems);
 
   const getRoleBadge = (role) => {
     switch (role) {
@@ -68,59 +75,57 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
       }}>
         {/* Brand Logo (Figma totora style) */}
         <div 
-          onClick={() => onNavigate(isTutor ? 'dashboard' : 'classes')} 
+          onClick={() => onNavigate(user ? (isTutor ? 'dashboard' : 'classes') : 'tutors')} 
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
           <TutoraLogo size="md" />
         </div>
 
         {/* Centered Pill Nav Tabs (Figma style) */}
-        {user && (
-          <nav style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'transparent',
-            padding: '2px'
-          }}>
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id || (item.id === 'tutors' && activeTab === 'checkout');
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onNavigate(item.id)}
-                  style={{
-                    border: 'none',
-                    padding: '8px 18px',
-                    borderRadius: '999px',
-                    fontSize: '0.92rem',
-                    fontWeight: isActive ? 700 : 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    backgroundColor: isActive ? '#f3e8ff' : 'transparent',
-                    color: isActive ? '#7c3aed' : '#475569',
-                    letterSpacing: '-0.01em'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.color = '#0f172a';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#475569';
-                    }
-                  }}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        )}
+        <nav style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'transparent',
+          padding: '2px'
+        }}>
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id || (item.id === 'tutors' && activeTab === 'checkout');
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigate(item.id)}
+                style={{
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: '999px',
+                  fontSize: '0.92rem',
+                  fontWeight: isActive ? 700 : 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: isActive ? '#f3e8ff' : 'transparent',
+                  color: isActive ? '#7c3aed' : '#475569',
+                  letterSpacing: '-0.01em'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.color = '#0f172a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#475569';
+                  }
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
         {/* Right Side: User Avatar matching Figma Circular Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
@@ -263,18 +268,58 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button 
+                type="button"
                 onClick={() => onNavigate('login')} 
-                className="btn btn-secondary" 
-                style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  border: '2px solid #0f172a',
+                  boxShadow: '2px 2px 0px #0f172a',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translate(-1px, -1px)';
+                  e.currentTarget.style.boxShadow = '3px 3px 0px #0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translate(0, 0)';
+                  e.currentTarget.style.boxShadow = '2px 2px 0px #0f172a';
+                }}
               >
                 Đăng nhập
               </button>
               <button 
+                type="button"
                 onClick={() => onNavigate('register')} 
-                className="btn btn-primary" 
-                style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  backgroundColor: '#7c3aed',
+                  color: '#ffffff',
+                  border: '2px solid #0f172a',
+                  boxShadow: '2px 2px 0px #0f172a',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translate(-1px, -1px)';
+                  e.currentTarget.style.boxShadow = '3px 3px 0px #0f172a';
+                  e.currentTarget.style.backgroundColor = '#6d28d9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translate(0, 0)';
+                  e.currentTarget.style.boxShadow = '2px 2px 0px #0f172a';
+                  e.currentTarget.style.backgroundColor = '#7c3aed';
+                }}
               >
                 Đăng ký ngay
               </button>

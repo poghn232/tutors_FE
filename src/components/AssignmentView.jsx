@@ -132,7 +132,7 @@ const DEFAULT_ASSIGNMENTS = [
     }
 ];
 
-export default function AssignmentView({ user }) {
+export default function AssignmentView({ user, onRequireAuth }) {
   const isTutor = user?.role === 'TUTOR';
   const [filter, setFilter] = useState('all'); // 'all', 'pending', 'submitted', 'graded', 'overdue'
 
@@ -284,6 +284,10 @@ export default function AssignmentView({ user }) {
 
   // Student: Trigger File Input (Clicking dropzone or Re-submit button)
   const handleStudentUploadClick = (asgId, isResubmit = false) => {
+    if (!user && onRequireAuth) {
+      onRequireAuth('nộp bài tập');
+      return;
+    }
     setUploadTargetId(asgId);
     setIsResubmitMode(isResubmit);
     if (studentFileInputRef.current) {
@@ -313,6 +317,10 @@ export default function AssignmentView({ user }) {
   const handleDropFile = (asg, e) => {
     e.preventDefault();
     setDragOverId(null);
+    if (!user && onRequireAuth) {
+      onRequireAuth('nộp bài tập');
+      return;
+    }
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 

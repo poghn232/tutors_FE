@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import BookingView from './BookingView';
 
-export default function TutorCatalog({ onSelectTutor, onNavigate }) {
+export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequireAuth }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedGender, setSelectedGender] = useState('all');
@@ -208,6 +208,8 @@ export default function TutorCatalog({ onSelectTutor, onNavigate }) {
         tutor={activeBookingTutor} 
         onBack={() => setActiveBookingTutor(null)} 
         onNavigate={onNavigate}
+        user={user}
+        onRequireAuth={onRequireAuth}
       />
     );
   }

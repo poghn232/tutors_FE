@@ -9,7 +9,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 
-export default function BookingView({ tutor, onBack, onNavigate }) {
+export default function BookingView({ tutor, onBack, onNavigate, user, onRequireAuth }) {
   const currentTutor = tutor || {
     id: 1,
     fullName: 'Hoàng Thiên Ứng',
@@ -521,7 +521,13 @@ export default function BookingView({ tutor, onBack, onNavigate }) {
               type="button"
               className={selectedTime ? "figma-btn-primary" : "figma-btn-disabled"}
               disabled={!selectedTime}
-              onClick={() => setShowCheckout(true)}
+              onClick={() => {
+                if (!user && onRequireAuth) {
+                  onRequireAuth(`đặt lịch học với ${currentTutor.fullName}`);
+                  return;
+                }
+                setShowCheckout(true);
+              }}
             >
               Đặt lịch ngay
             </button>

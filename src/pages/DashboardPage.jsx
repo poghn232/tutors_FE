@@ -30,12 +30,12 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-export default function DashboardPage({ activeTab = 'default', onNavigate }) {
+export default function DashboardPage({ activeTab = 'default', onNavigate, onRequireAuth }) {
   const { user } = useAuth();
   const isTutor = user?.role === 'TUTOR';
 
   // Internal tab state if activeTab is 'default' or 'dashboard'
-  const [internalTab, setInternalTab] = useState(isTutor ? 'dashboard' : 'classes');
+  const [internalTab, setInternalTab] = useState(user ? (isTutor ? 'dashboard' : 'classes') : 'tutors');
 
   // Determine which tab to actually display
   const currentTab = (activeTab && activeTab !== 'default' && activeTab !== 'home') 
@@ -47,22 +47,100 @@ export default function DashboardPage({ activeTab = 'default', onNavigate }) {
     if (onNavigate) onNavigate(tab);
   };
 
-  if (!user) {
-    return (
-      <div className="card" style={{ textAlign: 'center', margin: '40px auto', maxWidth: '500px' }}>
-        <h3>Phiên đăng nhập chưa sẵn sàng</h3>
-        <p className="subtitle">Vui lòng đăng nhập để tiếp tục trải nghiệm hệ thống.</p>
-        <button onClick={() => onNavigate && onNavigate('login')} className="btn btn-primary">
-          Đi đến Đăng nhập
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div>
+      {/* Banner dành riêng cho Khách chưa đăng nhập */}
+      {!user && (
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto 24px auto',
+          backgroundColor: '#eff6ff',
+          border: '2px solid #0f172a',
+          borderRadius: '16px',
+          boxShadow: '3px 3px 0px #0f172a',
+          padding: '16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '10px',
+              backgroundColor: '#ffd600',
+              border: '2px solid #0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.25rem',
+              flexShrink: 0
+            }}>
+              👋
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>Bạn đang xem hệ thống với vai trò Khách (Guest)</span>
+                <span style={{
+                  backgroundColor: '#dbeafe',
+                  color: '#1d4ed8',
+                  fontSize: '0.72rem',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontWeight: 800,
+                  border: '1px solid #bfdbfe'
+                }}>
+                  Khám phá tự do
+                </span>
+              </div>
+              <p style={{ margin: '3px 0 0 0', fontSize: '0.85rem', color: '#475569' }}>
+                Bạn có thể tự do tìm gia sư, xem khóa học, tài liệu và bảng giá VIP. Đăng nhập để sử dụng các dịch vụ đặt lịch và nộp bài.
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => onNavigate('login')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                border: '2px solid #0f172a',
+                boxShadow: '2px 2px 0px #0f172a',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('register')}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                border: '2px solid #0f172a',
+                boxShadow: '2px 2px 0px #0f172a',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}
+            >
+              Đăng ký ngay
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Banner nhắc nhở bổ sung thông tin cá nhân (đặc biệt cho người dùng đăng nhập qua Google) */}
-      {(!user?.phone || user.phone.trim() === '') && currentTab !== 'profile' && (
+      {user && (!user?.phone || user.phone.trim() === '') && currentTab !== 'profile' && (
         <div style={{
           background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
           border: '1.5px solid #bfdbfe',
@@ -754,37 +832,92 @@ export default function DashboardPage({ activeTab = 'default', onNavigate }) {
               user={user} 
               onNavigateToTutors={() => handleTabChange('tutors')} 
               onNavigateToVip={() => handleTabChange('vip')}
+              onRequireAuth={onRequireAuth}
             />
           )}
 
           {currentTab === 'tutors' && (
-            <TutorCatalog onNavigate={handleTabChange} />
+            <TutorCatalog 
+              onNavigate={handleTabChange} 
+              user={user}
+              onRequireAuth={onRequireAuth}
+            />
           )}
 
           {currentTab === 'lessons' && (
-            <LessonList user={user} />
+            user ? (
+              <LessonList user={user} />
+            ) : (
+              <div className="card" style={{ textAlign: 'center', margin: '40px auto', maxWidth: '500px', border: '2px solid #0f172a', boxShadow: '4px 4px 0px #0f172a', borderRadius: '16px', padding: '36px 24px' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Lịch học cá nhân</h3>
+                <p className="subtitle" style={{ color: '#64748b', marginBottom: '24px' }}>Vui lòng đăng nhập để xem và quản lý lịch học riêng của bạn.</p>
+                <button 
+                  onClick={() => onRequireAuth ? onRequireAuth('xem lịch học cá nhân') : onNavigate('login')} 
+                  style={{
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: '2px solid #0f172a',
+                    boxShadow: '2px 2px 0px #0f172a',
+                    borderRadius: '8px',
+                    padding: '10px 24px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đăng nhập ngay
+                </button>
+              </div>
+            )
           )}
 
           {currentTab === 'assignments' && (
-            <AssignmentView user={user} />
+            <AssignmentView 
+              user={user} 
+              onRequireAuth={onRequireAuth}
+            />
           )}
 
           {currentTab === 'materials' && (
             <MaterialView 
               user={user} 
               onNavigateToVip={() => handleTabChange('vip')}
+              onRequireAuth={onRequireAuth}
             />
           )}
 
           {currentTab === 'vip' && (
             <VipPricingView 
-              onBack={() => handleTabChange('classes')} 
-              onSelectVip={() => handleTabChange('classes')}
+              user={user}
+              onBack={() => handleTabChange(user ? 'classes' : 'tutors')} 
+              onSelectVip={() => handleTabChange(user ? 'classes' : 'tutors')}
+              onRequireAuth={onRequireAuth}
             />
           )}
 
           {currentTab === 'payment' && (
-            <PaymentView />
+            user ? (
+              <PaymentView />
+            ) : (
+              <div className="card" style={{ textAlign: 'center', margin: '40px auto', maxWidth: '500px', border: '2px solid #0f172a', boxShadow: '4px 4px 0px #0f172a', borderRadius: '16px', padding: '36px 24px' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Quản lý thanh toán</h3>
+                <p className="subtitle" style={{ color: '#64748b', marginBottom: '24px' }}>Vui lòng đăng nhập để kiểm tra số dư và lịch sử giao dịch.</p>
+                <button 
+                  onClick={() => onRequireAuth ? onRequireAuth('quản lý thanh toán') : onNavigate('login')} 
+                  style={{
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: '2px solid #0f172a',
+                    boxShadow: '2px 2px 0px #0f172a',
+                    borderRadius: '8px',
+                    padding: '10px 24px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đăng nhập ngay
+                </button>
+              </div>
+            )
           )}
 
           {currentTab === 'checkout' && (
@@ -795,7 +928,29 @@ export default function DashboardPage({ activeTab = 'default', onNavigate }) {
           )}
 
           {currentTab === 'profile' && (
-            <ProfileView onBack={() => handleTabChange(isTutor ? 'dashboard' : 'classes')} />
+            user ? (
+              <ProfileView onBack={() => handleTabChange(isTutor ? 'dashboard' : 'classes')} />
+            ) : (
+              <div className="card" style={{ textAlign: 'center', margin: '40px auto', maxWidth: '500px', border: '2px solid #0f172a', boxShadow: '4px 4px 0px #0f172a', borderRadius: '16px', padding: '36px 24px' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Hồ sơ tài khoản</h3>
+                <p className="subtitle" style={{ color: '#64748b', marginBottom: '24px' }}>Vui lòng đăng nhập để xem và cập nhật thông tin cá nhân.</p>
+                <button 
+                  onClick={() => onRequireAuth ? onRequireAuth('xem hồ sơ cá nhân') : onNavigate('login')} 
+                  style={{
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: '2px solid #0f172a',
+                    boxShadow: '2px 2px 0px #0f172a',
+                    borderRadius: '8px',
+                    padding: '10px 24px',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đăng nhập ngay
+                </button>
+              </div>
+            )
           )}
 
           {currentTab === 'payment-result' && (

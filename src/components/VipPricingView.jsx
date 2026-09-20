@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import VNPayCheckoutModal from './VNPayCheckoutModal';
 
-export default function VipPricingView({ onBack, onSelectVip }) {
+export default function VipPricingView({ onBack, onSelectVip, user, onRequireAuth }) {
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [upgraded, setUpgraded] = useState(false);
@@ -39,6 +39,10 @@ export default function VipPricingView({ onBack, onSelectVip }) {
   ];
 
   const handleUpgrade = () => {
+    if (!user && onRequireAuth) {
+      onRequireAuth('nâng cấp gói VIP');
+      return;
+    }
     setShowVnpayModal(true);
   };
 

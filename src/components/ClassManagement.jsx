@@ -12,7 +12,7 @@ import {
   Plus
 } from 'lucide-react';
 
-export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip }) {
+export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
 
@@ -125,7 +125,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           type="button"
           className="figma-btn-primary"
           style={{ width: 'auto', padding: '12px 24px', fontSize: '0.95rem' }}
-          onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
+          onClick={() => {
+            if (!user && onRequireAuth) {
+              onRequireAuth('đặt lịch học mới với gia sư');
+              return;
+            }
+            if (onNavigateToTutors) onNavigateToTutors();
+          }}
         >
           + Đặt Lịch Học Mới
         </button>
@@ -337,21 +343,26 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
                 {/* Action button */}
                 {item.roomUrl && (
-                  <a
-                    href={item.roomUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!user && onRequireAuth) {
+                        onRequireAuth('tham gia phòng học trực tuyến');
+                        return;
+                      }
+                      window.open(item.roomUrl, '_blank', 'noreferrer');
+                    }}
                     className="figma-btn-primary"
                     style={{
-                      textDecoration: 'none',
                       display: 'inline-block',
                       width: 'auto',
                       padding: '10px 22px',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      cursor: 'pointer'
                     }}
                   >
                     Tham gia buổi học
-                  </a>
+                  </button>
                 )}
               </div>
             ))}
@@ -587,9 +598,15 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               </div>
             </div>
 
-            <button 
-              type="button" 
-              onClick={() => onNavigateToVip && onNavigateToVip()}
+            <button
+              type="button"
+              onClick={() => {
+                if (!user && onRequireAuth) {
+                  onRequireAuth('nâng cấp gói VIP để nhận ưu đãi học phí');
+                  return;
+                }
+                if (onNavigateToVip) onNavigateToVip();
+              }}
               style={{
                 width: '100%',
                 background: '#0f172a',
