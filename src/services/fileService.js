@@ -11,7 +11,9 @@ export const fileService = {
     formData.append('file', file);
 
     try {
-      const response = await api.post('/files/upload', formData);
+      const response = await api.post('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       if (response.data && response.data.success) {
         return {
@@ -20,7 +22,7 @@ export const fileService = {
         };
       }
     } catch (error) {
-      console.warn('Backend upload unavailable, falling back to local ObjectURL:', error.response?.data || error.message);
+      console.warn('Backend upload unavailable, falling back to local ObjectURL:', error.message);
     }
 
     // Local fallback for offline/demo operation
@@ -46,7 +48,9 @@ export const fileService = {
     Array.from(files).forEach((file) => formData.append('files', file));
 
     try {
-      const response = await api.post('/files/upload-multiple', formData);
+      const response = await api.post('/files/upload-multiple', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       if (response.data && response.data.success) {
         return {
@@ -72,19 +76,6 @@ export const fileService = {
       success: true,
       data: mockList,
     };
-  },
-
-  /**
-   * Resolve file download URL with backend host
-   */
-  getFileDownloadUrl(fileUrl) {
-    if (!fileUrl) return '';
-    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('blob:') || fileUrl.startsWith('data:')) {
-      return fileUrl;
-    }
-    const base = (api.defaults.baseURL || 'https://tutors-be.onrender.com/api').replace(/\/api\/?$/, '');
-    const cleanPath = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
-    return `${base}${cleanPath}`;
   },
 
   /**
@@ -114,7 +105,7 @@ export const fileService = {
 
     // If it's a backend endpoint or relative URL
     try {
-      const fullUrl = this.getFileDownloadUrl(fileUrl);
+      const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${api.defaults.baseURL || 'http://localhost:8080/api'}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
       const response = await fetch(fullUrl);
       if (response.ok) {
         const blob = await response.blob();
