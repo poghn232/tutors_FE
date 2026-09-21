@@ -71,7 +71,7 @@ export default function ProfileView({ onBack }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const certFileInputRef = useRef(null);
 
-  // State for Student Profile - Bỏ trống toàn bộ các thông tin để người dùng tự điền
+  // State for parent/child profile - empty by default so the user can fill in details themselves
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [dob, setDob] = useState(() => localStorage.getItem(`tutora_dob_${user?.id || user?.email}`) || '');
   const [gender, setGender] = useState('Nam');
@@ -1555,7 +1555,7 @@ export default function ProfileView({ onBack }) {
   }
 
   // -------------------------------------------------------------
-  // STUDENT / PARENT PROFILE (Figma Frame 61:5450)
+  // PARENT / CHILD PROFILE (Figma Frame 61:5450)
   // -------------------------------------------------------------
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px 48px', position: 'relative' }}>
@@ -1680,7 +1680,7 @@ export default function ProfileView({ onBack }) {
         
         {/* Left Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Card 1: Student Avatar & VIP badge */}
+          {/* Card 1: Parent/Child Avatar & VIP badge */}
           <div style={{
             backgroundColor: '#ffffff',
             border: '1.5px solid #0f172a',

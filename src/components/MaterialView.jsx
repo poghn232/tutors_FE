@@ -356,7 +356,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
         )}
       </div>
 
-      {/* VIP Upgrade / Active Banner (ONLY SHOWN TO STUDENTS - Hidden for Tutors) */}
+      {/* VIP Upgrade / Active Banner (ONLY SHOWN TO PARENT ACCOUNTS WITHOUT VIP - Hidden for Tutors) */}
       {!isTutor && (
         isVip ? (
           /* BANNER CHO HỌC VIÊN ĐÃ THANH TOÁN THÀNH CÔNG (VIP ACTIVE) */
@@ -633,8 +633,8 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
       {/* 3-Column Document Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
         {filteredMaterials.map((mat) => {
-          // Locked overlay ONLY appears for Students when mat.isVip === true and student is NOT VIP.
-          // Tutors and VIP students NEVER have locked overlays!
+          // Locked overlay ONLY appears for parent accounts when mat.isVip === true and the account is NOT VIP.
+          // Tutors and VIP parent accounts NEVER have locked overlays!
           const isLocked = !isTutor && mat.isVip && !isVip;
 
           return (

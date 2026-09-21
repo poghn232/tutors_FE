@@ -14,7 +14,7 @@ export default function LoginPage({ onNavigate }) {
   const [error, setError] = useState('');
   const [infoNotice, setInfoNotice] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('STUDENT');
+  const [selectedRole, setSelectedRole] = useState('PARENT');
   const [showClientModal, setShowClientModal] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -127,12 +127,12 @@ export default function LoginPage({ onNavigate }) {
           <div className="role-cards two">
             <button 
               type="button" 
-              className={`role-card ${selectedRole === 'STUDENT' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('STUDENT')}
+              className={`role-card ${selectedRole === 'PARENT' ? 'active' : ''}`}
+              onClick={() => setSelectedRole('PARENT')}
             >
               <BookOpen size={25} />
-              <strong>Học sinh / Phụ huynh</strong>
-              <span>Tìm gia sư phù hợp</span>
+              <strong>Phụ huynh</strong>
+              <span>Quản lý con em & bài tập</span>
             </button>
             <button 
               type="button" 

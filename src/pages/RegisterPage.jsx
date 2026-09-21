@@ -7,7 +7,7 @@ import TutoraLogo from '../components/TutoraLogo';
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
   
-  const [role, setRole] = useState('TUTOR');
+  const [role, setRole] = useState('PARENT');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -139,7 +139,16 @@ export default function RegisterPage({ onNavigate }) {
           {error && <div className="alert alert-danger">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
-          <div className="role-cards three">
+          <div className="role-cards two">
+            <button
+              type="button"
+              className={`role-card ${role === 'PARENT' ? 'active' : ''}`}
+              onClick={() => setRole('PARENT')}
+            >
+              <BookOpen size={22} />
+              <strong>Phụ huynh</strong>
+              <span>Quản lý con em</span>
+            </button>
             <button
               type="button"
               className={`role-card ${role === 'TUTOR' ? 'active' : ''}`}
@@ -148,24 +157,6 @@ export default function RegisterPage({ onNavigate }) {
               <UserRound size={22} />
               <strong>Gia sư</strong>
               <span>Dạy học</span>
-            </button>
-            <button
-              type="button"
-              className={`role-card ${role === 'PARENT' ? 'active' : ''}`}
-              onClick={() => setRole('PARENT')}
-            >
-              <BookOpen size={22} />
-              <strong>Phụ huynh</strong>
-              <span>Tìm gia sư</span>
-            </button>
-            <button
-              type="button"
-              className={`role-card ${role === 'STUDENT' ? 'active' : ''}`}
-              onClick={() => setRole('STUDENT')}
-            >
-              <BookOpen size={22} />
-              <strong>Học sinh</strong>
-              <span>Học tốt hơn</span>
             </button>
           </div>
 

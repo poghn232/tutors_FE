@@ -148,8 +148,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const upcomingCount = allUpcoming.length;
   const completedCount = allCompleted.length;
-  const activeTutorCount = Math.max(1, mappedDbUpcomingLessons.length + 3);
-  const currentSubjectsCount = Math.max(1, new Set(allUpcoming.map(item => item.subject)).size);
+  const activeTutorCount = new Set(mappedDbUpcomingLessons
+    .map(item => item.tutorName)
+    .filter(Boolean)).size;
+  const currentSubjectsCount = new Set(mappedDbUpcomingLessons
+    .map(item => item.subject)
+    .filter(Boolean)).size;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
