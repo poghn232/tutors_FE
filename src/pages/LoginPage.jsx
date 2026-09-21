@@ -83,7 +83,14 @@ export default function LoginPage({ onNavigate }) {
     }
   });
 
+  const isGoogleLoginAllowed = selectedRole === 'PARENT';
+
   const handleGoogleClick = () => {
+    if (!isGoogleLoginAllowed) {
+      setError('Chỉ phụ huynh mới được đăng nhập bằng Google. Gia sư không được phép sử dụng tính năng này.');
+      return;
+    }
+
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || clientId.trim() === '' || clientId.includes('dummy')) {
       setShowClientModal(true);
@@ -240,12 +247,16 @@ export default function LoginPage({ onNavigate }) {
             </button>
           </form>
 
-          <div className="divider"><span>Hoặc tiếp tục với</span></div>
-          <div className="social-row single">
-            <button type="button" onClick={handleGoogleClick} disabled={loading}>
-              <span className="google-mark">G</span> Tiếp tục với tài khoản Google
-            </button>
-          </div>
+          {isGoogleLoginAllowed && (
+            <>
+              <div className="divider"><span>Hoặc tiếp tục với</span></div>
+              <div className="social-row single">
+                <button type="button" onClick={handleGoogleClick} disabled={loading}>
+                  <span className="google-mark">G</span> Tiếp tục với tài khoản Google
+                </button>
+              </div>
+            </>
+          )}
 
           {showClientModal && (
             <div style={{

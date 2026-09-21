@@ -52,7 +52,14 @@ export default function RegisterPage({ onNavigate }) {
     }
   });
 
+  const isGoogleLoginAllowed = role === 'PARENT';
+
   const handleGoogleClick = () => {
+    if (!isGoogleLoginAllowed) {
+      setError('Chỉ phụ huynh mới được đăng nhập bằng Google. Gia sư không được phép sử dụng tính năng này.');
+      return;
+    }
+
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId || clientId.trim() === '' || clientId.includes('dummy')) {
       setShowClientModal(true);
@@ -156,7 +163,7 @@ export default function RegisterPage({ onNavigate }) {
             <button
               type="button"
               className={`role-card ${role === 'PARENT' ? 'active' : ''}`}
-              onClick={() => { setRole('PARENT'); localStorage.setItem('giasuhq_last_role', 'PARENT'); }}
+              onClick={() => { setRole('PARENT'); localStorage.setItem('giasuhq_last_role', 'PARENT'); setError(''); }}
             >
               <BookOpen size={22} />
               <strong>Phụ huynh</strong>
@@ -165,7 +172,7 @@ export default function RegisterPage({ onNavigate }) {
             <button
               type="button"
               className={`role-card ${role === 'TUTOR' ? 'active' : ''}`}
-              onClick={() => { setRole('TUTOR'); localStorage.setItem('giasuhq_last_role', 'TUTOR'); }}
+              onClick={() => { setRole('TUTOR'); localStorage.setItem('giasuhq_last_role', 'TUTOR'); setError(''); }}
             >
               <UserRound size={22} />
               <strong>Gia sư</strong>
@@ -228,12 +235,16 @@ export default function RegisterPage({ onNavigate }) {
           </button>
         </form>
 
-        <div className="divider"><span>Hoặc đăng ký nhanh với</span></div>
-        <div className="social-row single">
-          <button type="button" onClick={handleGoogleClick} disabled={loading}>
-            <span className="google-mark">G</span> Đăng ký tài khoản nhanh với Google
-          </button>
-        </div>
+        {isGoogleLoginAllowed && (
+          <>
+            <div className="divider"><span>Hoặc đăng ký nhanh với</span></div>
+            <div className="social-row single">
+              <button type="button" onClick={handleGoogleClick} disabled={loading}>
+                <span className="google-mark">G</span> Đăng ký tài khoản nhanh với Google
+              </button>
+            </div>
+          </>
+        )}
 
         {showClientModal && (
           <div style={{
