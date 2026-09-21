@@ -22,6 +22,9 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
     subjects: ['Toán học', 'Vật lý', 'Tin học'],
     hobbies: ['Cờ vua', 'Leo núi', 'Origami', 'Vật lý thiên văn'],
     bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
+    phone: '0901 234 567',
+    facebookUrl: 'https://facebook.com/giasu.hoangthienung',
+    email: 'tutor.nguyen@giasuhq.com'
   };
 
   const [activeTab, setActiveTab] = useState('intro'); // 'intro', 'reviews', 'slots'

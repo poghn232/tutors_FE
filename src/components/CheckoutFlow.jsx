@@ -17,7 +17,9 @@ import {
   CreditCard,
   QrCode,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 import { classService } from '../services/classService';
@@ -42,7 +44,30 @@ export default function CheckoutFlow({
     reviewsCount: 127,
     hourlyRate: 250000,
     subjects: ['Toán học', 'Vật lý', 'Tin học'],
-    avatarUrl: null
+    avatarUrl: null,
+    phone: '0901 234 567',
+    facebookUrl: 'https://facebook.com/giasu.nguyenthihoa',
+    email: 'tutor.nguyen@giasuhq.com'
+  };
+
+  const tutorPhone = currentTutor.phone || '0901 234 567';
+  const tutorPhoneClean = tutorPhone.replace(/[^0-9]/g, '');
+  const tutorFacebook = currentTutor.facebookUrl || `https://facebook.com/giasu.${(currentTutor.fullName || 'tutor').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  const tutorEmail = currentTutor.email || 'tutor.nguyen@giasuhq.com';
+
+  const [copiedTutorPhone, setCopiedTutorPhone] = useState(false);
+  const [copiedTutorFacebook, setCopiedTutorFacebook] = useState(false);
+
+  const handleCopyPhone = () => {
+    navigator.clipboard?.writeText(tutorPhone);
+    setCopiedTutorPhone(true);
+    setTimeout(() => setCopiedTutorPhone(false), 2000);
+  };
+
+  const handleCopyFacebook = () => {
+    navigator.clipboard?.writeText(tutorFacebook);
+    setCopiedTutorFacebook(true);
+    setTimeout(() => setCopiedTutorFacebook(false), 2000);
   };
 
   // Booking details from parent or fallbacks
@@ -152,6 +177,7 @@ export default function CheckoutFlow({
             tutorName: payload.tutorName,
             studentName: payload.studentName,
             studentId: payload.studentId,
+            studentEmail: payload.studentEmail,
             scheduleDescription: payload.scheduleDescription,
             date: payload.date,
             time: payload.time,
@@ -174,15 +200,29 @@ export default function CheckoutFlow({
             });
           }
         } catch (apiErr) {
-          console.warn('API tạo lớp học gặp lỗi, sử dụng dữ liệu local:', apiErr);
-          setCreatedClassInfo({
-            id: null,
-            className: payload.className,
-            subjectName: payload.subjectName,
-            tutorName: payload.tutorName,
-            scheduleDescription: payload.scheduleDescription,
-            status: 'PENDING_TUTOR_APPROVAL'
-          });
+          console.warn('classService.createClass failed, trying registerPendingBooking fallback:', apiErr);
+          // Fallback: register through payment service (permitAll endpoint)
+          try {
+            await paymentService.registerPendingBooking(payload);
+            setCreatedClassInfo({
+              id: null,
+              className: payload.className,
+              subjectName: payload.subjectName,
+              tutorName: payload.tutorName,
+              scheduleDescription: payload.scheduleDescription,
+              status: 'PENDING_TUTOR_APPROVAL'
+            });
+          } catch (fallbackErr) {
+            console.warn('Fallback registerPendingBooking also failed:', fallbackErr);
+            setCreatedClassInfo({
+              id: null,
+              className: payload.className,
+              subjectName: payload.subjectName,
+              tutorName: payload.tutorName,
+              scheduleDescription: payload.scheduleDescription,
+              status: 'PENDING_TUTOR_APPROVAL'
+            });
+          }
         }
       }
     } catch (err) {
@@ -1027,98 +1067,319 @@ export default function CheckoutFlow({
         )}
 
         {/* ========================================================
-            STEP 3: GỬI YÊU CẦU KẾT NỐI THÀNH CÔNG
+            STEP 3: KẾT NỐI GIA SƯ THÀNH CÔNG & HIỆN THÔNG TIN LIÊN HỆ
            ======================================================== */}
         {step === 3 && (
-          <div className="figma-success-card">
-            <div className="figma-success-icon">
-              🎉
+          <div className="figma-success-card" style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'left' }}>
+            {/* Top Celebration Header */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div className="figma-success-icon" style={{ fontSize: '3rem', marginBottom: '12px' }}>
+                🎉
+              </div>
+
+              <h2 className="figma-success-title" style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', marginBottom: '8px' }}>
+                Kết Nối Gia Sư Thành Công!
+              </h2>
+
+              <p className="figma-success-subtitle" style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.5, margin: '0 auto', maxWidth: '540px' }}>
+                Bạn đã thanh toán phí kết nối nền tảng <strong>{formatVND(finalTotal)}</strong>. Dưới đây là <strong>thông tin liên lạc trực tiếp của gia sư</strong> để hai bên kết nối trao đổi.
+              </p>
             </div>
 
-            <h2 className="figma-success-title">
-              Gửi yêu cầu kết nối thành công!
-            </h2>
-
-            <p className="figma-success-subtitle">
-              Yêu cầu học cùng <strong>{currentTutor.title || currentTutor.fullName}</strong> vào ngày <strong>{details.date}</strong> lúc <strong>{details.time}</strong> đã được gửi tới gia sư.
-            </p>
-
-            <div className="figma-success-box">
-              <div className="figma-success-row">
-                <span className="figma-success-box-label">Môn học</span>
-                <span className="figma-success-box-val"><strong>{details.subject || 'Toán học'} · 60 phút</strong></span>
-              </div>
-
-              <div className="figma-success-row">
-                <span className="figma-success-box-label">Gia sư phụ trách</span>
-                <span className="figma-success-box-val"><strong>{currentTutor.fullName}</strong></span>
-              </div>
-
-              <div className="figma-success-row">
-                <span className="figma-success-box-label">Thời gian dự kiến</span>
-                <span className="figma-success-box-val">{details.date} lúc {details.time}</span>
-              </div>
-
-              <div className="figma-success-row">
-                <span className="figma-success-box-label">Trạng thái</span>
-                <span className="figma-success-box-val" style={{ color: '#b45309', fontWeight: 800 }}>
-                  ⏳ Chờ gia sư duyệt lịch
-                </span>
-              </div>
-
-              <div className="figma-success-row">
-                <span className="figma-success-box-label">Phí kết nối nền tảng</span>
-                <span className="figma-success-box-val figma-paid-amount" style={{ color: '#2563eb' }}>
-                  {formatVND(finalTotal)}
-                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: 'block' }}>
-                    (Thử nghiệm: 5.000đ · Học phí trả trực tiếp cho gia sư sau buổi học)
-                  </span>
-                </span>
-              </div>
-            </div>
-
+            {/* TUTOR DIRECT CONTACT CARD */}
             <div style={{
-              backgroundColor: '#eff6ff',
-              border: '1.5px solid #2563eb',
-              borderRadius: '12px',
-              padding: '12px 18px',
-              marginTop: '16px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              color: '#1d4ed8',
-              fontWeight: 700,
-              fontSize: '0.88rem'
+              background: '#ffffff',
+              border: '2px solid #0f172a',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+              marginBottom: '24px'
             }}>
-              <CheckCircle2 size={18} color="#2563eb" />
-              <span>
-                {createdClassInfo 
-                  ? `Đã lưu yêu cầu vào hệ thống (Mã lớp #${createdClassInfo.id})`
-                  : 'Đã lưu yêu cầu kết nối vào cơ sở dữ liệu'}
-              </span>
+              {/* Tutor Header Info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingBottom: '18px', borderBottom: '1.5px solid #f1f5f9' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '16px',
+                  backgroundColor: currentTutor.avatarColor || '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.6rem',
+                  fontWeight: 900,
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  {currentTutor.fullName ? currentTutor.fullName.charAt(0) : 'G'}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                      {currentTutor.fullName}
+                    </h3>
+                    <span style={{
+                      backgroundColor: '#ecfdf5',
+                      color: '#059669',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      border: '1px solid #a7f3d0'
+                    }}>
+                      ✓ Đã xác minh
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '3px' }}>
+                    {currentTutor.school || currentTutor.qualification || 'Gia sư chuyên môn'} · {details.subject || 'Toán học'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Channels List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '18px' }}>
+                
+                {/* 1. Phone & Zalo */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: '#dbeafe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Phone size={20} color="#2563eb" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                        Số điện thoại & Zalo
+                      </div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.5px' }}>
+                        {tutorPhone}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <a
+                      href={`tel:${tutorPhoneClean}`}
+                      style={{
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Phone size={14} /> Gọi ngay
+                    </a>
+                    <a
+                      href={`https://zalo.me/${tutorPhoneClean}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <MessageSquare size={14} /> Nhắn Zalo
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyPhone}
+                      style={{
+                        background: '#ffffff',
+                        border: '1.5px solid #cbd5e1',
+                        color: '#334155',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {copiedTutorPhone ? <><Check size={14} color="#059669" /> Đã chép</> : <><Copy size={14} /> Sao chép</>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Facebook Profile */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: '#eff6ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#1877f2',
+                      fontWeight: 900,
+                      fontSize: '1.25rem'
+                    }}>
+                      f
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                        Trang cá nhân Facebook
+                      </div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1d4ed8', wordBreak: 'break-all' }}>
+                        {tutorFacebook}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <a
+                      href={tutorFacebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#1877f2',
+                        color: '#ffffff',
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <ExternalLink size={14} /> Mở Facebook
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyFacebook}
+                      style={{
+                        background: '#ffffff',
+                        border: '1.5px solid #cbd5e1',
+                        color: '#334155',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {copiedTutorFacebook ? <><Check size={14} color="#059669" /> Đã chép</> : <><Copy size={14} /> Sao chép</>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Email */}
+                {tutorEmail && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    fontSize: '0.85rem'
+                  }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Email liên hệ: <strong style={{ color: '#0f172a' }}>{tutorEmail}</strong></span>
+                    <a
+                      href={`mailto:${tutorEmail}`}
+                      style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}
+                    >
+                      Gửi email →
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <p className="figma-success-note" style={{ lineHeight: 1.5, color: '#475569' }}>
-              Sau khi gia sư xem và chấp nhận lịch học, bạn có thể bấm <strong>"Thanh toán phí kết nối"</strong> tại mục <strong>Lớp học của tôi</strong> để kích hoạt lớp và nhận link phòng học trực tuyến.
-            </p>
+            {/* NEXT STEPS GUIDANCE */}
+            <div style={{
+              background: '#f0fdf4',
+              border: '1.5px solid #86efac',
+              borderRadius: '16px',
+              padding: '18px 20px',
+              marginBottom: '24px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', color: '#166534', fontWeight: 800, fontSize: '0.98rem' }}>
+                <CheckCircle2 size={20} color="#16a34a" />
+                Hướng dẫn các bước tiếp theo:
+              </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.88rem', color: '#14532d', lineHeight: 1.5 }}>
+                <div>
+                  <strong>1. Liên hệ gia sư:</strong> Phụ huynh gọi điện hoặc nhắn tin qua Zalo / Facebook cho gia sư để trao đổi về tình hình học tập của con, mục tiêu và thống nhất lịch học cụ thể.
+                </div>
+                <div>
+                  <strong>2. Tự thêm lớp học vào hệ thống:</strong> Sau khi thống nhất ngày giờ, <strong>Gia sư hoặc Phụ huynh có thể tự thêm lớp học</strong> tại mục <strong>"Lớp Học Của Tôi"</strong> để hiển thị lịch học và theo dõi tiến trình.
+                </div>
+                <div>
+                  <strong>3. Học phí thực tế:</strong> Học phí gia sư ({formatVND(tutorReferencePrice)}/buổi) sẽ do phụ huynh và gia sư tự thanh toán trực tiếp sau các buổi học. Nền tảng chỉ thu 5.000đ phí kết nối ban đầu và không can thiệp học phí.
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
                 type="button" 
                 className="figma-btn-primary"
+                style={{ padding: '14px 24px', fontSize: '1rem', fontWeight: 800 }}
                 onClick={() => onNavigate ? onNavigate('classes') : (window.location.href = '/')}
               >
-                Xem Lớp Học Của Tôi
+                Vào Lớp Học Của Tôi để thêm lớp & xem lịch →
               </button>
 
               <button 
                 type="button" 
                 className="figma-btn-outline"
+                style={{ padding: '12px 20px' }}
                 onClick={() => onNavigate ? onNavigate('tutors') : setStep(1)}
               >
-                Tìm gia sư khác
+                Tìm kiếm thêm gia sư khác
               </button>
             </div>
           </div>
