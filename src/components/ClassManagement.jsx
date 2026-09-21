@@ -113,6 +113,11 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       ? historyClasses 
       : allMappedClasses;
 
+  const upcomingCount = upcomingClasses.length;
+  const completedCount = historyClasses.length;
+  const activeTutorCount = new Set(allMappedClasses.map(c => c.tutorName).filter(Boolean)).size;
+  const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
       {/* Top Header */}
@@ -283,14 +288,16 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📚</div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
-                  Chưa có lớp học nào trong danh sách này
+                  {!user ? 'Bạn đang xem danh sách lớp học ở chế độ Khách' : 'Chưa có lớp học nào trong danh sách này'}
                 </h3>
                 <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 20px 0' }}>
-                  {user?.role === 'TUTOR' 
-                    ? 'Bạn hiện chưa có yêu cầu kết nối hoặc lớp học nào trong mục này.' 
-                    : 'Hãy tìm kiếm gia sư phù hợp và gửi yêu cầu kết nối lịch học!'}
+                  {!user 
+                    ? 'Đăng nhập vào hệ thống để đặt lịch học với gia sư hoặc quản lý các lớp học cá nhân của bạn!'
+                    : (user?.role === 'TUTOR' 
+                        ? 'Bạn hiện chưa có yêu cầu kết nối hoặc lớp học nào trong mục này.' 
+                        : 'Hãy tìm kiếm gia sư phù hợp và gửi yêu cầu kết nối lịch học!')}
                 </p>
-                {user?.role !== 'TUTOR' && (
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={onNavigateToTutors}
@@ -299,7 +306,24 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                   >
                     Tìm gia sư ngay →
                   </button>
-                )}
+                  {!user && onRequireAuth && (
+                    <button
+                      type="button"
+                      onClick={() => onRequireAuth('quản lý lớp học')}
+                      style={{
+                        padding: '10px 24px',
+                        borderRadius: '12px',
+                        border: '2px solid #0f172a',
+                        backgroundColor: '#ffffff',
+                        color: '#0f172a',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Đăng nhập
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               displayLessons.map((item) => {
