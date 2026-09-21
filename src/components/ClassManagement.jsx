@@ -304,8 +304,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             ) : (
               displayLessons.map((item) => {
                 const isUserTutor = user?.role === 'TUTOR';
-                const displayName = isUserTutor ? (item.studentName || 'Học sinh') : item.tutorName;
-                const roleBadgeText = isUserTutor ? 'Học sinh' : 'Gia sư';
+                const isUserAdmin = user?.role === 'ADMIN';
+                const displayName = isUserTutor 
+                  ? (item.studentName || 'Học sinh') 
+                  : (isUserAdmin 
+                      ? `${item.studentName || 'Học sinh'} (Phụ huynh: ${item.parentName || 'N/A'}) - Gia sư: ${item.tutorName}`
+                      : item.tutorName);
+                const roleBadgeText = isUserTutor ? 'Học sinh' : (isUserAdmin ? 'Quản trị' : 'Gia sư');
                 const initialChar = displayName ? (displayName.trim().charAt(displayName.trim().lastIndexOf(' ') + 1) || displayName.charAt(0)) : 'G';
 
                 return (
@@ -398,7 +403,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     </div>
 
                     {/* Action buttons & status-specific guidance */}
-                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                    {item.isFromDb && (user?.role === 'TUTOR' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
@@ -418,19 +423,19 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && (user?.role === 'TUTOR' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_PAYMENT' && (
                       <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
-                        ✓ Bạn đã chấp nhận lịch học. Đang chờ học sinh/phụ huynh thanh toán phí kết nối để kích hoạt lớp.
+                        ✓ Lịch học đã được chấp nhận. Đang chờ phụ huynh thanh toán phí kết nối để kích hoạt lớp.
                       </div>
                     )}
 
-                    {item.isFromDb && user?.role !== 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                    {item.isFromDb && user?.role === 'PARENT' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
                       <div style={{ color: '#92400e', fontSize: '0.88rem', fontWeight: 700, background: '#fef3c7', border: '1px solid #fde68a', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
                         ⏳ Yêu cầu đã được gửi tới gia sư. Vui lòng chờ gia sư xác nhận lịch học.
                       </div>
                     )}
 
-                    {item.isFromDb && user?.role !== 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && (user?.role === 'PARENT' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_PAYMENT' && (
                       <button
                         type="button"
                         onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}

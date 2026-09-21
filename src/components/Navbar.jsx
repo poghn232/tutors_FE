@@ -40,10 +40,24 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'profile', label: 'Hồ Sơ' },
   ];
 
-  const navItems = !user ? guestNavItems : (isTutor ? tutorNavItems : studentNavItems);
+  const adminNavItems = [
+    { id: 'dashboard', label: 'Tổng Quan' },
+    { id: 'classes', label: 'Tất Cả Lớp Học' },
+    { id: 'tutors', label: 'Danh Sách Gia Sư' },
+    { id: 'materials', label: 'Tài Liệu' },
+    { id: 'payment', label: 'Ví Kết Nối' },
+  ];
+
+  const navItems = !user 
+    ? guestNavItems 
+    : (user.role === 'ADMIN' 
+        ? adminNavItems 
+        : (isTutor ? tutorNavItems : studentNavItems));
 
   const getRoleBadge = (role) => {
     switch (role) {
+      case 'ADMIN':
+        return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>Admin</span>;
       case 'TUTOR':
         return <span className="badge badge-tutor">Gia sư</span>;
       case 'PARENT':

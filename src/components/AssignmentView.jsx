@@ -186,8 +186,8 @@ export default function AssignmentView({ user, onRequireAuth }) {
   const [gradeScore, setGradeScore] = useState('18/20');
   const [gradeFeedback, setGradeFeedback] = useState('');
 
-  // Student upload ref
-  const studentFileInputRef = useRef(null);
+  // Parent upload ref
+  const parentFileInputRef = useRef(null);
   const [uploadTargetId, setUploadTargetId] = useState(null);
 
   const showToast = (msg) => {
@@ -282,22 +282,22 @@ export default function AssignmentView({ user, onRequireAuth }) {
     showToast(`Đã lưu chấm điểm (${gradeScore}) cho bài tập!`);
   };
 
-  // Student: Trigger File Input (Clicking dropzone or Re-submit button)
-  const handleStudentUploadClick = (asgId, isResubmit = false) => {
+  // Parent: Trigger File Input (Clicking dropzone or Re-submit button)
+  const handleParentUploadClick = (asgId, isResubmit = false) => {
     if (!user && onRequireAuth) {
       onRequireAuth('nộp bài tập');
       return;
     }
     setUploadTargetId(asgId);
     setIsResubmitMode(isResubmit);
-    if (studentFileInputRef.current) {
-      studentFileInputRef.current.value = '';
-      studentFileInputRef.current.click();
+    if (parentFileInputRef.current) {
+      parentFileInputRef.current.value = '';
+      parentFileInputRef.current.click();
     }
   };
 
-  // Student: When file selected from file picker -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
-  const handleStudentFileChange = (e) => {
+  // Parent: When file selected from file picker -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
+  const handleParentFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTargetId) return;
 
@@ -401,12 +401,12 @@ export default function AssignmentView({ user, onRequireAuth }) {
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '16px 0 60px 0' }}>
       
-      {/* Hidden File Input for Student Submission */}
+      {/* Hidden File Input for Parent Submission */}
       <input 
         type="file" 
-        ref={studentFileInputRef} 
+        ref={parentFileInputRef} 
         style={{ display: 'none' }} 
-        onChange={handleStudentFileChange}
+        onChange={handleParentFileChange}
       />
 
       {/* Toast Notification */}
@@ -830,7 +830,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleStudentUploadClick(asg.id, true)}
+                      onClick={() => handleParentUploadClick(asg.id, true)}
                       style={{
                         background: '#ffffff',
                         color: '#0f172a',
@@ -889,7 +889,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
             {/* PENDING / OVERDUE: ONLY STUDENTS HAVE UPLOAD DROPZONE */}
             {!isTutor && (asg.status === 'pending' || asg.status === 'overdue') && (
               <div 
-                onClick={() => handleStudentUploadClick(asg.id, false)}
+                onClick={() => handleParentUploadClick(asg.id, false)}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setDragOverId(asg.id);
@@ -1395,8 +1395,8 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (studentFileInputRef.current) {
-                      studentFileInputRef.current.click();
+                    if (parentFileInputRef.current) {
+                      parentFileInputRef.current.click();
                     }
                   }}
                   style={{
