@@ -69,6 +69,16 @@ export const paymentService = {
    * Check SePay payment status for an order
    * @param {string} orderCode
    */
+  async registerPendingBooking(bookingData) {
+    try {
+      const response = await api.post('/payments/sepay/register-booking', bookingData);
+      return response.data;
+    } catch (error) {
+      console.error('Error registering pending booking:', error);
+      return { success: false, message: error.response?.data?.message || 'Không thể lưu booking chờ thanh toán.' };
+    }
+  },
+
   async checkSepayStatus(orderCode) {
     try {
       const response = await api.get('/payments/sepay/check-status', {

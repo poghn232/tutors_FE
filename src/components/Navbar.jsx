@@ -24,7 +24,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'vip', label: 'Bảng Giá VIP' },
   ];
 
-  const studentNavItems = [
+  const parentNavItems = [
     { id: 'tutors', label: 'Tìm Gia Sư' },
     { id: 'classes', label: 'Lớp Học Của Tôi' },
     { id: 'payment', label: 'Ví Kết Nối' },
@@ -62,8 +62,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
         return <span className="badge badge-tutor">Gia sư</span>;
       case 'PARENT':
         return <span className="badge badge-parent">Phụ huynh</span>;
-      case 'STUDENT':
-        return <span className="badge badge-student">Học sinh</span>;
+      case 'PARENT':
+        return <span className="badge badge-parent">Phụ huynh</span>;
       default:
         return <span className="badge badge-tutor">{role}</span>;
     }

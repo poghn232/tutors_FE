@@ -163,7 +163,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           padding: '20px 24px'
         }}>
           <CalendarIcon size={20} color="#059669" style={{ marginBottom: '8px' }} />
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>3</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{upcomingCount}</div>
           <div style={{ fontSize: '0.82rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>Buổi học sắp tới</div>
         </div>
 
@@ -175,7 +175,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           padding: '20px 24px'
         }}>
           <CheckCircle2 size={20} color="#7c3aed" style={{ marginBottom: '8px' }} />
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7c3aed', lineHeight: 1.1 }}>2</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#7c3aed', lineHeight: 1.1 }}>{completedCount}</div>
           <div style={{ fontSize: '0.82rem', color: '#6d28d9', marginTop: '4px', fontWeight: 600 }}>Buổi đã hoàn thành</div>
         </div>
 
@@ -187,7 +187,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           padding: '20px 24px'
         }}>
           <User size={20} color="#ea580c" style={{ marginBottom: '8px' }} />
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>4</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>{activeTutorCount}</div>
           <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>Gia sư đang học</div>
         </div>
 
@@ -199,7 +199,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           padding: '20px 24px'
         }}>
           <BookOpen size={20} color="#0284c7" style={{ marginBottom: '8px' }} />
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0284c7', lineHeight: 1.1 }}>5</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0284c7', lineHeight: 1.1 }}>{currentSubjectsCount}</div>
           <div style={{ fontSize: '0.82rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>Môn đang học</div>
         </div>
       </div>
