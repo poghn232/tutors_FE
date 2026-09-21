@@ -152,6 +152,7 @@ export default function CheckoutFlow({
             tutorName: payload.tutorName,
             studentName: payload.studentName,
             studentId: payload.studentId,
+            studentEmail: payload.studentEmail,
             scheduleDescription: payload.scheduleDescription,
             date: payload.date,
             time: payload.time,
@@ -174,15 +175,29 @@ export default function CheckoutFlow({
             });
           }
         } catch (apiErr) {
-          console.warn('API tạo lớp học gặp lỗi, sử dụng dữ liệu local:', apiErr);
-          setCreatedClassInfo({
-            id: null,
-            className: payload.className,
-            subjectName: payload.subjectName,
-            tutorName: payload.tutorName,
-            scheduleDescription: payload.scheduleDescription,
-            status: 'PENDING_TUTOR_APPROVAL'
-          });
+          console.warn('classService.createClass failed, trying registerPendingBooking fallback:', apiErr);
+          // Fallback: register through payment service (permitAll endpoint)
+          try {
+            await paymentService.registerPendingBooking(payload);
+            setCreatedClassInfo({
+              id: null,
+              className: payload.className,
+              subjectName: payload.subjectName,
+              tutorName: payload.tutorName,
+              scheduleDescription: payload.scheduleDescription,
+              status: 'PENDING_TUTOR_APPROVAL'
+            });
+          } catch (fallbackErr) {
+            console.warn('Fallback registerPendingBooking also failed:', fallbackErr);
+            setCreatedClassInfo({
+              id: null,
+              className: payload.className,
+              subjectName: payload.subjectName,
+              tutorName: payload.tutorName,
+              scheduleDescription: payload.scheduleDescription,
+              status: 'PENDING_TUTOR_APPROVAL'
+            });
+          }
         }
       }
     } catch (err) {
