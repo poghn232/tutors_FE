@@ -76,9 +76,9 @@ export default function RegisterPage({ onNavigate }) {
     try {
       setLoading(true);
       const res = await register({
-        fullName,
-        email,
-        phone,
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone ? phone.trim() : '',
         password,
         role
       });
