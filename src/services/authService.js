@@ -115,5 +115,23 @@ export const authService = {
       return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'vip', 'checkout'];
     }
     return ['tutors', 'classes', 'materials', 'vip', 'assignments', 'checkout'];
+  },
+
+  // Quên mật khẩu: Gửi OTP về Gmail
+  async forgotPassword(email) {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  // Xác thực mã OTP
+  async verifyOtp(email, otp) {
+    const response = await api.post('/auth/verify-otp', { email, otp });
+    return response.data;
+  },
+
+  // Đặt lại mật khẩu mới
+  async resetPassword(email, otp, newPassword) {
+    const response = await api.post('/auth/reset-password', { email, otp, newPassword });
+    return response.data;
   }
 };
