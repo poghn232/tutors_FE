@@ -62,8 +62,6 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
         return <span className="badge badge-tutor">Gia sư</span>;
       case 'PARENT':
         return <span className="badge badge-parent">Phụ huynh</span>;
-      case 'PARENT':
-        return <span className="badge badge-parent">Phụ huynh</span>;
       default:
         return <span className="badge badge-tutor">{role}</span>;
     }
