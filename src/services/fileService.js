@@ -2,6 +2,20 @@ import api from './api';
 
 export const fileService = {
   /**
+   * Helper to format image / file URLs
+   */
+  getFileUrl(path) {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+      return path;
+    }
+    const baseUrl = api.defaults.baseURL || 'http://localhost:8080/api';
+    const serverOrigin = baseUrl.replace(/\/api\/?$/, '');
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    return `${serverOrigin}${cleanPath}`;
+  },
+
+  /**
    * Upload single file to backend (with client-side fallback if backend is offline)
    * @param {File} file 
    * @returns {Promise<{success: boolean, data: {fileUrl: string, originalName: string, size: number}}>}
@@ -12,13 +26,17 @@ export const fileService = {
 
     try {
       const response = await api.post('/files/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       });
 
       if (response.data && response.data.success) {
+        const fileData = response.data.data;
         return {
           success: true,
-          data: response.data.data,
+          data: {
+            ...fileData,
+            fileUrl: this.getFileUrl(fileData.fileUrl)
+          },
         };
       }
     } catch (error) {
@@ -49,13 +67,17 @@ export const fileService = {
 
     try {
       const response = await api.post('/files/upload-multiple', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       });
 
       if (response.data && response.data.success) {
+        const list = (response.data.data || []).map(item => ({
+          ...item,
+          fileUrl: this.getFileUrl(item.fileUrl)
+        }));
         return {
           success: true,
-          data: response.data.data,
+          data: list,
         };
       }
     } catch (error) {

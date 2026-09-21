@@ -117,6 +117,12 @@ export const authService = {
     return ['tutors', 'classes', 'materials', 'vip', 'assignments', 'checkout'];
   },
 
+  // Đăng ký: Gửi OTP xác thực về Gmail
+  async sendRegisterOtp(email, fullName = '') {
+    const response = await api.post('/auth/send-register-otp', { email, fullName });
+    return response.data;
+  },
+
   // Quên mật khẩu: Gửi OTP về Gmail
   async forgotPassword(email) {
     const response = await api.post('/auth/forgot-password', { email });

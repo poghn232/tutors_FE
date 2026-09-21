@@ -70,6 +70,10 @@ export default function ProfileView({ onBack }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const certFileInputRef = useRef(null);
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef(null);
+  const parentAvatarFileInputRef = useRef(null);
+
   // State for parent/child profile - empty by default so the user can fill in details themselves
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [dob, setDob] = useState(() => localStorage.getItem(`tutora_dob_${user?.id || user?.email}`) || '');
@@ -141,6 +145,16 @@ export default function ProfileView({ onBack }) {
           if (d.bio !== undefined && d.bio !== null) setTutorFullBio(d.bio);
           if (d.qualification !== undefined && d.qualification !== null) setTutorDisplayName(d.qualification);
 
+          if (d.certificatesJson) {
+            try {
+              const parsed = JSON.parse(d.certificatesJson);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setCertificates(parsed);
+                localStorage.setItem(`giasuhq_tutor_certificates_${user?.id || user?.email}`, JSON.stringify(parsed));
+              }
+            } catch (e) {}
+          }
+
           updateUser(d);
         }
       } catch (err) {
@@ -164,7 +178,8 @@ export default function ProfileView({ onBack }) {
           fullName: `${tutorLastName} ${tutorFirstName}`.trim() || user?.fullName || 'Gia sư Tutora',
           phone: (tutorPhone || '').trim(),
           bio: tutorFullBio || tutorShortBio,
-          qualification: tutorDisplayName
+          qualification: tutorDisplayName,
+          certificatesJson: JSON.stringify(certificates)
         };
       } else {
         payload = {
@@ -224,10 +239,29 @@ export default function ProfileView({ onBack }) {
     }
   };
 
+  const handleAvatarUpload = async (file) => {
+    if (!file) return;
+    try {
+      setUploadingAvatar(true);
+      const res = await fileService.uploadFile(file);
+      const newAvatarUrl = res.data?.fileUrl;
+      if (newAvatarUrl) {
+        await userService.updateProfile({ avatarUrl: newAvatarUrl });
+        updateUser({ ...user, avatarUrl: newAvatarUrl });
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 3000);
+      }
+    } catch (err) {
+      alert('Không thể tải ảnh đại diện: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleUploadCertificate = async (e) => {
     e.preventDefault();
-    if (certificates.length >= 5) {
-      alert('Bạn đã tải lên tối đa 5 ảnh bằng cấp.');
+    if (certificates.length >= 8) {
+      alert('Bạn đã tải lên tối đa 8 ảnh bằng cấp.');
       return;
     }
     if (!newCertFile) {
@@ -247,16 +281,17 @@ export default function ProfileView({ onBack }) {
         title: newCertTitle.trim(),
         imageUrl: res.data?.fileUrl || URL.createObjectURL(newCertFile),
         date: new Date().getFullYear().toString(),
-        verified: true
+        verified: false
       };
       const updated = [...certificates, newCert];
       setCertificates(updated);
-      localStorage.setItem('giasuhq_tutor_certificates', JSON.stringify(updated));
+      localStorage.setItem(`giasuhq_tutor_certificates_${user?.id || user?.email}`, JSON.stringify(updated));
+      await userService.updateProfile({ certificatesJson: JSON.stringify(updated) });
       setNewCertTitle('');
       setNewCertFile(null);
       if (certFileInputRef.current) certFileInputRef.current.value = '';
     } catch (err) {
-      alert('Lỗi khi tải ảnh bằng cấp: ' + err.message);
+      alert('Lỗi khi tải ảnh bằng cấp: ' + (err.response?.data?.message || err.message));
     } finally {
       setUploadingCert(false);
     }
@@ -266,7 +301,8 @@ export default function ProfileView({ onBack }) {
     if (window.confirm('Bạn có chắc chắn muốn xóa ảnh bằng cấp này không?')) {
       const updated = certificates.filter(c => c.id !== id);
       setCertificates(updated);
-      localStorage.setItem('giasuhq_tutor_certificates', JSON.stringify(updated));
+      localStorage.setItem(`giasuhq_tutor_certificates_${user?.id || user?.email}`, JSON.stringify(updated));
+      userService.updateProfile({ certificatesJson: JSON.stringify(updated) }).catch(() => {});
       if (previewCert && previewCert.id === id) setPreviewCert(null);
     }
   };
@@ -1070,22 +1106,44 @@ export default function ProfileView({ onBack }) {
 
                 {/* Avatar Row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '28px' }}>
+                  <input
+                    type="file"
+                    ref={avatarFileInputRef}
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleAvatarUpload(e.target.files[0]);
+                      }
+                    }}
+                  />
                   <div style={{
-                    width: '72px',
-                    height: '72px',
+                    width: '76px',
+                    height: '76px',
                     borderRadius: '18px',
                     border: '2px solid #0f172a',
                     backgroundColor: '#ffd600',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '2.4rem'
+                    overflow: 'hidden',
+                    position: 'relative'
                   }}>
-                    🐔
+                    {user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.fullName || 'Tutor Avatar'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '2.4rem' }}>🐔</span>
+                    )}
                   </div>
                   <div>
                     <button
                       type="button"
+                      disabled={uploadingAvatar}
+                      onClick={() => avatarFileInputRef.current && avatarFileInputRef.current.click()}
                       style={{
                         backgroundColor: '#ffffff',
                         border: '1.5px solid #0f172a',
@@ -1095,13 +1153,17 @@ export default function ProfileView({ onBack }) {
                         fontSize: '0.85rem',
                         cursor: 'pointer',
                         boxShadow: '2px 2px 0px #0f172a',
-                        marginBottom: '6px'
+                        marginBottom: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
                       }}
                     >
-                      Tải ảnh mới lên
+                      <Camera size={16} />
+                      {uploadingAvatar ? 'Đang tải ảnh lên...' : 'Tải ảnh mới lên'}
                     </button>
                     <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                      JPG, PNG hoặc GIF · tối đa 5MB · nên dùng ảnh vuông
+                      JPG, PNG hoặc WEBP · tối đa 5MB · ảnh đại diện sẽ hiển thị cho học viên & Admin
                     </div>
                   </div>
                 </div>
@@ -1676,6 +1738,17 @@ export default function ProfileView({ onBack }) {
             textAlign: 'center'
           }}>
             <div style={{ position: 'relative', width: '84px', height: '84px', margin: '0 auto 16px' }}>
+              <input
+                type="file"
+                ref={parentAvatarFileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleAvatarUpload(e.target.files[0]);
+                  }
+                }}
+              />
               <div style={{
                 width: '84px',
                 height: '84px',
@@ -1685,20 +1758,27 @@ export default function ProfileView({ onBack }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                overflow: 'hidden',
                 fontSize: '1.6rem',
                 fontWeight: 900,
                 color: '#7c3aed'
               }}>
-                {(fullName || user?.fullName || 'HV')
-                  .trim()
-                  .split(' ')
-                  .map(n => n[0])
-                  .slice(-2)
-                  .join('')
-                  .toUpperCase()}
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  (fullName || user?.fullName || 'HV')
+                    .trim()
+                    .split(' ')
+                    .map(n => n[0])
+                    .slice(-2)
+                    .join('')
+                    .toUpperCase()
+                )}
               </div>
               <button
                 type="button"
+                disabled={uploadingAvatar}
+                onClick={() => parentAvatarFileInputRef.current && parentAvatarFileInputRef.current.click()}
                 style={{
                   position: 'absolute',
                   bottom: '0',
@@ -1714,6 +1794,7 @@ export default function ProfileView({ onBack }) {
                   justifyContent: 'center',
                   cursor: 'pointer'
                 }}
+                title="Thay đổi ảnh đại diện"
               >
                 <Camera size={14} />
               </button>

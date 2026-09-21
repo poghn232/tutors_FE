@@ -11,6 +11,7 @@ import PaymentView from '../components/PaymentView';
 import CheckoutFlow from '../components/CheckoutFlow';
 import VipPricingView from '../components/VipPricingView';
 import PaymentResultView from '../components/PaymentResultView';
+import AdminTutorVerificationDashboard from '../components/AdminTutorVerificationDashboard';
 import { 
   User, 
   Calendar, 
@@ -19,17 +20,18 @@ import {
   CreditCard, 
   UserCheck, 
   ShieldCheck, 
-  Sparkles,
-  FileText,
-  CheckSquare,
-  DollarSign,
-  Star,
-  Clock,
-  Video,
-  ArrowRight,
-  TrendingUp,
-  RefreshCw,
-  CheckCircle2
+  Sparkles, 
+  FileText, 
+  CheckSquare, 
+  DollarSign, 
+  Star, 
+  Clock, 
+  Video, 
+  ArrowRight, 
+  TrendingUp, 
+  RefreshCw, 
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 
 export default function DashboardPage({ activeTab = 'default', onNavigate, onRequireAuth }) {
@@ -224,8 +226,10 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
         </div>
       )}
 
-      {/* Tutor Overview matching Figma Frame 16:2 when currentTab is 'dashboard' */}
-      {isTutor && currentTab === 'dashboard' ? (
+      {/* Admin Tutor Verification Dashboard */}
+      {user?.role === 'ADMIN' && (currentTab === 'dashboard' || currentTab === 'tutors') ? (
+        <AdminTutorVerificationDashboard />
+      ) : isTutor && currentTab === 'dashboard' ? (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px 48px', position: 'relative' }}>
           
           {/* Floating Background Shapes */}
@@ -264,6 +268,163 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
             zIndex: 0,
             pointerEvents: 'none'
           }} />
+
+          {/* Tutor Verification Status Banner */}
+          {user?.verificationStatus === 'APPROVED' ? (
+            <div style={{
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+              border: '2px solid #22c55e',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              boxShadow: '3px 3px 0px #0f172a'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  backgroundColor: '#22c55e',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#14532d' }}>
+                    Hồ sơ Gia sư đã được xác thực chính thức (Verified Tutor)
+                  </h4>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.84rem', color: '#166534' }}>
+                    Tài khoản của bạn đã được chứng nhận và hiển thị công khai trên danh mục tìm kiếm gia sư.
+                  </p>
+                </div>
+              </div>
+              <span style={{
+                backgroundColor: '#bbf7d0',
+                color: '#15803d',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                border: '1px solid #86efac'
+              }}>
+                Huy hiệu tích xanh
+              </span>
+            </div>
+          ) : user?.verificationStatus === 'REJECTED' ? (
+            <div style={{
+              background: '#fef2f2',
+              border: '2px solid #ef4444',
+              borderRadius: '16px',
+              padding: '18px 20px',
+              marginBottom: '24px',
+              boxShadow: '3px 3px 0px #0f172a'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: '#ef4444',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <XCircle size={24} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#991b1b' }}>
+                      Hồ sơ cần cập nhật lại thông tin / bằng cấp
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: '#b91c1c', lineHeight: 1.5 }}>
+                      <strong>Lý do từ chối:</strong> {user?.rejectionReason || 'Ảnh bằng cấp hoặc thông tin chưa hợp lệ. Vui lòng tải lại ảnh bằng cấp rõ nét.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('profile')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    backgroundColor: '#ffffff',
+                    color: '#b91c1c',
+                    border: '1.5px solid #ef4444',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cập nhật bằng cấp ngay
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              background: '#fffbeb',
+              border: '2px solid #f59e0b',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              boxShadow: '3px 3px 0px #0f172a'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  backgroundColor: '#f59e0b',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Clock size={24} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#92400e' }}>
+                    Hồ sơ Gia sư đang chờ Ban Quản Trị phê duyệt
+                  </h4>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.84rem', color: '#b45309' }}>
+                    Admin đang kiểm tra hồ sơ và bằng cấp của bạn. Bạn vẫn có thể cập nhật thông tin và bổ sung chứng chỉ trong lúc này.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('profile')}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '10px',
+                  backgroundColor: '#ffffff',
+                  color: '#92400e',
+                  border: '1.5px solid #f59e0b',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Xem / Bổ sung hồ sơ
+              </button>
+            </div>
+          )}
 
           {/* Hero Greeting Card (Dark Card matching Figma 16:2) */}
           <div style={{
@@ -958,7 +1119,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
             />
           )}
 
-          {currentTab === 'tutors' && (
+          {currentTab === 'tutors' && user?.role !== 'ADMIN' && (
             <TutorCatalog 
               onNavigate={handleTabChange} 
               user={user}
