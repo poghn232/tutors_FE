@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { authService } from './services/authService';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
@@ -43,8 +44,7 @@ function AppContent() {
         } else if (hash) {
           setCurrentView(hash);
         } else if (user) {
-          const isTutorOrAdmin = user.role === 'TUTOR' || user.role === 'ADMIN';
-          setCurrentView(isTutorOrAdmin ? 'dashboard' : 'classes');
+          setCurrentView(authService.getDefaultViewForRole(user.role));
         } else {
           setCurrentView('tutors');
         }
@@ -70,17 +70,11 @@ function AppContent() {
     }
 
     if (user) {
-      const isTutorOrAdmin = user.role === 'TUTOR' || user.role === 'ADMIN';
-      const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
-      const targetHash = (!isTutorOrAdmin && hash === 'dashboard') ? 'classes' : hash;
-      if (targetHash && validViews.includes(targetHash)) {
-        setCurrentView(targetHash);
-        window.history.replaceState({ view: targetHash }, '', '#' + targetHash);
-      } else {
-        const defaultView = isTutorOrAdmin ? 'dashboard' : 'classes';
-        setCurrentView(defaultView);
-        window.history.replaceState({ view: defaultView }, '', '#' + defaultView);
-      }
+      const allowedViews = authService.getAllowedViews(user.role);
+      const defaultView = authService.getDefaultViewForRole(user.role);
+      const targetHash = hash && allowedViews.includes(hash) ? hash : defaultView;
+      setCurrentView(targetHash);
+      window.history.replaceState({ view: targetHash }, '', '#' + targetHash);
     } else {
       if (hash && authViews.includes(hash)) {
         setCurrentView(hash);
@@ -96,6 +90,12 @@ function AppContent() {
   }, [user, loading]);
 
   const handleNavigate = (view) => {
+    if (user) {
+      const allowedViews = authService.getAllowedViews(user.role);
+      if (!allowedViews.includes(view)) {
+        view = authService.getDefaultViewForRole(user.role);
+      }
+    }
     if (view !== currentView) {
       window.history.pushState({ view }, '', '#' + view);
       setCurrentView(view);

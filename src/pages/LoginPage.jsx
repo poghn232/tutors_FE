@@ -31,13 +31,13 @@ export default function LoginPage({ onNavigate }) {
       setLoading(true);
       const res = await login({ email: email.trim(), password, role: selectedRole }, rememberMe);
       if (res.success) {
-        const userRole = res.data?.user?.role || selectedRole;
-        localStorage.setItem('giasuhq_last_role', userRole);
-        if (userRole === 'TUTOR' || userRole === 'ADMIN') {
-          onNavigate('dashboard');
-        } else {
-          onNavigate('classes');
+        const userRole = res.data?.user?.role;
+        if (!userRole) {
+          setError('Không xác định được vai trò tài khoản. Vui lòng thử lại hoặc liên hệ hỗ trợ.');
+          return;
         }
+        localStorage.setItem('giasuhq_last_role', userRole);
+        onNavigate(authService.getDefaultViewForRole(userRole));
       } else {
         setError(res.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại.');
       }
@@ -60,13 +60,13 @@ export default function LoginPage({ onNavigate }) {
           role: selectedRole
         }, rememberMe);
         if (res.success) {
-          const userRole = res.data?.user?.role || selectedRole;
-          localStorage.setItem('giasuhq_last_role', userRole);
-          if (userRole === 'TUTOR' || userRole === 'ADMIN') {
-            onNavigate('dashboard');
-          } else {
-            onNavigate('classes');
+          const userRole = res.data?.user?.role;
+          if (!userRole) {
+            setError('Không xác định được vai trò tài khoản. Vui lòng thử lại hoặc liên hệ hỗ trợ.');
+            return;
           }
+          localStorage.setItem('giasuhq_last_role', userRole);
+          onNavigate(authService.getDefaultViewForRole(userRole));
         } else {
           setError(res.message || 'Đăng nhập Google thất bại.');
         }
@@ -140,7 +140,7 @@ export default function LoginPage({ onNavigate }) {
             <button 
               type="button" 
               className={`role-card ${selectedRole === 'PARENT' ? 'active' : ''}`}
-              onClick={() => { setSelectedRole('PARENT'); setError(''); }}
+              onClick={() => { setSelectedRole('PARENT'); localStorage.setItem('giasuhq_last_role', 'PARENT'); setError(''); }}
             >
               <BookOpen size={22} />
               <strong>Phụ huynh</strong>
@@ -149,7 +149,7 @@ export default function LoginPage({ onNavigate }) {
             <button 
               type="button" 
               className={`role-card ${selectedRole === 'TUTOR' ? 'active' : ''}`}
-              onClick={() => { setSelectedRole('TUTOR'); setError(''); }}
+              onClick={() => { setSelectedRole('TUTOR'); localStorage.setItem('giasuhq_last_role', 'TUTOR'); setError(''); }}
             >
               <UserRound size={22} />
               <strong>Gia sư</strong>

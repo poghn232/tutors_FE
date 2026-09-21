@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, UserRound, Info, X } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
+import { authService } from '../services/authService';
 
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
@@ -28,13 +29,13 @@ export default function RegisterPage({ onNavigate }) {
           role: role
         });
         if (res.success) {
-          const userRole = res.data?.user?.role || role;
-          localStorage.setItem('giasuhq_last_role', userRole);
-          if (userRole === 'TUTOR' || userRole === 'ADMIN') {
-            onNavigate('dashboard');
-          } else {
-            onNavigate('classes');
+          const userRole = res.data?.user?.role;
+          if (!userRole) {
+            setError('Không xác định được vai trò tài khoản. Vui lòng thử lại hoặc liên hệ hỗ trợ.');
+            return;
           }
+          localStorage.setItem('giasuhq_last_role', userRole);
+          onNavigate(authService.getDefaultViewForRole(userRole));
         } else {
           setError(res.message || 'Đăng ký bằng Google thất bại.');
         }
@@ -90,13 +91,13 @@ export default function RegisterPage({ onNavigate }) {
       });
 
       if (res.success) {
-        const userRole = res.data?.user?.role || role;
-        localStorage.setItem('giasuhq_last_role', userRole);
-        if (userRole === 'TUTOR' || userRole === 'ADMIN') {
-          onNavigate('dashboard');
-        } else {
-          onNavigate('classes');
+        const userRole = res.data?.user?.role;
+        if (!userRole) {
+          setError('Không xác định được vai trò tài khoản. Vui lòng thử lại hoặc liên hệ hỗ trợ.');
+          return;
         }
+        localStorage.setItem('giasuhq_last_role', userRole);
+        onNavigate(authService.getDefaultViewForRole(userRole));
       } else {
         setError(res.message || 'Đăng ký không thành công. Vui lòng thử lại.');
       }
@@ -155,7 +156,7 @@ export default function RegisterPage({ onNavigate }) {
             <button
               type="button"
               className={`role-card ${role === 'PARENT' ? 'active' : ''}`}
-              onClick={() => setRole('PARENT')}
+              onClick={() => { setRole('PARENT'); localStorage.setItem('giasuhq_last_role', 'PARENT'); }}
             >
               <BookOpen size={22} />
               <strong>Phụ huynh</strong>
@@ -164,7 +165,7 @@ export default function RegisterPage({ onNavigate }) {
             <button
               type="button"
               className={`role-card ${role === 'TUTOR' ? 'active' : ''}`}
-              onClick={() => setRole('TUTOR')}
+              onClick={() => { setRole('TUTOR'); localStorage.setItem('giasuhq_last_role', 'TUTOR'); }}
             >
               <UserRound size={22} />
               <strong>Gia sư</strong>

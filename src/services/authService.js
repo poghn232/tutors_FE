@@ -94,5 +94,26 @@ export const authService = {
   // Kiểm tra cờ ghi nhớ
   isRemembered() {
     return localStorage.getItem('giasuhq_remember_me') === 'true';
+  },
+
+  isTutorOrAdmin(role) {
+    return role === 'TUTOR' || role === 'ADMIN';
+  },
+
+  getDefaultViewForRole(role) {
+    return this.isTutorOrAdmin(role) ? 'dashboard' : 'classes';
+  },
+
+  getAllowedViews(role) {
+    if (role === 'ADMIN') {
+      return ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
+    }
+    if (role === 'TUTOR') {
+      return ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile'];
+    }
+    if (role === 'PARENT') {
+      return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'vip', 'checkout'];
+    }
+    return ['tutors', 'classes', 'materials', 'vip', 'assignments', 'checkout'];
   }
 };
