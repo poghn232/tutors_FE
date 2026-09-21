@@ -104,30 +104,46 @@ export default function CheckoutFlow({
   const [createdClassInfo, setCreatedClassInfo] = useState(null);
   const [isCreatingClass, setIsCreatingClass] = useState(false);
 
-  const confirmBookingInDatabase = async () => {
-    if (isCreatingClass) return;
+  const buildBookingPayload = () => ({
+    className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+    subjectId: details.subjectId || 1,
+    subjectName: details.subject || 'Toán học',
+    tutorId: currentTutor.id || 1,
+    tutorName: currentTutor.fullName,
+    studentId: user?.id,
+    studentName: user?.fullName,
+    studentEmail: user?.email,
+    scheduleDescription: `${details.date} lúc ${details.time}`,
+    date: details.date,
+    time: details.time,
+    amount: finalTotal,
+    orderCode: bookingOrderCode,
+    paymentMethod: paymentMethod
+  });
+
+  const registerPendingBooking = async () => {
+    try {
+      const payload = buildBookingPayload();
+      await paymentService.registerPendingBooking(payload);
+    } catch (err) {
+      console.warn('Không thể lưu booking chờ thanh toán:', err);
+    }
+  };
+
+  const confirmBookingInDatabase = async (createdBookingData = null) => {
+    if (isCreatingClass || createdClassInfo) return;
     setIsCreatingClass(true);
     try {
-      const payload = {
-        className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
-        subjectId: details.subjectId || 1,
-        subjectName: details.subject || 'Toán học',
-        tutorId: currentTutor.id || 1,
-        tutorName: currentTutor.fullName,
-        studentId: user?.id,
-        studentName: user?.fullName,
-        studentEmail: user?.email,
-        scheduleDescription: `${details.date} lúc ${details.time}`,
-        date: details.date,
-        time: details.time,
-        amount: finalTotal,
-        orderCode: bookingOrderCode,
-        paymentMethod: paymentMethod
+      const payload = buildBookingPayload();
+      const bookData = createdBookingData || {
+        id: null,
+        className: payload.className,
+        subjectName: payload.subjectName,
+        tutorName: payload.tutorName,
+        scheduleDescription: payload.scheduleDescription,
+        status: 'ACTIVE'
       };
-      const res = await classService.createClass(payload);
-      if (res && res.data) {
-        setCreatedClassInfo(res.data);
-      }
+      setCreatedClassInfo(bookData);
     } catch (err) {
       console.warn('Lưu lớp học vào database gặp cảnh báo:', err);
     } finally {
@@ -140,12 +156,21 @@ export default function CheckoutFlow({
   useEffect(() => {
     if (step !== 2 || paymentMethod !== 'vietqr') return;
 
+    registerPendingBooking();
+
     const interval = setInterval(async () => {
       try {
         const res = await paymentService.checkSepayStatus(bookingOrderCode);
         if (res && res.data && res.data.paid) {
           clearInterval(interval);
-          confirmBookingInDatabase();
+          confirmBookingInDatabase({
+            id: res.data.classId || null,
+            className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+            subjectName: details.subject || 'Toán học',
+            tutorName: currentTutor.fullName,
+            scheduleDescription: `${details.date} lúc ${details.time}`,
+            status: 'ACTIVE'
+          });
         }
       } catch (e) {
         // silent
@@ -200,7 +225,14 @@ export default function CheckoutFlow({
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
       if (res && res.data && res.data.paid) {
-        confirmBookingInDatabase();
+        confirmBookingInDatabase({
+          id: res.data.classId || null,
+          className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+          subjectName: details.subject || 'Toán học',
+          tutorName: currentTutor.fullName,
+          scheduleDescription: `${details.date} lúc ${details.time}`,
+          status: 'ACTIVE'
+        });
       } else {
         alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
       }
