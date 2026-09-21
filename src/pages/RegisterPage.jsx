@@ -7,7 +7,7 @@ import TutoraLogo from '../components/TutoraLogo';
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
   
-  const [role, setRole] = useState('PARENT');
+  const [role, setRole] = useState(() => localStorage.getItem('giasuhq_last_role') || 'PARENT');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,7 +28,13 @@ export default function RegisterPage({ onNavigate }) {
           role: role
         });
         if (res.success) {
-          onNavigate('dashboard');
+          const userRole = res.data?.user?.role || role;
+          localStorage.setItem('giasuhq_last_role', userRole);
+          if (userRole === 'TUTOR' || userRole === 'ADMIN') {
+            onNavigate('dashboard');
+          } else {
+            onNavigate('classes');
+          }
         } else {
           setError(res.message || 'Đăng ký bằng Google thất bại.');
         }
@@ -84,7 +90,13 @@ export default function RegisterPage({ onNavigate }) {
       });
 
       if (res.success) {
-        onNavigate('dashboard');
+        const userRole = res.data?.user?.role || role;
+        localStorage.setItem('giasuhq_last_role', userRole);
+        if (userRole === 'TUTOR' || userRole === 'ADMIN') {
+          onNavigate('dashboard');
+        } else {
+          onNavigate('classes');
+        }
       } else {
         setError(res.message || 'Đăng ký không thành công. Vui lòng thử lại.');
       }

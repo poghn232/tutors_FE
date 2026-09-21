@@ -886,7 +886,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
       ) : (
         /* Render Target Component based on currentTab */
         <div>
-          {currentTab === 'classes' && (
+          {(currentTab === 'classes' || (!isTutor && currentTab === 'dashboard')) && (
             <ClassManagement 
               user={user} 
               onNavigateToTutors={() => handleTabChange('tutors')} 

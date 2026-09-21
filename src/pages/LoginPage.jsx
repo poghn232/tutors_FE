@@ -14,7 +14,7 @@ export default function LoginPage({ onNavigate }) {
   const [error, setError] = useState('');
   const [infoNotice, setInfoNotice] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('PARENT');
+  const [selectedRole, setSelectedRole] = useState(() => localStorage.getItem('giasuhq_last_role') || 'PARENT');
   const [showClientModal, setShowClientModal] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -29,9 +29,15 @@ export default function LoginPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await login({ email: email.trim(), password }, rememberMe);
+      const res = await login({ email: email.trim(), password, role: selectedRole }, rememberMe);
       if (res.success) {
-        onNavigate('dashboard');
+        const userRole = res.data?.user?.role || selectedRole;
+        localStorage.setItem('giasuhq_last_role', userRole);
+        if (userRole === 'TUTOR' || userRole === 'ADMIN') {
+          onNavigate('dashboard');
+        } else {
+          onNavigate('classes');
+        }
       } else {
         setError(res.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại.');
       }
@@ -54,7 +60,13 @@ export default function LoginPage({ onNavigate }) {
           role: selectedRole
         }, rememberMe);
         if (res.success) {
-          onNavigate('dashboard');
+          const userRole = res.data?.user?.role || selectedRole;
+          localStorage.setItem('giasuhq_last_role', userRole);
+          if (userRole === 'TUTOR' || userRole === 'ADMIN') {
+            onNavigate('dashboard');
+          } else {
+            onNavigate('classes');
+          }
         } else {
           setError(res.message || 'Đăng nhập Google thất bại.');
         }
@@ -128,7 +140,7 @@ export default function LoginPage({ onNavigate }) {
             <button 
               type="button" 
               className={`role-card ${selectedRole === 'PARENT' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('PARENT')}
+              onClick={() => { setSelectedRole('PARENT'); setError(''); }}
             >
               <BookOpen size={22} />
               <strong>Phụ huynh</strong>
@@ -137,7 +149,7 @@ export default function LoginPage({ onNavigate }) {
             <button 
               type="button" 
               className={`role-card ${selectedRole === 'TUTOR' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('TUTOR')}
+              onClick={() => { setSelectedRole('TUTOR'); setError(''); }}
             >
               <UserRound size={22} />
               <strong>Gia sư</strong>
@@ -145,7 +157,35 @@ export default function LoginPage({ onNavigate }) {
             </button>
           </div>
 
-          {error && <div className="alert alert-danger">{error}</div>}
+          {error && (
+            <div className="alert alert-danger" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>{error}</div>
+              {error.includes('không thể đăng nhập ở cổng') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextRole = selectedRole === 'PARENT' ? 'TUTOR' : 'PARENT';
+                    setSelectedRole(nextRole);
+                    setError('');
+                  }}
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#ffffff',
+                    color: '#b91c1c',
+                    border: '1.5px solid #f87171',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                  }}
+                >
+                  👉 Chuyển sang cổng {selectedRole === 'PARENT' ? 'Gia sư' : 'Phụ huynh'} ngay
+                </button>
+              )}
+            </div>
+          )}
           {infoNotice && (
             <div className="alert" style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', fontSize: '13px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
               <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />

@@ -52,7 +52,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     ? guestNavItems 
     : (user.role === 'ADMIN' 
         ? adminNavItems 
-        : (isTutor ? tutorNavItems : studentNavItems));
+        : (isTutor ? tutorNavItems : parentNavItems));
 
   const getRoleBadge = (role) => {
     switch (role) {

@@ -43,7 +43,8 @@ function AppContent() {
         } else if (hash) {
           setCurrentView(hash);
         } else if (user) {
-          setCurrentView(user.role === 'TUTOR' ? 'dashboard' : 'classes');
+          const isTutorOrAdmin = user.role === 'TUTOR' || user.role === 'ADMIN';
+          setCurrentView(isTutorOrAdmin ? 'dashboard' : 'classes');
         } else {
           setCurrentView('tutors');
         }
@@ -69,12 +70,14 @@ function AppContent() {
     }
 
     if (user) {
+      const isTutorOrAdmin = user.role === 'TUTOR' || user.role === 'ADMIN';
       const validViews = ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
-      if (hash && validViews.includes(hash)) {
-        setCurrentView(hash);
-        window.history.replaceState({ view: hash }, '', '#' + hash);
+      const targetHash = (!isTutorOrAdmin && hash === 'dashboard') ? 'classes' : hash;
+      if (targetHash && validViews.includes(targetHash)) {
+        setCurrentView(targetHash);
+        window.history.replaceState({ view: targetHash }, '', '#' + targetHash);
       } else {
-        const defaultView = user.role === 'TUTOR' ? 'dashboard' : 'classes';
+        const defaultView = isTutorOrAdmin ? 'dashboard' : 'classes';
         setCurrentView(defaultView);
         window.history.replaceState({ view: defaultView }, '', '#' + defaultView);
       }
