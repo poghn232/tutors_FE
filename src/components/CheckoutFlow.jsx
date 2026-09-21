@@ -940,66 +940,59 @@ export default function CheckoutFlow({
         )}
 
         {/* ========================================================
-            STEP 3: ĐẶT LỊCH THÀNH CÔNG! (FIGMA IMAGE 4 EXACT DESIGN)
+            STEP 3: GỬI YÊU CẦU KẾT NỐI THÀNH CÔNG
            ======================================================== */}
         {step === 3 && (
           <div className="figma-success-card">
-            {/* Party popper */}
             <div className="figma-success-icon">
               🎉
             </div>
 
-            {/* Title */}
             <h2 className="figma-success-title">
-              Đặt lịch thành công!
+              Gửi yêu cầu kết nối thành công!
             </h2>
 
-            {/* Subtitle */}
             <p className="figma-success-subtitle">
-              Buổi học với <strong>{currentTutor.title || currentTutor.fullName}</strong> vào ngày <strong>{details.date}</strong> lúc <strong>{details.time}</strong> đã được xác nhận.
+              Yêu cầu học cùng <strong>{currentTutor.title || currentTutor.fullName}</strong> vào ngày <strong>{details.date}</strong> lúc <strong>{details.time}</strong> đã được gửi tới gia sư.
             </p>
 
-            {/* Confirmation Box (Cyan background with border) */}
             <div className="figma-success-box">
               <div className="figma-success-row">
-                <span className="figma-success-box-label">Buổi học</span>
+                <span className="figma-success-box-label">Môn học</span>
                 <span className="figma-success-box-val"><strong>{details.subject || 'Toán học'} · 60 phút</strong></span>
               </div>
 
               <div className="figma-success-row">
-                <span className="figma-success-box-label">Link Meet</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <a 
-                    href={`https://${details.meetLink}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="figma-meet-link"
-                  >
-                    {details.meetLink}
-                  </a>
-                  <button 
-                    type="button" 
-                    onClick={handleCopyLink}
-                    title="Sao chép link Meet"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', padding: 0 }}
-                  >
-                    {copiedLink ? <CheckCheck size={16} color="#059669" /> : <Copy size={16} />}
-                  </button>
-                </div>
+                <span className="figma-success-box-label">Gia sư phụ trách</span>
+                <span className="figma-success-box-val"><strong>{currentTutor.fullName}</strong></span>
               </div>
 
               <div className="figma-success-row">
-                <span className="figma-success-box-label">Đã thanh toán</span>
-                <span className="figma-success-box-val figma-paid-amount">
-                  {formatVND(finalTotal)}
+                <span className="figma-success-box-label">Thời gian dự kiến</span>
+                <span className="figma-success-box-val">{details.date} lúc {details.time}</span>
+              </div>
+
+              <div className="figma-success-row">
+                <span className="figma-success-box-label">Trạng thái</span>
+                <span className="figma-success-box-val" style={{ color: '#b45309', fontWeight: 800 }}>
+                  ⏳ Chờ gia sư duyệt lịch
+                </span>
+              </div>
+
+              <div className="figma-success-row">
+                <span className="figma-success-box-label">Phí kết nối</span>
+                <span className="figma-success-box-val figma-paid-amount" style={{ color: '#2563eb' }}>
+                  {formatVND(bookingFee)}
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: 'block' }}>
+                    (Chỉ trừ từ ví sau khi gia sư chấp nhận lịch học)
+                  </span>
                 </span>
               </div>
             </div>
 
-            {/* Database Sync Status Badge */}
             <div style={{
-              backgroundColor: '#ecfdf5',
-              border: '1.5px solid #059669',
+              backgroundColor: '#eff6ff',
+              border: '1.5px solid #2563eb',
               borderRadius: '12px',
               padding: '12px 18px',
               marginTop: '16px',
@@ -1008,35 +1001,33 @@ export default function CheckoutFlow({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              color: '#065f46',
+              color: '#1d4ed8',
               fontWeight: 700,
               fontSize: '0.88rem'
             }}>
-              <CheckCircle2 size={18} color="#059669" />
+              <CheckCircle2 size={18} color="#2563eb" />
               <span>
                 {createdClassInfo 
-                  ? `Đã lưu thành công vào CSDL (Lớp #${createdClassInfo.id} - Bảng tutoring_classes & lessons)`
-                  : 'Đã lưu thông tin buổi học vào cơ sở dữ liệu MySQL'}
+                  ? `Đã lưu yêu cầu vào hệ thống (Mã lớp #${createdClassInfo.id})`
+                  : 'Đã lưu yêu cầu kết nối vào cơ sở dữ liệu'}
               </span>
             </div>
 
-            {/* Email note */}
-            <p className="figma-success-note">
-              Email xác nhận đã được gửi đến tài khoản của bạn. Bạn có thể hủy miễn phí trước 24 giờ.
+            <p className="figma-success-note" style={{ lineHeight: 1.5, color: '#475569' }}>
+              Sau khi gia sư xem và chấp nhận lịch học, bạn có thể bấm <strong>"Thanh toán phí kết nối"</strong> tại mục <strong>Lớp học của tôi</strong> để kích hoạt lớp và nhận link phòng học trực tuyến.
             </p>
 
-            {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
-                type="button"
+                type="button" 
                 className="figma-btn-primary"
                 onClick={() => onNavigate ? onNavigate('classes') : (window.location.href = '/')}
               >
-                Xem bảng điều khiển
+                Xem Lớp Học Của Tôi
               </button>
 
               <button 
-                type="button"
+                type="button" 
                 className="figma-btn-outline"
                 onClick={() => onNavigate ? onNavigate('tutors') : setStep(1)}
               >
@@ -1045,7 +1036,7 @@ export default function CheckoutFlow({
             </div>
           </div>
         )}
-      </div>
+              </div>
     </div>
   );
 }

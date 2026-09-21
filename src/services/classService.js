@@ -17,5 +17,20 @@ export const classService = {
   async createClass(classData) {
     const response = await api.post('/classes', classData);
     return response.data;
+  },
+
+  async acceptClass(id) {
+    const response = await api.post(`/classes/${id}/accept`);
+    return response.data;
+  },
+
+  async declineClass(id) {
+    const response = await api.post(`/classes/${id}/decline`);
+    return response.data;
+  },
+
+  async payConnectionFee(id) {
+    const response = await api.post(`/classes/${id}/pay-connection-fee`);
+    return response.data;
   }
 };

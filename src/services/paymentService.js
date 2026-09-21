@@ -92,6 +92,19 @@ export const paymentService = {
       console.error('Error activating VIP in database:', error);
       return { success: false };
     }
+  },
+
+  async depositBalance(amount) {
+    try {
+      const response = await api.post('/payments/deposit', { amount });
+      return response.data;
+    } catch (error) {
+      console.error('Error depositing balance:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể nạp số dư.'
+      };
+    }
   }
 };
 

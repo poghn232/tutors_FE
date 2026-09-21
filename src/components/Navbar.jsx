@@ -27,17 +27,17 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const studentNavItems = [
     { id: 'tutors', label: 'Tìm Gia Sư' },
     { id: 'classes', label: 'Lớp Học Của Tôi' },
+    { id: 'payment', label: 'Ví Kết Nối' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'assignments', label: 'Bài Tập' },
   ];
 
   const tutorNavItems = [
     { id: 'dashboard', label: 'Tổng Quan' },
-    { id: 'lessons', label: 'Lịch Dạy' },
+    { id: 'classes', label: 'Lớp Dạy & Yêu Cầu' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'assignments', label: 'Bài Tập' },
     { id: 'profile', label: 'Hồ Sơ' },
-    { id: 'payment', label: 'Thanh Toán' },
   ];
 
   const navItems = !user ? guestNavItems : (isTutor ? tutorNavItems : studentNavItems);
@@ -211,31 +211,33 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
                     <UserCheck size={16} color="#7c3aed" /> Hồ sơ cá nhân
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowUserDropdown(false);
-                      onNavigate('checkout');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px',
-                      background: 'none',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      color: '#334155',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <CreditCard size={16} color="#059669" /> Thanh toán (Figma)
-                  </button>
+                  {!isTutor && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onNavigate('payment');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px',
+                        background: 'none',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#334155',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <CreditCard size={16} color="#059669" /> Ví kết nối ({new Intl.NumberFormat('vi-VN').format(user?.balance || 0)}đ)
+                    </button>
+                  )}
 
                   <div style={{ height: '1px', backgroundColor: '#f1f5f9', margin: '4px 0' }} />
 

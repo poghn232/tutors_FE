@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { classService } from '../services/classService';
 import { useAuth } from '../context/AuthContext';
 import LessonList from '../components/LessonList';
 import ClassManagement from '../components/ClassManagement';
@@ -33,6 +34,24 @@ import {
 export default function DashboardPage({ activeTab = 'default', onNavigate, onRequireAuth }) {
   const { user } = useAuth();
   const isTutor = user?.role === 'TUTOR';
+  const [tutorClasses, setTutorClasses] = useState([]);
+
+  useEffect(() => {
+    if (user?.role === 'TUTOR') {
+      classService.getClasses()
+        .then(res => {
+          if (res && res.data && Array.isArray(res.data)) {
+            setTutorClasses(res.data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
+  const pendingRequests = tutorClasses.filter(c => c.status === 'PENDING_TUTOR_APPROVAL');
+  const activeClasses = tutorClasses.filter(c => c.status === 'ACTIVE');
+  const pendingPaymentClasses = tutorClasses.filter(c => c.status === 'PENDING_PAYMENT');
+
 
   // Internal tab state if activeTab is 'default' or 'dashboard'
   const [internalTab, setInternalTab] = useState(user ? (isTutor ? 'dashboard' : 'classes') : 'tutors');
@@ -322,7 +341,44 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
             </div>
           </div>
 
-          {/* 4 Metrics from Figma 16:2 */}
+          {/* Notification banner for pending tutor approval requests */}
+          {pendingRequests.length > 0 && (
+            <div style={{
+              backgroundColor: '#fffbeb',
+              border: '2px solid #f59e0b',
+              borderRadius: '20px',
+              padding: '18px 24px',
+              marginBottom: '24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '1.8rem' }}>🔔</span>
+                <div>
+                  <div style={{ color: '#92400e', fontSize: '1.05rem', fontWeight: 800 }}>
+                    Bạn có {pendingRequests.length} yêu cầu kết nối lịch học mới đang chờ duyệt!
+                  </div>
+                  <p style={{ margin: '3px 0 0', color: '#b45309', fontSize: '0.88rem' }}>
+                    Hãy chấp nhận lịch học để học sinh có thể thanh toán phí kết nối và vào lớp học cùng bạn.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('classes')}
+                className="figma-btn-primary"
+                style={{ width: 'auto', padding: '10px 22px', fontSize: '0.9rem', cursor: 'pointer' }}
+              >
+                Xem và duyệt ngay →
+              </button>
+            </div>
+          )}
+
+          {/* 4 Metrics */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
@@ -346,11 +402,11 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <Calendar size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'serif' }}>
-                  4
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'serif' }}>
+                  {activeClasses.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
-                  Buổi học sắp tới
+                  Lớp học đang dạy
                 </div>
               </div>
             </div>
@@ -367,38 +423,41 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               minHeight: '120px'
             }}>
               <div style={{ color: '#7c3aed' }}>
-                <Users size={22} />
+                <Clock size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
-                  243
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
+                  {pendingPaymentClasses.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
-                  Tổng học sinh
+                  Chờ học viên nộp phí kết nối
                 </div>
               </div>
             </div>
 
-            {/* Metric 3: Peach */}
+            {/* Metric 3: Peach - Yêu cầu chờ duyệt */}
             <div style={{
-              backgroundColor: '#fff1ed',
+              backgroundColor: pendingRequests.length > 0 ? '#fef3c7' : '#fff1ed',
               border: '1.5px solid #0f172a',
               borderRadius: '20px',
               padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: '120px'
-            }}>
-              <div style={{ color: '#ea580c' }}>
-                <DollarSign size={22} />
+              minHeight: '120px',
+              cursor: 'pointer'
+            }}
+            onClick={() => handleTabChange('classes')}
+            >
+              <div style={{ color: pendingRequests.length > 0 ? '#b45309' : '#ea580c' }}>
+                <CheckSquare size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', lineHeight: 1.1, fontFamily: 'serif' }}>
-                  10.000.000đ
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: pendingRequests.length > 0 ? '#b45309' : '#ea580c', lineHeight: 1.1, fontFamily: 'serif' }}>
+                  {pendingRequests.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
-                  Tháng này (dự kiến)
+                  Yêu cầu đang chờ duyệt {pendingRequests.length > 0 ? '⚠️' : ''}
                 </div>
               </div>
             </div>
@@ -418,7 +477,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <Star size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'serif' }}>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'serif' }}>
                   4.9
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>

@@ -29,7 +29,7 @@ export default function LoginPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await login({ email: email.trim(), password }, rememberMe);
+      const res = await login({ email: email.trim(), password, role: selectedRole }, rememberMe);
       if (res.success) {
         onNavigate('dashboard');
       } else {
@@ -124,24 +124,33 @@ export default function LoginPage({ onNavigate }) {
             <button type="button" onClick={() => onNavigate('register')}>Đăng ký</button>
           </div>
 
-          <div className="role-cards two">
-            <button 
-              type="button" 
-              className={`role-card ${selectedRole === 'STUDENT' ? 'active' : ''}`}
-              onClick={() => setSelectedRole('STUDENT')}
-            >
-              <BookOpen size={25} />
-              <strong>Học sinh / Phụ huynh</strong>
-              <span>Tìm gia sư phù hợp</span>
-            </button>
+          <div className="role-cards three">
             <button 
               type="button" 
               className={`role-card ${selectedRole === 'TUTOR' ? 'active' : ''}`}
               onClick={() => setSelectedRole('TUTOR')}
             >
-              <UserRound size={25} />
+              <UserRound size={22} />
               <strong>Gia sư</strong>
-              <span>Dạy & kiếm thêm thu nhập</span>
+              <span>Dạy học</span>
+            </button>
+            <button 
+              type="button" 
+              className={`role-card ${selectedRole === 'PARENT' ? 'active' : ''}`}
+              onClick={() => setSelectedRole('PARENT')}
+            >
+              <BookOpen size={22} />
+              <strong>Phụ huynh</strong>
+              <span>Tìm gia sư</span>
+            </button>
+            <button 
+              type="button" 
+              className={`role-card ${selectedRole === 'STUDENT' ? 'active' : ''}`}
+              onClick={() => setSelectedRole('STUDENT')}
+            >
+              <BookOpen size={22} />
+              <strong>Học sinh</strong>
+              <span>Học tập</span>
             </button>
           </div>
 

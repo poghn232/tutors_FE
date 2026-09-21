@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { classService } from '../services/classService';
+import { useAuth } from '../context/AuthContext';
 import { 
   Calendar as CalendarIcon, 
   CheckCircle2, 
@@ -14,116 +15,75 @@ import {
 } from 'lucide-react';
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
   const [dbClasses, setDbClasses] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+
+  const loadClasses = async () => {
+    try {
+      setLoadingDb(true);
+      const res = await classService.getClasses();
+      if (res && res.data && Array.isArray(res.data)) {
+        setDbClasses(res.data);
+      }
+    } catch (err) {
+      // quiet fallback
+    } finally {
+      setLoadingDb(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadClasses() {
-      try {
-        setLoadingDb(true);
-        const res = await classService.getClasses();
-        if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setDbClasses(res.data);
-        }
-      } catch (err) {
-        // quiet fallback
-      } finally {
-        setLoadingDb(false);
-      }
-    }
     loadClasses();
   }, [user]);
 
-  // Lesson list matching Figma 15:2994
-  const upcomingLessons = [
-    {
-      id: 1,
-      tutorName: 'TS. Nguyễn Thị Hoa',
-      subject: 'Toán học',
-      subjectTagColor: '#fee2e2',
-      subjectTextColor: '#ea580c',
-      date: '12/09/2026',
-      time: '10:00',
-      duration: '60 phút',
-      topic: 'Ôn tập Chương 5 - Tích phân từng phần',
-      roomUrl: 'https://meet.google.com/abc-def-ghi',
-      status: 'Sắp tới',
-      statusColor: '#059669',
-      statusBg: '#e6fffa'
-    },
-    {
-      id: 2,
-      tutorName: 'TS. Phạm Thị Lan',
-      subject: 'Hóa học',
-      subjectTagColor: '#e0f2fe',
-      subjectTextColor: '#0284c7',
-      date: '15/09/2026',
-      time: '18:00',
-      duration: '90 phút',
-      topic: 'Hóa hữu cơ - Cơ chế phản ứng',
-      roomUrl: 'https://meet.google.com/hjk-lmno-pqr',
-      status: 'Sắp tới',
-      statusColor: '#059669',
-      statusBg: '#e6fffa'
-    },
-    {
-      id: 3,
-      tutorName: 'TS. Lê Thị Thu',
-      subject: 'Sinh học',
-      subjectTagColor: '#dcfce7',
-      subjectTextColor: '#15803d',
-      date: '19/09/2026',
-      time: '09:00',
-      duration: '90 phút',
-      topic: 'Phân bào và di truyền học',
-      roomUrl: 'https://meet.google.com/stu-vwxy-zab',
-      status: 'Sắp tới',
-      statusColor: '#059669',
-      statusBg: '#e6fffa'
+  const handleClassAction = async (action, classId, isPayment = false) => {
+    try {
+      setActionMessage('');
+      const res = await action(classId);
+      setActionMessage(res?.message || 'Cập nhật lớp học thành công.');
+      if (isPayment && user && user.balance !== undefined) {
+        updateUser({ balance: Math.max(0, (user.balance || 0) - 50000) });
+      }
+      await loadClasses();
+    } catch (err) {
+      setActionMessage(err.response?.data?.message || 'Không thể cập nhật lớp học.');
     }
-  ];
+  };
 
-  const completedLessons = [
-    {
-      id: 4,
-      tutorName: 'Trần Minh Đức',
-      subject: 'Tiếng Anh',
-      subjectTagColor: '#fee2e2',
-      subjectTextColor: '#ea580c',
-      date: '08/09/2026',
-      time: '19:30',
-      duration: '60 phút',
-      topic: 'Skimming & Scanning trong các bài đọc xã hội dài 800 từ',
-      status: 'Đã hoàn thành',
-      statusColor: '#64748b',
-      statusBg: '#f1f5f9'
-    },
-    {
-      id: 5,
-      tutorName: 'TS. Nguyễn Thị Hoa',
-      subject: 'Toán học',
-      subjectTagColor: '#fee2e2',
-      subjectTextColor: '#ea580c',
-      date: '05/09/2026',
-      time: '10:00',
-      duration: '60 phút',
-      topic: 'Cực trị của hàm số bậc ba và bài toán tham số m',
-      status: 'Đã hoàn thành',
-      statusColor: '#64748b',
-      statusBg: '#f1f5f9'
+  const getClassStatusMeta = (status) => {
+    if (status === 'PENDING_TUTOR_APPROVAL') {
+      return { label: 'Chờ gia sư duyệt', color: '#92400e', bg: '#fef3c7' };
     }
-  ];
+    if (status === 'PENDING_PAYMENT') {
+      return { label: 'Chờ thanh toán phí kết nối', color: '#1d4ed8', bg: '#dbeafe' };
+    }
+    if (status === 'DECLINED') {
+      return { label: 'Gia sư đã từ chối', color: '#b91c1c', bg: '#fee2e2' };
+    }
+    if (status === 'ACTIVE') {
+      return { label: 'Đang học', color: '#059669', bg: '#e6fffa' };
+    }
+    if (status === 'COMPLETED') {
+      return { label: 'Đã hoàn thành', color: '#475569', bg: '#f1f5f9' };
+    }
+    return { label: status || 'Đã cập nhật', color: '#64748b', bg: '#f1f5f9' };
+  };
 
-  const mappedDbUpcomingLessons = dbClasses.map((c) => {
+  const allMappedClasses = dbClasses.map((c) => {
     const sDesc = c.scheduleDescription || '';
     const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
     const timePart = sDesc.includes('lúc') ? sDesc.split('lúc')[1].trim() : '10:00';
+    const statusMeta = getClassStatusMeta(c.status);
     return {
       id: 'db-' + c.id,
+      classId: c.id,
       tutorName: c.tutorName || 'Gia sư chuyên môn',
-      subject: c.subjectName || 'Toán học',
+      studentName: c.studentName || 'Học sinh',
+      subject: c.subjectName || 'Môn học',
       subjectTagColor: '#e0f2fe',
       subjectTextColor: '#0284c7',
       date: datePart,
@@ -131,19 +91,27 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       duration: '60 phút',
       topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
       roomUrl: 'https://meet.google.com/tutora-class-' + c.id,
-      status: c.status === 'ACTIVE' ? 'Sắp tới' : 'Đã hoàn thành',
-      statusColor: '#059669',
-      statusBg: '#e6fffa',
+      rawStatus: c.status,
+      connectionFee: c.connectionFee,
+      status: statusMeta.label,
+      statusColor: statusMeta.color,
+      statusBg: statusMeta.bg,
       isFromDb: true
     };
   });
 
-  const allUpcoming = [...mappedDbUpcomingLessons, ...upcomingLessons];
+  const upcomingClasses = allMappedClasses.filter(c => 
+    ['PENDING_TUTOR_APPROVAL', 'PENDING_PAYMENT', 'ACTIVE', 'PAUSED'].includes(c.rawStatus)
+  );
+  const historyClasses = allMappedClasses.filter(c => 
+    ['COMPLETED', 'DECLINED', 'CANCELLED'].includes(c.rawStatus)
+  );
+
   const displayLessons = activeTab === 'upcoming' 
-    ? allUpcoming 
+    ? upcomingClasses 
     : activeTab === 'completed' 
-      ? completedLessons 
-      : [...allUpcoming, ...completedLessons];
+      ? historyClasses 
+      : allMappedClasses;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
@@ -162,6 +130,11 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
             Theo dõi buổi học và tiến trình học tập
           </p>
+          {actionMessage && (
+            <p style={{ color: actionMessage.includes('Không thể') ? '#dc2626' : '#059669', fontSize: '0.9rem', margin: '8px 0 0', fontWeight: 700 }}>
+              {actionMessage}
+            </p>
+          )}
         </div>
 
         <button 
@@ -260,7 +233,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 transition: 'all 0.15s'
               }}
             >
-              Sắp tới (3)
+              Lớp học & Yêu cầu ({upcomingClasses.length})
             </button>
             <button
               type="button"
@@ -277,7 +250,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 transition: 'all 0.15s'
               }}
             >
-              Đã hoàn thành (2)
+              Lịch sử ({historyClasses.length})
             </button>
             <button
               type="button"
@@ -294,121 +267,212 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 transition: 'all 0.15s'
               }}
             >
-              Tất cả
+              Tất cả ({allMappedClasses.length})
             </button>
           </div>
 
           {/* Lesson Cards List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-            {displayLessons.map((item) => (
-              <div 
-                key={item.id}
-                style={{
-                  background: '#ffffff',
-                  border: '1.5px solid #0f172a',
-                  borderRadius: '20px',
-                  padding: '24px 28px',
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
-                }}
-              >
-                {/* Header row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 900,
-                      color: '#2563eb',
-                      fontSize: '1.2rem'
-                    }}>
-                      {item.tutorName.charAt(item.tutorName.lastIndexOf(' ') + 1)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>{item.tutorName}</div>
-                      <span style={{
-                        display: 'inline-block',
-                        background: item.subjectTagColor,
-                        color: item.subjectTextColor,
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        borderRadius: '999px',
-                        padding: '2px 10px',
-                        marginTop: '3px'
-                      }}>
-                        {item.subject}
-                      </span>
-                    </div>
-                  </div>
-
-                  <span style={{
-                    background: item.statusBg,
-                    color: item.statusColor,
-                    fontSize: '0.8rem',
-                    fontWeight: 800,
-                    borderRadius: '999px',
-                    padding: '4px 12px',
-                    border: `1px solid ${item.statusColor}33`
-                  }}>
-                    {item.status}
-                  </span>
-                </div>
-
-                {/* Time row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.88rem', color: '#64748b', marginBottom: '14px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    📅 {item.date}
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    🕒 {item.time}
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    ⏳ {item.duration}
-                  </span>
-                </div>
-
-                {/* Topic container */}
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  fontSize: '0.88rem',
-                  color: '#475569',
-                  marginBottom: '18px'
-                }}>
-                  {item.topic}
-                </div>
-
-                {/* Action button */}
-                {item.roomUrl && (
+            {displayLessons.length === 0 ? (
+              <div style={{
+                background: '#ffffff',
+                border: '1.5px dashed #cbd5e1',
+                borderRadius: '20px',
+                padding: '48px 24px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📚</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                  Chưa có lớp học nào trong danh sách này
+                </h3>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 20px 0' }}>
+                  {user?.role === 'TUTOR' 
+                    ? 'Bạn hiện chưa có yêu cầu kết nối hoặc lớp học nào trong mục này.' 
+                    : 'Hãy tìm kiếm gia sư phù hợp và gửi yêu cầu kết nối lịch học!'}
+                </p>
+                {user?.role !== 'TUTOR' && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!user && onRequireAuth) {
-                        onRequireAuth('tham gia phòng học trực tuyến');
-                        return;
-                      }
-                      window.open(item.roomUrl, '_blank', 'noreferrer');
-                    }}
+                    onClick={onNavigateToTutors}
                     className="figma-btn-primary"
-                    style={{
-                      display: 'inline-block',
-                      width: 'auto',
-                      padding: '10px 22px',
-                      fontSize: '0.9rem',
-                      cursor: 'pointer'
-                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 24px', width: 'auto' }}
                   >
-                    Tham gia buổi học
+                    Tìm gia sư ngay →
                   </button>
                 )}
               </div>
-            ))}
+            ) : (
+              displayLessons.map((item) => {
+                const isUserTutor = user?.role === 'TUTOR';
+                const displayName = isUserTutor ? (item.studentName || 'Học sinh') : item.tutorName;
+                const roleBadgeText = isUserTutor ? 'Học sinh' : 'Gia sư';
+                const initialChar = displayName ? (displayName.trim().charAt(displayName.trim().lastIndexOf(' ') + 1) || displayName.charAt(0)) : 'G';
+
+                return (
+                  <div 
+                    key={item.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #0f172a',
+                      borderRadius: '20px',
+                      padding: '24px 28px',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                    }}
+                  >
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '12px',
+                          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                          color: '#2563eb',
+                          fontSize: '1.2rem'
+                        }}>
+                          {initialChar}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
+                            {displayName}
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginLeft: '8px' }}>
+                              ({roleBadgeText})
+                            </span>
+                          </div>
+                          <span style={{
+                            display: 'inline-block',
+                            background: item.subjectTagColor,
+                            color: item.subjectTextColor,
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            borderRadius: '999px',
+                            padding: '2px 10px',
+                            marginTop: '3px'
+                          }}>
+                            {item.subject}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        background: item.statusBg,
+                        color: item.statusColor,
+                        fontSize: '0.8rem',
+                        fontWeight: 800,
+                        borderRadius: '999px',
+                        padding: '4px 12px',
+                        border: `1px solid ${item.statusColor}33`
+                      }}>
+                        {item.status}
+                      </span>
+                    </div>
+
+                    {/* Time row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.88rem', color: '#64748b', marginBottom: '14px', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        📅 {item.date}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        🕒 {item.time}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        ⏳ {item.duration}
+                      </span>
+                    </div>
+
+                    {/* Topic container */}
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '12px 16px',
+                      fontSize: '0.88rem',
+                      color: '#475569',
+                      marginBottom: '18px'
+                    }}>
+                      {item.topic}
+                    </div>
+
+                    {/* Action buttons & status-specific guidance */}
+                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleClassAction(classService.acceptClass, item.classId)}
+                          className="figma-btn-primary"
+                          style={{ width: 'auto', padding: '10px 18px', fontSize: '0.9rem' }}
+                        >
+                          Chấp nhận lịch học
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleClassAction(classService.declineClass, item.classId)}
+                          style={{ border: '1.5px solid #b91c1c', color: '#b91c1c', background: '#fff', borderRadius: '10px', padding: '10px 18px', fontWeight: 800, cursor: 'pointer' }}
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    )}
+
+                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
+                      <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
+                        ✓ Bạn đã chấp nhận lịch học. Đang chờ học sinh/phụ huynh thanh toán phí kết nối để kích hoạt lớp.
+                      </div>
+                    )}
+
+                    {item.isFromDb && user?.role !== 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                      <div style={{ color: '#92400e', fontSize: '0.88rem', fontWeight: 700, background: '#fef3c7', border: '1px solid #fde68a', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
+                        ⏳ Yêu cầu đã được gửi tới gia sư. Vui lòng chờ gia sư xác nhận lịch học.
+                      </div>
+                    )}
+
+                    {item.isFromDb && user?.role !== 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
+                      <button
+                        type="button"
+                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}
+                        className="figma-btn-primary"
+                        style={{ display: 'inline-block', width: 'auto', padding: '10px 22px', fontSize: '0.9rem', cursor: 'pointer' }}
+                      >
+                        Thanh toán phí kết nối (50.000đ)
+                      </button>
+                    )}
+
+                    {item.isFromDb && item.rawStatus === 'DECLINED' && (
+                      <div style={{ color: '#b91c1c', fontSize: '0.88rem', fontWeight: 700, background: '#fee2e2', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
+                        Gia sư đã từ chối yêu cầu kết nối này. Bạn có thể tìm kiếm gia sư khác để đăng ký lịch học.
+                      </div>
+                    )}
+
+                    {item.roomUrl && (!item.isFromDb || item.rawStatus === 'ACTIVE') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user && onRequireAuth) {
+                            onRequireAuth('tham gia phòng học trực tuyến');
+                            return;
+                          }
+                          window.open(item.roomUrl, '_blank', 'noreferrer');
+                        }}
+                        className="figma-btn-primary"
+                        style={{
+                          display: 'inline-block',
+                          width: 'auto',
+                          padding: '10px 22px',
+                          fontSize: '0.9rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Tham gia buổi học
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* "Thông báo" Section (Figma 15:2994) */}
