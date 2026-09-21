@@ -33,6 +33,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 243,
       subjects: ['Toán học', 'Vật lý', 'Tin học'],
       hobbies: ['Cờ vua', 'Đọc sách'],
+      phone: '0901 234 567',
+      facebookUrl: 'https://facebook.com/giasu.nguyenthihoa',
+      email: 'tutor.nguyen@giasuhq.com',
       bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
       avatarColor: '#22c55e'
     },
@@ -49,6 +52,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 312,
       subjects: ['Hóa học', 'Sinh học'],
       hobbies: ['Nấu ăn', 'Du lịch'],
+      phone: '0902 222 333',
+      facebookUrl: 'https://facebook.com/giasu.phamthilan',
+      email: 'tutor.lan@giasuhq.com',
       bio: 'Tiến sĩ Y khoa tại ĐH Y Hà Nội. Chuyên luyện thi y dược và khoa học tự nhiên. 96% học sinh đậu kỳ thi quốc gia.',
       avatarColor: '#f59e0b'
     },
@@ -65,6 +71,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 289,
       subjects: ['Sinh học', 'Hóa học', 'Luyện thi THPT'],
       hobbies: ['Thể thao', 'Nghệ thuật'],
+      phone: '0903 333 444',
+      facebookUrl: 'https://facebook.com/giasu.lethithu',
+      email: 'tutor.thu@giasuhq.com',
       bio: 'Cựu giảng viên đại học với niềm đam mê làm cho khoa học trở nên thú vị. Sử dụng thí nghiệm thực hành và ví dụ thực tế để xây dựng hiểu biết sâu.',
       avatarColor: '#ef4444'
     },
@@ -81,6 +90,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 178,
       subjects: ['Tiếng Anh', 'Lịch sử', 'Luyện thi THPT'],
       hobbies: ['Du lịch', 'Điện ảnh'],
+      phone: '0904 444 555',
+      facebookUrl: 'https://facebook.com/giasu.tranminhduc',
+      email: 'tutor.duc@giasuhq.com',
       bio: 'Thạc sĩ Giáo dục tại ĐH Ngoại Thương. Cựu giáo viên THPT, chuyên gia luyện thi đại học với tỉ lệ học sinh đậu 95%.',
       avatarColor: '#8b5cf6'
     },
@@ -97,6 +109,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 134,
       subjects: ['Tiếng Pháp', 'Tiếng Tây Ban Nha', 'Mỹ thuật'],
       hobbies: ['Nghệ thuật', 'Du lịch'],
+      phone: '0905 555 666',
+      facebookUrl: 'https://facebook.com/giasu.vuthimai',
+      email: 'tutor.mai@giasuhq.com',
       bio: 'Người Pháp gốc Việt, Thạc sĩ Lịch sử Nghệ thuật tại Sorbonne. Dạy ngôn ngữ qua văn hóa - nghệ thuật, điện ảnh, ẩm thực và văn học.',
       avatarColor: '#ec4899'
     },
@@ -113,6 +128,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 87,
       subjects: ['Tin học', 'Toán học'],
       hobbies: ['Công nghệ', 'Gaming'],
+      phone: '0906 666 777',
+      facebookUrl: 'https://facebook.com/giasu.levanhung',
+      email: 'tutor.hung@giasuhq.com',
       bio: 'Kỹ sư phần mềm tại VNG. Dạy lập trình theo phương pháp thực hành - học viên tạo ra sản phẩm thật sau mỗi khóa học.',
       avatarColor: '#06b6d4'
     },
@@ -129,6 +147,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 201,
       subjects: ['Toán học', 'Vật lý', 'Luyện thi THPT'],
       hobbies: ['Cờ vua', 'Thể thao'],
+      phone: '0907 777 888',
+      facebookUrl: 'https://facebook.com/giasu.dothanhtung',
+      email: 'tutor.tung@giasuhq.com',
       bio: 'Thạc sĩ Vật lý tại ĐH Bách Khoa. Chuyên luyện thi THPT quốc gia và Olympic Toán. Hơn 200 học sinh tăng điểm trung bình 2.5 điểm.',
       avatarColor: '#10b981'
     },
@@ -145,6 +166,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       studentsCount: 62,
       subjects: ['Âm nhạc', 'Toán học'],
       hobbies: ['Âm nhạc', 'Hoạt động ngoài trời'],
+      phone: '0908 888 999',
+      facebookUrl: 'https://facebook.com/giasu.nguyenquocbao',
+      email: 'tutor.bao@giasuhq.com',
       bio: 'Tốt nghiệp Nhạc viện Hà Nội và yêu thích Toán học. Tìm ra mối liên hệ giữa lý thuyết âm nhạc và toán học để truyền cảm hứng cho học sinh.',
       avatarColor: '#f97316'
     }

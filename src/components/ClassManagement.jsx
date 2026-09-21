@@ -12,7 +12,9 @@ import {
   Star, 
   ArrowRight,
   Plus,
-  Bell
+  PlusCircle,
+  Bell,
+  X
 } from 'lucide-react';
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
@@ -23,13 +25,63 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const [loadingDb, setLoadingDb] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
+  // Modal State for Adding Class / Free Schedule Slot
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmittingClass, setIsSubmittingClass] = useState(false);
+  const [newClassForm, setNewClassForm] = useState({
+    className: '',
+    subjectName: 'Toán học',
+    partnerName: '',
+    date: '2026-09-22',
+    time: '18:00 - 20:00',
+    duration: '60 phút',
+    isFreeSlot: false,
+    notes: ''
+  });
+
+  const getLocalStorageClasses = () => {
+    try {
+      const key = `giasuhq_custom_classes_${user?.id || 'guest'}`;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const saveLocalStorageClass = (newCls) => {
+    try {
+      const key = `giasuhq_custom_classes_${user?.id || 'guest'}`;
+      const existing = getLocalStorageClasses();
+      const updated = [newCls, ...existing.filter(item => item.id !== newCls.id)];
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Cannot save to localStorage', e);
+    }
+  };
+
   const loadClasses = async () => {
     try {
       setLoadingDb(true);
-      const res = await classService.getClasses();
-      if (res && res.data && Array.isArray(res.data)) {
-        setDbClasses(res.data);
+      const localClasses = getLocalStorageClasses();
+      let remoteClasses = [];
+      try {
+        const res = await classService.getClasses();
+        if (res && res.data && Array.isArray(res.data)) {
+          remoteClasses = res.data;
+        }
+      } catch (err) {
+        console.warn('API getClasses warning, using local data fallback:', err);
       }
+
+      // Merge remote and local without duplicate IDs
+      const merged = [...localClasses];
+      remoteClasses.forEach(rc => {
+        if (!merged.some(mc => mc.id === rc.id || (mc.orderCode && mc.orderCode === rc.orderCode))) {
+          merged.push(rc);
+        }
+      });
+      setDbClasses(merged);
     } catch (err) {
       // quiet fallback
     } finally {
@@ -40,6 +92,94 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   useEffect(() => {
     loadClasses();
   }, [user]);
+
+  const handleCreateCustomClass = async (e) => {
+    e.preventDefault();
+    if (!user && onRequireAuth) {
+      onRequireAuth('thêm lớp học hoặc lịch rảnh');
+      return;
+    }
+    setIsSubmittingClass(true);
+    setActionMessage('');
+    try {
+      const isTutor = user?.role === 'TUTOR';
+      const isFreeSlot = isTutor && newClassForm.isFreeSlot;
+      const sName = isFreeSlot 
+        ? 'Lịch rảnh (Sẵn sàng nhận lớp)' 
+        : (isTutor 
+            ? (newClassForm.partnerName || 'Học sinh mới') 
+            : (user?.fullName || 'Học sinh'));
+      const tName = isTutor 
+        ? (user?.fullName || 'Gia sư') 
+        : (newClassForm.partnerName || 'TS. Nguyễn Thị Hoa');
+
+      const cName = newClassForm.className.trim() || 
+        (isFreeSlot 
+          ? `Lịch rảnh: Môn ${newClassForm.subjectName} (${tName})` 
+          : `Lớp ${newClassForm.subjectName} cùng ${tName}`);
+
+      const payload = {
+        className: cName,
+        subjectName: newClassForm.subjectName,
+        subjectId: 1,
+        tutorId: isTutor ? user?.id : 1,
+        tutorName: tName,
+        studentName: sName,
+        studentId: isTutor ? null : user?.id,
+        studentEmail: user?.email,
+        scheduleDescription: `${newClassForm.date} lúc ${newClassForm.time}`,
+        date: newClassForm.date,
+        time: newClassForm.time,
+        duration: newClassForm.duration,
+        notes: newClassForm.notes,
+        status: 'ACTIVE',
+        isFreeSlot: isFreeSlot
+      };
+
+      let savedItem = null;
+      try {
+        const res = await classService.createClass(payload);
+        if (res && res.data) {
+          savedItem = res.data;
+        }
+      } catch (err) {
+        console.warn('Backend API createClass warning, using local persistence:', err);
+      }
+
+      if (!savedItem) {
+        savedItem = {
+          id: Date.now(),
+          ...payload,
+          status: 'ACTIVE',
+          connectionFee: 5000
+        };
+      }
+
+      saveLocalStorageClass(savedItem);
+      setDbClasses(prev => [savedItem, ...prev.filter(item => item.id !== savedItem.id)]);
+      setShowAddModal(false);
+      setActionMessage(
+        isFreeSlot
+          ? '✅ Đã thêm lịch rảnh thành công! Khung giờ đã xuất hiện trên thời khóa biểu của bạn.'
+          : '✅ Đã thêm lớp học mới vào lịch học thành công!'
+      );
+      // Reset form
+      setNewClassForm({
+        className: '',
+        subjectName: 'Toán học',
+        partnerName: '',
+        date: '2026-09-22',
+        time: '18:00 - 20:00',
+        duration: '60 phút',
+        isFreeSlot: false,
+        notes: ''
+      });
+    } catch (err) {
+      setActionMessage('Không thể tạo lớp học. Vui lòng thử lại.');
+    } finally {
+      setIsSubmittingClass(false);
+    }
+  };
 
   const handleClassAction = async (action, classId, isPayment = false) => {
     try {
@@ -55,7 +195,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     }
   };
 
-  const getClassStatusMeta = (status) => {
+  const getClassStatusMeta = (status, isFreeSlot = false) => {
+    if (isFreeSlot) {
+      return { label: '🟢 Lịch rảnh nhận lớp', color: '#059669', bg: '#ecfdf5' };
+    }
     if (status === 'PENDING_TUTOR_APPROVAL') {
       return { label: 'Chờ gia sư duyệt', color: '#92400e', bg: '#fef3c7' };
     }
@@ -75,25 +218,27 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   };
 
   const allMappedClasses = dbClasses.map((c) => {
+    const isFreeSlot = c.isFreeSlot || (c.studentName && c.studentName.includes('Lịch rảnh'));
     const sDesc = c.scheduleDescription || '';
     const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
     const timePart = sDesc.includes('lúc') ? sDesc.split('lúc')[1].trim() : '10:00';
-    const statusMeta = getClassStatusMeta(c.status);
+    const statusMeta = getClassStatusMeta(c.status, isFreeSlot);
     return {
       id: 'db-' + c.id,
       classId: c.id,
       tutorName: c.tutorName || 'Gia sư chuyên môn',
       studentName: c.studentName || 'Học sinh',
       subject: c.subjectName || 'Môn học',
-      subjectTagColor: '#e0f2fe',
-      subjectTextColor: '#0284c7',
+      subjectTagColor: isFreeSlot ? '#ecfdf5' : '#e0f2fe',
+      subjectTextColor: isFreeSlot ? '#059669' : '#0284c7',
       date: datePart,
       time: timePart,
-      duration: '60 phút',
+      duration: c.duration || '60 phút',
       topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
       roomUrl: 'https://meet.google.com/tutora-class-' + c.id,
       rawStatus: c.status,
       connectionFee: c.connectionFee,
+      isFreeSlot: isFreeSlot,
       status: statusMeta.label,
       statusColor: statusMeta.color,
       statusBg: statusMeta.bg,
@@ -143,20 +288,54 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           )}
         </div>
 
-        <button 
-          type="button"
-          className="figma-btn-primary"
-          style={{ width: 'auto', padding: '12px 24px', fontSize: '0.95rem' }}
-          onClick={() => {
-            if (!user && onRequireAuth) {
-              onRequireAuth('đặt lịch học mới với gia sư');
-              return;
-            }
-            if (onNavigateToTutors) onNavigateToTutors();
-          }}
-        >
-          + Đặt Lịch Học Mới
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {user?.role === 'TUTOR' ? (
+            <button 
+              type="button"
+              className="figma-btn-primary"
+              style={{ width: 'auto', padding: '12px 22px', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              onClick={() => {
+                if (!user && onRequireAuth) {
+                  onRequireAuth('thêm lịch rảnh hoặc lớp học');
+                  return;
+                }
+                setNewClassForm(prev => ({ ...prev, isFreeSlot: true }));
+                setShowAddModal(true);
+              }}
+            >
+              <PlusCircle size={18} /> + Thêm Lịch Rảnh / Tạo Lớp
+            </button>
+          ) : (
+            <>
+              <button 
+                type="button"
+                className="figma-btn-primary"
+                style={{ width: 'auto', padding: '12px 22px', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => {
+                  if (!user && onRequireAuth) {
+                    onRequireAuth('tự thêm lớp học vào hệ thống');
+                    return;
+                  }
+                  setNewClassForm(prev => ({ ...prev, isFreeSlot: false }));
+                  setShowAddModal(true);
+                }}
+              >
+                <Plus size={18} /> + Thêm Lớp Học Mới
+              </button>
+
+              <button 
+                type="button"
+                className="figma-btn-outline"
+                style={{ width: 'auto', padding: '11px 20px', fontSize: '0.92rem' }}
+                onClick={() => {
+                  if (onNavigateToTutors) onNavigateToTutors();
+                }}
+              >
+                Tìm Gia Sư
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 4 Top Stat Cards (Exact Figma 15:2994) */}
@@ -844,6 +1023,281 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           </div>
         </div>
       </div>
+
+      {/* Modal Thêm Lớp Học / Lịch Rảnh */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            border: '2px solid #0f172a',
+            padding: '32px',
+            maxWidth: '560px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
+            position: 'relative'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                  {user?.role === 'TUTOR' 
+                    ? (newClassForm.isFreeSlot ? 'Thêm Lịch Rảnh Mới' : 'Tạo Lớp Học Mới') 
+                    : 'Thêm Lớp Học Mới'}
+                </h2>
+                <p style={{ fontSize: '0.86rem', color: '#64748b', margin: 0 }}>
+                  {user?.role === 'TUTOR' 
+                    ? 'Thiết lập khung giờ rảnh nhận dạy hoặc lên lịch cho học sinh mới'
+                    : 'Lên lịch học sau khi đã kết nối và trao đổi với gia sư'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={20} color="#475569" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleCreateCustomClass}>
+              {/* Option for Tutor: Free slot toggle */}
+              {user?.role === 'TUTOR' && (
+                <div style={{
+                  background: newClassForm.isFreeSlot ? '#ecfdf5' : '#f8fafc',
+                  border: newClassForm.isFreeSlot ? '1.5px solid #10b981' : '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  marginBottom: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setNewClassForm(prev => ({ ...prev, isFreeSlot: !prev.isFreeSlot }))}
+                >
+                  <input
+                    type="checkbox"
+                    checked={newClassForm.isFreeSlot}
+                    onChange={(e) => setNewClassForm(prev => ({ ...prev, isFreeSlot: e.target.checked }))}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: newClassForm.isFreeSlot ? '#065f46' : '#0f172a' }}>
+                      📅 Thiết lập làm Lịch Rảnh (Sẵn sàng nhận học sinh mới)
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                      Khung giờ này sẽ hiển thị là lịch rảnh trên thời khóa biểu của bạn
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Field: Subject */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Môn học *
+                </label>
+                <select
+                  className="figma-text-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                  value={newClassForm.subjectName}
+                  onChange={(e) => setNewClassForm(prev => ({ ...prev, subjectName: e.target.value }))}
+                >
+                  {['Toán học', 'Vật lý', 'Hóa học', 'Sinh học', 'Tiếng Anh', 'Tin học', 'Ngữ Văn', 'Lịch sử'].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Field: Class Name */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Tên lớp học / Tiêu đề (Tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  className="figma-text-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                  placeholder={newClassForm.isFreeSlot ? "Ví dụ: Lịch rảnh dạy Toán cấp tốc" : "Ví dụ: Lớp Toán 12 - Ôn thi THPT"}
+                  value={newClassForm.className}
+                  onChange={(e) => setNewClassForm(prev => ({ ...prev, className: e.target.value }))}
+                />
+              </div>
+
+              {/* Field: Partner Name */}
+              {user?.role === 'TUTOR' && !newClassForm.isFreeSlot && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Tên học sinh / Phụ huynh
+                  </label>
+                  <input
+                    type="text"
+                    className="figma-text-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                    placeholder="Ví dụ: Em Trần Văn C"
+                    value={newClassForm.partnerName}
+                    onChange={(e) => setNewClassForm(prev => ({ ...prev, partnerName: e.target.value }))}
+                  />
+                </div>
+              )}
+
+              {user?.role !== 'TUTOR' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Gia sư phụ trách *
+                  </label>
+                  <select
+                    className="figma-text-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                    value={newClassForm.partnerName}
+                    onChange={(e) => setNewClassForm(prev => ({ ...prev, partnerName: e.target.value }))}
+                  >
+                    <option value="">-- Chọn gia sư đã kết nối --</option>
+                    {[
+                      'TS. Nguyễn Thị Hoa',
+                      'TS. Phạm Thị Lan',
+                      'TS. Lê Thị Thu',
+                      'Trần Minh Đức',
+                      'Vũ Thị Mai',
+                      'Lê Văn Hùng',
+                      'Đỗ Thanh Tùng',
+                      'Nguyễn Quốc Bảo'
+                    ].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Field: Date and Time Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Ngày học *
+                  </label>
+                  <input
+                    type="date"
+                    className="figma-text-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                    value={newClassForm.date}
+                    onChange={(e) => setNewClassForm(prev => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Khung giờ *
+                  </label>
+                  <select
+                    className="figma-text-input"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                    value={newClassForm.time}
+                    onChange={(e) => setNewClassForm(prev => ({ ...prev, time: e.target.value }))}
+                  >
+                    <option value="08:00 - 10:00">08:00 - 10:00 (Sáng)</option>
+                    <option value="10:00 - 12:00">10:00 - 12:00 (Trưa)</option>
+                    <option value="14:00 - 16:00">14:00 - 16:00 (Chiều)</option>
+                    <option value="16:00 - 18:00">16:00 - 18:00 (Chiều)</option>
+                    <option value="18:00 - 20:00">18:00 - 20:00 (Tối)</option>
+                    <option value="19:30 - 21:00">19:30 - 21:00 (Tối)</option>
+                    <option value="20:00 - 22:00">20:00 - 22:00 (Tối)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Field: Duration & Notes */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Thời lượng mỗi buổi
+                </label>
+                <select
+                  className="figma-text-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                  value={newClassForm.duration}
+                  onChange={(e) => setNewClassForm(prev => ({ ...prev, duration: e.target.value }))}
+                >
+                  <option value="60 phút">60 phút (1 tiếng)</option>
+                  <option value="90 phút">90 phút (1.5 tiếng)</option>
+                  <option value="120 phút">120 phút (2 tiếng)</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  Ghi chú / Link Google Meet
+                </label>
+                <input
+                  type="text"
+                  className="figma-text-input"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
+                  placeholder="meet.google.com/abc-xyz hoặc địa chỉ học kèm"
+                  value={newClassForm.notes}
+                  onChange={(e) => setNewClassForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingClass}
+                  className="figma-btn-primary"
+                  style={{ width: 'auto', padding: '12px 28px', fontSize: '0.95rem' }}
+                >
+                  {isSubmittingClass 
+                    ? 'Đang lưu...' 
+                    : (user?.role === 'TUTOR' && newClassForm.isFreeSlot ? 'Lưu Lịch Rảnh' : 'Lưu Lớp Học')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
