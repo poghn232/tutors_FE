@@ -12,7 +12,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedGender, setSelectedGender] = useState('all');
   const [selectedEducation, setSelectedEducation] = useState('all');
-  const [maxPrice, setMaxPrice] = useState(500000);
   const [minRating, setMinRating] = useState('all');
   const [selectedHobby, setSelectedHobby] = useState('all');
   const [sortBy, setSortBy] = useState('rating_desc');
@@ -26,7 +25,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Tiến sĩ · ĐH Quốc gia Hà Nội',
       degree: 'Tiến sĩ',
       gender: 'Nữ',
-      hourlyRate: 250000,
       rating: 4.9,
       reviewsCount: 127,
       experienceYears: 8,
@@ -45,7 +43,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Tiến sĩ · ĐH Y Hà Nội',
       degree: 'Tiến sĩ',
       gender: 'Nữ',
-      hourlyRate: 300000,
       rating: 4.9,
       reviewsCount: 203,
       experienceYears: 10,
@@ -64,7 +61,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Tiến sĩ · ĐH Stanford (Hoa Kỳ)',
       degree: 'Tiến sĩ',
       gender: 'Nữ',
-      hourlyRate: 280000,
       rating: 4.9,
       reviewsCount: 158,
       experienceYears: 12,
@@ -83,7 +79,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Thạc sĩ · ĐH Ngoại Thương',
       degree: 'Thạc sĩ',
       gender: 'Nam',
-      hourlyRate: 200000,
       rating: 4.8,
       reviewsCount: 89,
       experienceYears: 6,
@@ -102,7 +97,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Thạc sĩ · ĐH Sorbonne',
       degree: 'Thạc sĩ',
       gender: 'Nữ',
-      hourlyRate: 180000,
       rating: 4.8,
       reviewsCount: 76,
       experienceYears: 7,
@@ -121,7 +115,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Cử nhân · ĐH Bách Khoa TP.HCM',
       degree: 'Cử nhân',
       gender: 'Nam',
-      hourlyRate: 220000,
       rating: 4.7,
       reviewsCount: 54,
       experienceYears: 4,
@@ -140,7 +133,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Thạc sĩ · ĐH Bách Khoa Hà Nội',
       degree: 'Thạc sĩ',
       gender: 'Nam',
-      hourlyRate: 230000,
       rating: 4.7,
       reviewsCount: 93,
       experienceYears: 6,
@@ -159,7 +151,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       school: 'Cử nhân · Nhạc viện Hà Nội',
       degree: 'Cử nhân',
       gender: 'Nam',
-      hourlyRate: 190000,
       rating: 4.6,
       reviewsCount: 41,
       experienceYears: 5,
@@ -215,16 +206,11 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
     const matchSubject = selectedSubject === 'all' || selectedSubject === 'Tất cả môn học' || t.subjects.includes(selectedSubject);
     const matchGender = selectedGender === 'all' || t.gender === selectedGender;
     const matchEducation = selectedEducation === 'all' || t.degree === selectedEducation;
-    const matchPrice = t.hourlyRate <= maxPrice;
     const matchRating = minRating === 'all' || t.rating >= parseFloat(minRating);
     const matchHobby = selectedHobby === 'all' || (t.hobbies && t.hobbies.includes(selectedHobby));
 
-    return matchSearch && matchSubject && matchGender && matchEducation && matchPrice && matchRating && matchHobby;
+    return matchSearch && matchSubject && matchGender && matchEducation && matchRating && matchHobby;
   });
-
-  const formatVND = (val) => {
-    return new Intl.NumberFormat('vi-VN').format(val) + 'đ/giờ';
-  };
 
   if (activeBookingTutor) {
     return (
@@ -303,8 +289,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
               }}
             >
               <option value="rating_desc">Đánh giá cao nhất ⌄</option>
-              <option value="price_asc">Học phí: Thấp đến cao</option>
-              <option value="price_desc">Học phí: Cao đến thấp</option>
               <option value="exp_desc">Kinh nghiệm nhiều nhất</option>
             </select>
           </div>
@@ -436,29 +420,7 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
 
           <div style={{ height: '1px', background: '#f1f5f9', margin: '16px 0' }} />
 
-          {/* SECTION 4: GIÁ TỐI ĐA */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '8px' }}>
-              GIÁ TỐI ĐA: {new Intl.NumberFormat('vi-VN').format(maxPrice)}Đ/GIỜ
-            </div>
-            <input 
-              type="range"
-              min="100000"
-              max="500000"
-              step="50000"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(parseInt(e.target.value))}
-              style={{ width: '100%', accentColor: '#f97316', cursor: 'pointer' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-              <span>100.000đ</span>
-              <span>500.000đ</span>
-            </div>
-          </div>
-
-          <div style={{ height: '1px', background: '#f1f5f9', margin: '16px 0' }} />
-
-          {/* SECTION 5: ĐÁNH GIÁ TỐI THIỂU */}
+          {/* SECTION 4: ĐÁNH GIÁ TỐI THIỂU */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '12px' }}>
               ĐÁNH GIÁ TỐI THIỂU
@@ -585,9 +547,6 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                       </div>
                     </div>
 
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#059669', whiteSpace: 'nowrap' }}>
-                      {formatVND(tutor.hourlyRate)}
-                    </div>
                   </div>
 
                   {/* Tags */}

@@ -50,7 +50,6 @@ export default function ProfileView({ onBack }) {
 
   const [tutorDegree, setTutorDegree] = useState(() => localStorage.getItem(`tutora_degree_${user?.id || user?.email}`) || '');
   const [tutorUniversity, setTutorUniversity] = useState(() => localStorage.getItem(`tutora_univ_${user?.id || user?.email}`) || '');
-  const [tutorHourlyRate, setTutorHourlyRate] = useState(user?.hourlyRate || '');
   const [tutorSkills, setTutorSkills] = useState(() => {
     const s = localStorage.getItem(`tutora_skills_${user?.id || user?.email}`);
     return s ? JSON.parse(s) : [];
@@ -893,24 +892,12 @@ export default function ProfileView({ onBack }) {
                 </div>
               </div>
             ) : tutorNav === 'rates' ? (
-              /* TAB: MÔN DẠY & HỌC PHÍ */
+              /* TAB: MÔN DẠY */
               <div>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <BookOpen size={24} color="#7c3aed" />
-                  <span>Môn dạy & Học phí đề xuất</span>
+                  <span>Môn dạy</span>
                 </h2>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Mức học phí theo buổi (VNĐ / buổi 90 phút)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: 250.000đ / buổi hoặc 200.000đ / giờ..."
-                    value={tutorHourlyRate}
-                    onChange={(e) => setTutorHourlyRate(e.target.value)}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box', fontWeight: 700 }}
-                  />
-                </div>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
                     Chọn các môn bạn tự tin nhận dạy kèm:
