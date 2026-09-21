@@ -92,10 +92,11 @@ export default function CheckoutFlow({
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Calculate pricing
-  const lessonPrice = details.lessonPrice || 250000;
-  const bookingFee = Math.round(lessonPrice * (details.bookingFeeRate || 0.05));
-  const subtotal = lessonPrice + bookingFee;
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+  // Phí kết nối nền tảng: Cố định 5.000đ trong giai đoạn thử nghiệm
+  const CONNECTION_FEE = 5000;
+  const tutorReferencePrice = details.lessonPrice || currentTutor.hourlyRate || 250000;
+  const bookingFee = CONNECTION_FEE;
+  const finalTotal = Math.max(0, CONNECTION_FEE - discountAmount);
 
   const formatVND = (num) => {
     return new Intl.NumberFormat('vi-VN').format(num) + 'đ';
@@ -905,16 +906,30 @@ export default function CheckoutFlow({
 
             {/* RIGHT COLUMN: TÓM TẮT ĐƠN HÀNG (FIGMA EXACT DESIGN) */}
             <div className="figma-summary-card">
-              <h3 className="figma-summary-heading">Tóm tắt đơn hàng</h3>
+              <h3 className="figma-summary-heading">Tóm tắt thanh toán</h3>
 
               <div className="figma-summary-line">
-                <span className="figma-summary-label">Buổi học 60 phút</span>
-                <span className="figma-summary-val">{formatVND(lessonPrice)}</span>
+                <span className="figma-summary-label">
+                  <strong style={{ color: '#0f172a' }}>Phí kết nối nền tảng</strong>
+                  <span style={{ display: 'block', fontSize: '0.74rem', color: '#059669', fontWeight: 600 }}>
+                    Thử nghiệm kết nối gia sư
+                  </span>
+                </span>
+                <span className="figma-summary-val" style={{ color: '#059669', fontWeight: 800 }}>
+                  {formatVND(CONNECTION_FEE)}
+                </span>
               </div>
 
-              <div className="figma-summary-line">
-                <span className="figma-summary-label">Phí đặt lịch (5%)</span>
-                <span className="figma-summary-val">{formatVND(bookingFee)}</span>
+              <div className="figma-summary-line" style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', margin: '8px 0' }}>
+                <span className="figma-summary-label">
+                  <span style={{ color: '#475569', fontWeight: 700, fontSize: '0.82rem' }}>Học phí gia sư (Tham khảo)</span>
+                  <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', marginTop: '2px', lineHeight: 1.3 }}>
+                    Phụ huynh & gia sư tự thỏa thuận trực tiếp sau buổi học (không chuyển khoản qua web)
+                  </span>
+                </span>
+                <span className="figma-summary-val" style={{ color: '#64748b', fontWeight: 700 }}>
+                  {formatVND(tutorReferencePrice)}/buổi
+                </span>
               </div>
 
               {discountApplied && (
@@ -927,13 +942,13 @@ export default function CheckoutFlow({
               <div className="figma-summary-divider" />
 
               <div className="figma-summary-total">
-                <span>Tổng cộng</span>
-                <span>{formatVND(finalTotal)}</span>
+                <span>Tiền chuyển khoản</span>
+                <span style={{ color: '#059669' }}>{formatVND(finalTotal)}</span>
               </div>
 
-              {/* Cancellation policy green box (Figma design) */}
-              <div className="figma-cancel-box">
-                <strong>Hủy miễn phí</strong> trước 24 giờ so với giờ học. Sau thời điểm đó, phí hủy là 50%.
+              {/* Cancellation policy / Note green box */}
+              <div className="figma-cancel-box" style={{ fontSize: '0.8rem', lineHeight: 1.4 }}>
+                <strong>Lưu ý:</strong> Tiền chuyển khoản chỉ là <strong>Phí kết nối (5.000đ)</strong>. Học phí thực tế do phụ huynh và gia sư tự thanh toán trực tiếp, nền tảng không thu giữ học phí.
               </div>
 
               {/* Discount code link / expander */}
@@ -1012,11 +1027,11 @@ export default function CheckoutFlow({
               </div>
 
               <div className="figma-success-row">
-                <span className="figma-success-box-label">Phí kết nối</span>
+                <span className="figma-success-box-label">Phí kết nối nền tảng</span>
                 <span className="figma-success-box-val figma-paid-amount" style={{ color: '#2563eb' }}>
-                  {formatVND(bookingFee)}
+                  {formatVND(finalTotal)}
                   <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: 'block' }}>
-                    (Chỉ trừ từ ví sau khi gia sư chấp nhận lịch học)
+                    (Thử nghiệm: 5.000đ · Học phí trả trực tiếp cho gia sư sau buổi học)
                   </span>
                 </span>
               </div>

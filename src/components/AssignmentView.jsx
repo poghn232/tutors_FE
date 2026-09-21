@@ -151,7 +151,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
     } catch (e) {
       console.warn('Cannot read assignments from localStorage:', e);
     }
-    return DEFAULT_ASSIGNMENTS;
+    return user ? [] : DEFAULT_ASSIGNMENTS;
   });
 
   // Save assignments whenever modified
@@ -586,9 +586,29 @@ export default function AssignmentView({ user, onRequireAuth }) {
 
       {/* Assignment Cards List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {filteredAssignments.map((asg) => (
-          <div
-            key={asg.id}
+        {filteredAssignments.length === 0 ? (
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px dashed #cbd5e1',
+            borderRadius: '20px',
+            padding: '40px 20px',
+            textAlign: 'center',
+            color: '#64748b'
+          }}>
+            <FileText size={36} color="#94a3b8" style={{ margin: '0 auto 12px', display: 'block' }} />
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
+              Chưa có bài tập nào
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
+              {isTutor 
+                ? 'Bấm "+ Giao bài tập mới" để giao bài tập cho học sinh của bạn.'
+                : 'Bạn chưa có bài tập nào được giao từ gia sư.'}
+            </p>
+          </div>
+        ) : (
+          filteredAssignments.map((asg) => (
+            <div
+              key={asg.id}
             style={{
               background: '#ffffff',
               border: asg.status === 'overdue' ? '2px solid #ef4444' : asg.status === 'submitted' ? '2px solid #7c3aed' : '1.5px solid #0f172a',
@@ -935,7 +955,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
               </div>
             )}
           </div>
-        ))}
+        )))}
       </div>
 
       {/* MODAL: TUTOR CREATE ASSIGNMENT */}

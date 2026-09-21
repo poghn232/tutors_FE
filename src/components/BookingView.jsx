@@ -426,18 +426,40 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
             padding: '24px 28px'
           }}>
             {/* Price Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
-                <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a' }}>
-                  {formatVND(currentTutor.hourlyRate)}
-                </span>
-                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/giờ</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a' }}>
+                    {formatVND(currentTutor.hourlyRate)}
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/buổi</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>
+                  (Học phí tham khảo · Tự thỏa thuận trực tiếp)
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.88rem' }}>
                 <span style={{ color: '#f59e0b' }}>★★★★★</span>
                 <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentTutor.rating}</span>
               </div>
+            </div>
+
+            {/* Platform connection fee badge */}
+            <div style={{
+              background: '#ecfdf5',
+              border: '1.5px dashed #059669',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              marginBottom: '18px',
+              fontSize: '0.8rem',
+              color: '#065f46',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span>⚡ Phí kết nối nền tảng:</span>
+              <strong style={{ fontSize: '0.9rem', color: '#047857' }}>5.000đ (Thử nghiệm)</strong>
             </div>
 
             {/* MÔN HỌC */}

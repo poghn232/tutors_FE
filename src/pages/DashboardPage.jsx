@@ -28,7 +28,8 @@ import {
   Video,
   ArrowRight,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function DashboardPage({ activeTab = 'default', onNavigate, onRequireAuth }) {
@@ -295,10 +296,10 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                   CHÀO BUỔI SÁNG
                 </span>
                 <h1 style={{ fontFamily: 'serif', fontSize: '2.4rem', fontWeight: 900, color: '#ffffff', margin: '6px 0 8px 0' }}>
-                  {user.fullName || 'Hoàng Thiên Ứng'}
+                  {user.fullName || 'Gia sư'}
                 </h1>
                 <p style={{ color: '#cbd5e1', fontSize: '0.95rem', margin: 0 }}>
-                  ĐH Bách Khoa · Toán, Vật lý, Tin học
+                  {user.school || 'Gia sư chuyên môn'} · {user.subjects?.join(', ') || 'Nền tảng kết nối gia sư'}
                 </p>
               </div>
 
@@ -507,7 +508,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                   </h3>
                   <button
                     type="button"
-                    onClick={() => handleTabChange('lessons')}
+                    onClick={() => handleTabChange('classes')}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -521,161 +522,190 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {[
-                    { name: 'Minh Anh', subject: 'Toán học', subBg: '#fff1ed', subColor: '#ea580c', duration: '60 phút', date: '12/09/2026', time: '10:00' },
-                    { name: 'Phương Linh', subject: 'Vật lý', subBg: '#f4f0ff', subColor: '#7c3aed', duration: '60 phút', date: '12/09/2026', time: '14:00' },
-                    { name: 'Quốc Khánh', subject: 'Tin học', subBg: '#e0f2fe', subColor: '#0284c7', duration: '90 phút', date: '14/09/2026', time: '11:00' },
-                    { name: 'Bảo Châu', subject: 'Vật lý', subBg: '#f4f0ff', subColor: '#7c3aed', duration: '60 phút', date: '17/09/2026', time: '16:00' },
-                  ].map((sess, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        border: '1.5px solid #0f172a',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '16px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '12px',
-                          border: '1px solid #cbd5e1',
-                          backgroundColor: '#f8fafc',
+                {activeClasses.length === 0 ? (
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px dashed #cbd5e1',
+                    borderRadius: '16px',
+                    padding: '32px 20px',
+                    textAlign: 'center',
+                    color: '#64748b'
+                  }}>
+                    <BookOpen size={28} color="#94a3b8" style={{ margin: '0 auto 10px', display: 'block' }} />
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>Chưa có buổi học nào sắp tới</div>
+                    <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>
+                      Khi học sinh đặt lịch và hoàn tất phí kết nối, lịch học sẽ xuất hiện tại đây.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {activeClasses.map((c, idx) => (
+                      <div
+                        key={c.id || idx}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1.5px solid #0f172a',
+                          borderRadius: '16px',
+                          padding: '16px 20px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          color: sess.subColor
-                        }}>
-                          <BookOpen size={18} />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a' }}>
-                            {sess.name}
+                          justifyContent: 'space-between',
+                          gap: '16px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '12px',
+                            border: '1px solid #cbd5e1',
+                            backgroundColor: '#f8fafc',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#7c3aed'
+                          }}>
+                            <BookOpen size={18} />
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '999px',
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                              backgroundColor: sess.subBg,
-                              color: sess.subColor
-                            }}>
-                              {sess.subject}
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                              {sess.duration}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => window.open('https://meet.google.com/new', '_blank')}
-                              style={{
-                                backgroundColor: '#7c3aed',
-                                color: '#ffffff',
-                                border: 'none',
-                                padding: '2px 10px',
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a' }}>
+                              {c.studentName || 'Học sinh'}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                              <span style={{
+                                padding: '2px 8px',
                                 borderRadius: '999px',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Tham gia
-                            </button>
+                                backgroundColor: '#f4f0ff',
+                                color: '#7c3aed'
+                              }}>
+                                {c.subjectName || 'Môn học'}
+                              </span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                60 phút
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => window.open(`https://meet.google.com/tutora-class-${c.id}`, '_blank')}
+                                style={{
+                                  backgroundColor: '#7c3aed',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  padding: '2px 10px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Vào lớp
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                            {c.scheduleDescription || 'Sắp tới'}
                           </div>
                         </div>
                       </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                          {sess.date}
-                        </div>
-                        <div style={{ fontSize: '0.82rem', color: '#ea580c', fontWeight: 700 }}>
-                          {sess.time}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Recent Notifications (Figma 16:2) */}
+              {/* Recent Notifications */}
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 16px 0', fontFamily: 'serif' }}>
                   Thông báo Gần đây
                 </h3>
 
-                <div style={{
-                  backgroundColor: '#ffffff',
-                  border: '1.5px solid #0f172a',
-                  borderRadius: '20px',
-                  overflow: 'hidden'
-                }}>
+                {tutorClasses.length === 0 ? (
                   <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #f1f5f9'
+                    backgroundColor: '#ffffff',
+                    border: '1.5px dashed #cbd5e1',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    color: '#64748b',
+                    fontSize: '0.85rem'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <RefreshCw size={18} color="#ea580c" />
-                      <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                        Minh Anh đã đặt lịch học Toán ngày 12/09 lúc 10:00
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', color: '#059669', backgroundColor: '#eefaf6', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                      2 giờ trước
-                    </span>
+                    Chưa có thông báo gần đây. Các yêu cầu đặt lịch mới của học sinh sẽ hiển thị tại đây.
                   </div>
+                ) : (
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #0f172a',
+                    borderRadius: '20px',
+                    overflow: 'hidden'
+                  }}>
+                    {pendingRequests.map((pr) => (
+                      <div key={'pr-' + pr.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 20px',
+                        borderBottom: '1px solid #f1f5f9'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <RefreshCw size={18} color="#ea580c" />
+                          <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
+                            {pr.studentName || 'Học sinh'} vừa gửi yêu cầu đặt lịch môn {pr.subjectName || 'học'} ({pr.scheduleDescription})
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#ea580c', backgroundColor: '#fff1ed', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                          Chờ duyệt
+                        </span>
+                      </div>
+                    ))}
 
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #f1f5f9'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <Star size={18} color="#ca8a04" fill="#ca8a04" />
-                      <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                        Phương Linh để lại đánh giá 5 sao cho buổi học Vật lý
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', color: '#059669', backgroundColor: '#eefaf6', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                      Hôm qua
-                    </span>
-                  </div>
+                    {pendingPaymentClasses.map((pp) => (
+                      <div key={'pp-' + pp.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 20px',
+                        borderBottom: '1px solid #f1f5f9'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <Clock size={18} color="#2563eb" />
+                          <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
+                            Bạn đã duyệt lớp {pp.subjectName} của {pp.studentName}. Đang chờ nộp phí kết nối (5.000đ).
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#1d4ed8', backgroundColor: '#eff6ff', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                          Chờ phí
+                        </span>
+                      </div>
+                    ))}
 
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px 20px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <DollarSign size={18} color="#059669" />
-                      <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                        Thanh toán 212.500đ từ Quốc Khánh đã được xử lý
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', color: '#059669', backgroundColor: '#eefaf6', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                      2 ngày trước
-                    </span>
+                    {activeClasses.map((ac) => (
+                      <div key={'ac-' + ac.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 20px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <CheckCircle2 size={18} color="#059669" />
+                          <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
+                            Lớp {ac.subjectName} cùng {ac.studentName} đã kích hoạt và sẵn sàng giảng dạy.
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: '#059669', backgroundColor: '#eefaf6', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
+                          Đang học
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
 
             </div>
 
-            {/* Right Column: 3 Cards from Figma 16:2 */}
+            {/* Right Column: 3 Cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* Card 1: BUỔI HỌC TIẾP THEO (Coral Card) */}
@@ -697,36 +727,69 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                   BUỔI HỌC TIẾP THEO
                 </span>
 
-                <div style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '8px', marginBottom: '2px', fontFamily: 'serif' }}>
-                  Minh Anh
-                </div>
+                {activeClasses.length === 0 ? (
+                  <>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 900, marginTop: '12px', marginBottom: '4px', fontFamily: 'serif' }}>
+                      Chưa có lịch dạy
+                    </div>
 
-                <div style={{ fontSize: '0.95rem', color: '#ffe2da', fontWeight: 600 }}>
-                  Toán học
-                </div>
+                    <div style={{ fontSize: '0.85rem', color: '#ffe2da', margin: '8px 0 20px 0', lineHeight: 1.5 }}>
+                      Lịch dạy sẽ xuất hiện tại đây khi học sinh gửi yêu cầu và bạn chấp nhận lịch học.
+                    </div>
 
-                <div style={{ fontSize: '0.82rem', color: '#fff1ed', margin: '8px 0 20px 0' }}>
-                  12/09/2026 lúc 10:00 · 60 phút
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('classes')}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: '#181b2a',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 0 #000'
+                      }}
+                    >
+                      Xem yêu cầu lịch học
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '8px', marginBottom: '2px', fontFamily: 'serif' }}>
+                      {activeClasses[0].studentName || 'Học sinh'}
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => window.open('https://meet.google.com/new', '_blank')}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    backgroundColor: '#181b2a',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.92rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 0 #000'
-                  }}
-                >
-                  Bắt đầu buổi học
-                </button>
+                    <div style={{ fontSize: '0.95rem', color: '#ffe2da', fontWeight: 600 }}>
+                      {activeClasses[0].subjectName || 'Môn học'}
+                    </div>
+
+                    <div style={{ fontSize: '0.82rem', color: '#fff1ed', margin: '8px 0 20px 0' }}>
+                      {activeClasses[0].scheduleDescription || 'Sắp tới'} · 60 phút
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => window.open(`https://meet.google.com/tutora-class-${activeClasses[0].id}`, '_blank')}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: '#181b2a',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 0 #000'
+                      }}
+                    >
+                      Bắt đầu buổi học
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Card 2: Môn học tôi dạy */}

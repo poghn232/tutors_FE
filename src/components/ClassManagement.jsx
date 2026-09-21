@@ -11,7 +11,8 @@ import {
   Lightbulb, 
   Star, 
   ArrowRight,
-  Plus
+  Plus,
+  Bell
 } from 'lucide-react';
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
@@ -46,7 +47,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       const res = await action(classId);
       setActionMessage(res?.message || 'Cập nhật lớp học thành công.');
       if (isPayment && user && user.balance !== undefined) {
-        updateUser({ balance: Math.max(0, (user.balance || 0) - 50000) });
+        updateUser({ balance: Math.max(0, (user.balance || 0) - 5000) });
       }
       await loadClasses();
     } catch (err) {
@@ -466,7 +467,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                         className="figma-btn-primary"
                         style={{ display: 'inline-block', width: 'auto', padding: '10px 22px', fontSize: '0.9rem', cursor: 'pointer' }}
                       >
-                        Thanh toán phí kết nối (50.000đ)
+                        Thanh toán phí kết nối (5.000đ)
                       </button>
                     )}
 
@@ -504,87 +505,110 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             )}
           </div>
 
-          {/* "Thông báo" Section (Figma 15:2994) */}
+          {/* "Thông báo" Section */}
           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
             Thông báo
           </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Box 1: Purple */}
+          {allMappedClasses.length === 0 ? (
             <div style={{
               background: '#ffffff',
-              border: '1.5px solid #a855f7',
+              border: '1.5px dashed #cbd5e1',
               borderRadius: '16px',
-              padding: '16px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px'
+              padding: '24px 20px',
+              textAlign: 'center',
+              color: '#64748b'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <CheckCircle2 size={18} color="#a855f7" />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
-                    TS. Nguyễn Thị Hoa xác nhận lịch học Toán ngày 12/09
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>1 giờ trước</div>
-                </div>
-              </div>
+              <Bell size={24} color="#94a3b8" style={{ margin: '0 auto 8px', display: 'block' }} />
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Chưa có thông báo mới</div>
+              <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>
+                Khi bạn gửi yêu cầu kết nối gia sư hoặc có cập nhật về lớp học, các thông báo sẽ hiển thị ở đây.
+              </p>
             </div>
-
-            {/* Box 2: Orange */}
-            <div style={{
-              background: '#ffffff',
-              border: '1.5px solid #fb923c',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Lightbulb size={18} color="#ea580c" />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
-                    Mẹo học: Ôn tập Hóa học 20 phút mỗi ngày sẽ giúp bạn tiến bộ nhanh hơn
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>Hôm nay</div>
-                </div>
-              </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {allMappedClasses.map((item, idx) => {
+                if (item.rawStatus === 'PENDING_TUTOR_APPROVAL') {
+                  return (
+                    <div key={item.id || idx} style={{
+                      background: '#fffbeb',
+                      border: '1.5px solid #fde68a',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <Clock size={18} color="#d97706" />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#92400e' }}>
+                          Yêu cầu lớp {item.subject} với {item.tutorName} đang chờ gia sư xác nhận lịch.
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#b45309', marginTop: '2px' }}>Lịch dự kiến: {item.date} {item.time}</div>
+                      </div>
+                    </div>
+                  );
+                }
+                if (item.rawStatus === 'PENDING_PAYMENT') {
+                  return (
+                    <div key={item.id || idx} style={{
+                      background: '#eff6ff',
+                      border: '1.5px solid #bfdbfe',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <CheckCircle2 size={18} color="#2563eb" />
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e40af' }}>
+                            {item.tutorName} đã chấp nhận lịch học môn {item.subject}!
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#3b82f6', marginTop: '2px' }}>
+                            Vui lòng thanh toán phí kết nối (5.000đ) để nhận link phòng học.
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}
+                        className="figma-btn-primary"
+                        style={{ width: 'auto', padding: '6px 14px', fontSize: '0.82rem' }}
+                      >
+                        Nộp phí ngay
+                      </button>
+                    </div>
+                  );
+                }
+                if (item.rawStatus === 'ACTIVE') {
+                  return (
+                    <div key={item.id || idx} style={{
+                      background: '#ecfdf5',
+                      border: '1.5px solid #a7f3d0',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <CheckCircle2 size={18} color="#059669" />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#065f46' }}>
+                          Lớp học {item.subject} cùng {item.tutorName} đã được kích hoạt.
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#047857', marginTop: '2px' }}>Thời gian: {item.date} lúc {item.time}</div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })}
             </div>
-
-            {/* Box 3: Yellow */}
-            <div style={{
-              background: '#ffffff',
-              border: '1.5px solid #facc15',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Star size={18} color="#ca8a04" />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
-                    Đánh giá buổi học Vật lý với TS. Nguyễn Thị Hoa
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>2 ngày trước</div>
-                </div>
-              </div>
-
-              <button 
-                type="button" 
-                className="figma-btn-primary" 
-                style={{ width: 'auto', padding: '8px 18px', fontSize: '0.85rem' }}
-              >
-                Đánh giá ngay
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: WIDGETS */}
@@ -636,18 +660,21 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             </div>
 
             {/* Event dots list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c' }} />
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>12/09/2026 10:00</span>
-                <span style={{ color: '#64748b' }}>Toán học</span>
+            {upcomingClasses.length === 0 ? (
+              <div style={{ fontSize: '0.82rem', color: '#64748b', textAlign: 'center', padding: '8px 0' }}>
+                Chưa có lịch học trong tuần này
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }} />
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>15/09/2026 18:00</span>
-                <span style={{ color: '#64748b' }}>Hóa học</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+                {upcomingClasses.slice(0, 3).map((uc, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: i % 2 === 0 ? '#ea580c' : '#0284c7' }} />
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{uc.date} {uc.time}</span>
+                    <span style={{ color: '#64748b' }}>{uc.subject}</span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Widget 2: Tiến trình học tập */}
@@ -661,44 +688,39 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               Tiến trình học tập
             </h4>
 
-            {/* Item 1: Toán học */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
-                <span style={{ color: '#0f172a' }}>Toán học</span>
-                <span style={{ color: '#ea580c' }}>75%</span>
+            {allMappedClasses.length === 0 ? (
+              <div style={{ fontSize: '0.82rem', color: '#64748b', textAlign: 'center', padding: '12px 0', lineHeight: 1.5 }}>
+                Chưa có tiến trình học tập. Tiến trình sẽ được tự động cập nhật khi bạn tham gia các buổi học cùng gia sư.
               </div>
-              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
-                <div style={{ width: '75%', height: '100%', background: '#ea580c', borderRadius: '4px' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Đang tiến bộ tốt</span>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {Array.from(new Set(allMappedClasses.map(c => c.subject).filter(Boolean))).map((subj, idx) => {
+                  const subjectClasses = allMappedClasses.filter(c => c.subject === subj);
+                  const completedInSubj = subjectClasses.filter(c => c.rawStatus === 'COMPLETED').length;
+                  const percent = Math.round((completedInSubj / subjectClasses.length) * 100);
+                  const colors = ['#ea580c', '#0284c7', '#059669', '#7c3aed'];
+                  const barColor = colors[idx % colors.length];
 
-            {/* Item 2: Hóa học */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
-                <span style={{ color: '#0f172a' }}>Hóa học</span>
-                <span style={{ color: '#0284c7' }}>45%</span>
+                  return (
+                    <div key={subj}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                        <span style={{ color: '#0f172a' }}>{subj}</span>
+                        <span style={{ color: barColor }}>{percent}%</span>
+                      </div>
+                      <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.max(5, percent)}%`, height: '100%', background: barColor, borderRadius: '4px' }} />
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>
+                        {completedInSubj}/{subjectClasses.length} buổi hoàn thành
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
-                <div style={{ width: '45%', height: '100%', background: '#0284c7', borderRadius: '4px' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Cần cải thiện</span>
-            </div>
-
-            {/* Item 3: Sinh học */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
-                <span style={{ color: '#0f172a' }}>Sinh học</span>
-                <span style={{ color: '#059669' }}>20%</span>
-              </div>
-              <div style={{ height: '8px', borderRadius: '4px', background: '#f1f5f9', overflow: 'hidden' }}>
-                <div style={{ width: '20%', height: '100%', background: '#059669', borderRadius: '4px' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block' }}>Mới bắt đầu</span>
-            </div>
+            )}
           </div>
 
-          {/* Widget 3: Lộ trình Toán học (VIP Yellow Card) */}
+          {/* Widget 3: Lộ trình học tập (VIP Card) */}
           <div style={{
             background: '#facc15',
             border: '2px solid #0f172a',
@@ -708,37 +730,22 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Lộ trình Toán học
+                Lộ trình học tập
               </h4>
               <span style={{ background: '#0f172a', color: '#ffffff', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '999px' }}>
-                Cao cấp
+                VIP
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={16} color="#059669" />
-                <span>Hiểu cơ bản Tích phân</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={16} color="#059669" />
-                <span>Bài tập Tích phân từng phần</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed' }}>
-                <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#7c3aed', display: 'inline-block' }} />
-                <span>Tích phân suy rộng</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#71717a' }}>
-                <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid #71717a', display: 'inline-block' }} />
-                <span>Phương trình vi phân</span>
-              </div>
-            </div>
+            <p style={{ fontSize: '0.85rem', color: '#0f172a', margin: '0 0 16px 0', lineHeight: 1.4, fontWeight: 600 }}>
+              Xây dựng lộ trình ôn tập và luyện thi chuẩn mục tiêu cùng đội ngũ gia sư hàng đầu.
+            </p>
 
             <button
               type="button"
               onClick={() => {
                 if (!user && onRequireAuth) {
-                  onRequireAuth('nâng cấp gói VIP để nhận ưu đãi học phí');
+                  onRequireAuth('nâng cấp gói VIP để nhận ưu đãi');
                   return;
                 }
                 if (onNavigateToVip) onNavigateToVip();
@@ -755,7 +762,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 cursor: 'pointer'
               }}
             >
-              Nâng cấp gói VIP →
+              Xem các gói VIP →
             </button>
           </div>
 
@@ -770,46 +777,70 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               Gia sư Của Tôi
             </h4>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {[
-                { name: 'TS. Nguyễn Thị Hoa' },
-                { name: 'TS. Phạm Thị Lan' },
-                { name: 'Trần Minh Đức' },
-                { name: 'TS. Lê Thị Thu' }
-              ].map((tut, i) => (
-                <div 
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: '#ede9fe',
-                      color: '#7c3aed',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.88rem'
-                    }}>
-                      {tut.name.charAt(tut.name.lastIndexOf(' ') + 1)}
-                    </div>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
-                      {tut.name}
-                    </span>
+            {(() => {
+              const myTutors = Array.from(new Set(allMappedClasses.map(c => c.tutorName).filter(Boolean)));
+              if (myTutors.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '12px 0', color: '#64748b', fontSize: '0.82rem' }}>
+                    <div>Bạn chưa kết nối với gia sư nào.</div>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToTutors && onNavigateToTutors()}
+                      style={{
+                        marginTop: '10px',
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        color: '#1d4ed8',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Khám phá gia sư →
+                    </button>
                   </div>
-                  <ArrowRight size={14} color="#94a3b8" />
+                );
+              }
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {myTutors.map((tutName, i) => (
+                    <div 
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: '#ede9fe',
+                          color: '#7c3aed',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.88rem'
+                        }}>
+                          {tutName.charAt(tutName.lastIndexOf(' ') + 1) || 'G'}
+                        </div>
+                        <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                          {tutName}
+                        </span>
+                      </div>
+                      <ArrowRight size={14} color="#94a3b8" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         </div>
       </div>

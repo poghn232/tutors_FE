@@ -114,13 +114,22 @@ export default function LessonList({ user }) {
     }
   ];
 
-  // Active students list (from Figma 16:399 right sidebar)
-  const activeStudents = [
+  // Active students list (derived from real lessons if logged in)
+  const activeStudents = user ? Array.from(new Set(lessons.map(l => l.studentName || l.classEntity?.studentName).filter(Boolean))).map(name => {
+    const sLessons = lessons.filter(l => (l.studentName || l.classEntity?.studentName) === name);
+    const sub = sLessons[0]?.subject || sLessons[0]?.classEntity?.subjectName || 'Môn học';
+    const words = name.trim().split(' ');
+    const initials = words.length > 1 ? (words[0][0] + words[words.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+    return {
+      initials,
+      name,
+      subject: sub,
+      sessions: `${sLessons.length} buổi`
+    };
+  }) : [
     { initials: 'MA', name: 'Minh Anh', subject: 'Toán học', sessions: '1 buổi' },
     { initials: 'PL', name: 'Phương Linh', subject: 'Vật lý', sessions: '1 buổi' },
     { initials: 'QK', name: 'Quốc Khánh', subject: 'Tin học', sessions: '1 buổi' },
-    { initials: 'TH', name: 'Thu Hà', subject: 'Toán học', sessions: '1 buổi' },
-    { initials: 'BC', name: 'Bảo Châu', subject: 'Vật lý', sessions: '1 buổi' },
   ];
 
   const fetchLessons = async () => {
@@ -130,11 +139,11 @@ export default function LessonList({ user }) {
       if (res.success && res.data && res.data.length > 0) {
         setLessons(res.data);
       } else {
-        // Fallback to Figma default lessons
-        setLessons(figmaMockLessons);
+        // Only fallback to demo mock lessons for unauthenticated preview
+        setLessons(user ? [] : figmaMockLessons);
       }
     } catch (err) {
-      setLessons(figmaMockLessons);
+      setLessons(user ? [] : figmaMockLessons);
     } finally {
       setLoading(false);
     }
@@ -251,6 +260,14 @@ export default function LessonList({ user }) {
       setNoteSubmitting(false);
     }
   };
+
+  // Dynamic stats
+  const totalLessons = lessons.length;
+  const completedLessons = lessons.filter(l => l.status === 'completed' || l.status === 'COMPLETED');
+  const upcomingLessons = lessons.filter(l => l.status === 'upcoming' || l.status === 'SCHEDULED' || !l.status);
+  const totalHours = lessons.reduce((acc, l) => acc + (parseFloat(l.duration) || 1), 0);
+  const totalStudents = activeStudents.length;
+  const estimatedIncome = totalLessons * 250000;
 
   // Filter lessons based on filterTab
   const filteredLessons = lessons.filter(l => {
@@ -413,7 +430,7 @@ export default function LessonList({ user }) {
           </div>
           <div>
             <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ea580c', lineHeight: 1.1, fontFamily: 'serif' }}>
-              4
+              {totalLessons}
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
               Tổng buổi học
@@ -437,7 +454,7 @@ export default function LessonList({ user }) {
           </div>
           <div>
             <div style={{ fontSize: '2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
-              5.5h
+              {totalHours}h
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
               Giờ đã dạy
@@ -461,7 +478,7 @@ export default function LessonList({ user }) {
           </div>
           <div>
             <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'serif' }}>
-              5
+              {totalStudents}
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
               Học sinh đang học
@@ -485,10 +502,10 @@ export default function LessonList({ user }) {
           </div>
           <div>
             <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'serif' }}>
-              1.250.000đ
+              {new Intl.NumberFormat('vi-VN').format(estimatedIncome)}đ
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
-              Thu nhập hiện tại
+              Thu nhập ước tính (Tham khảo)
             </div>
           </div>
         </div>
@@ -532,7 +549,7 @@ export default function LessonList({ user }) {
                 transition: 'all 0.15s ease'
               }}
             >
-              Tất cả
+              Tất cả ({totalLessons})
             </button>
             <button
               type="button"
@@ -550,7 +567,7 @@ export default function LessonList({ user }) {
                 transition: 'all 0.15s ease'
               }}
             >
-              Sắp tới (4)
+              Sắp tới ({upcomingLessons.length})
             </button>
             <button
               type="button"
@@ -568,7 +585,7 @@ export default function LessonList({ user }) {
                 transition: 'all 0.15s ease'
               }}
             >
-              Đã hoàn thành (1)
+              Đã hoàn thành ({completedLessons.length})
             </button>
           </div>
 
@@ -582,7 +599,18 @@ export default function LessonList({ user }) {
             flexDirection: 'column',
             gap: '12px'
           }}>
-            {filteredLessons.map((lesson) => {
+            {filteredLessons.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748b' }}>
+                <Calendar size={32} color="#94a3b8" style={{ margin: '0 auto 12px', display: 'block' }} />
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Chưa có buổi học nào</div>
+                <div style={{ fontSize: '0.85rem', marginTop: '4px' }}>
+                  {user?.role === 'TUTOR'
+                    ? 'Bạn chưa có buổi học nào. Hãy bấm "+ Tạo Buổi Học Mới" để lên lịch giảng dạy.'
+                    : 'Bạn chưa có buổi học nào trong danh sách.'}
+                </div>
+              </div>
+            ) : (
+              filteredLessons.map((lesson) => {
               const name = lesson.studentName || (lesson.classEntity?.studentName) || 'Học sinh';
               const subject = lesson.subject || (lesson.classEntity?.subjectName) || 'Toán học';
               const timeDisplay = lesson.time 
@@ -725,7 +753,7 @@ export default function LessonList({ user }) {
                   </div>
                 </div>
               );
-            })}
+            }))}
           </div>
         </div>
 
@@ -743,40 +771,46 @@ export default function LessonList({ user }) {
               Học sinh Đang học
             </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {activeStudents.map((st, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      backgroundColor: '#ede9fe',
-                      color: '#7c3aed',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.78rem'
-                    }}>
-                      {st.initials}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
-                        {st.name}
+            {activeStudents.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '16px 0', color: '#64748b', fontSize: '0.82rem' }}>
+                Chưa có học sinh đăng ký
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {activeStudents.map((st, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ede9fe',
+                        color: '#7c3aed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.78rem'
+                      }}>
+                        {st.initials}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                        {st.subject}
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                          {st.name}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                          {st.subject}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <span style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 700 }}>
-                    {st.sessions}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    <span style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 700 }}>
+                      {st.sessions}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Card 2: Lịch Trống Của Tôi */}
@@ -867,7 +901,7 @@ export default function LessonList({ user }) {
               letterSpacing: '0.06em',
               color: '#451a03'
             }}>
-              THU NHẬP THÁNG 9
+              THU NHẬP ƯỚC TÍNH (THAM KHẢO)
             </span>
 
             <div style={{
@@ -878,11 +912,11 @@ export default function LessonList({ user }) {
               marginBottom: '2px',
               fontFamily: 'serif'
             }}>
-              1.250.000đ
+              {new Intl.NumberFormat('vi-VN').format(estimatedIncome)}đ
             </div>
 
             <div style={{ fontSize: '0.85rem', color: '#78350f', fontWeight: 600, marginBottom: '16px' }}>
-              5 buổi · 250.000đ/giờ
+              {totalLessons} buổi · Phụ huynh thanh toán trực tiếp
             </div>
 
             {/* Progress Bar */}

@@ -10,7 +10,7 @@ const formatVND = (value) =>
 export default function PaymentView() {
   const { user, updateUser } = useAuth();
   const [overview, setOverview] = useState(null);
-  const [amount, setAmount] = useState(100000);
+  const [amount, setAmount] = useState(5000);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -65,10 +65,10 @@ export default function PaymentView() {
         <div style={{ background: '#eafaf3', border: '1.5px solid #0f172a', borderRadius: '18px', padding: '24px' }}>
           <CreditCard size={24} color="#059669" />
           <div style={{ marginTop: '14px', color: '#64748b', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase' }}>
-            Phí kết nối mặc định
+            Phí kết nối mặc định (Thử nghiệm)
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', marginTop: '6px', fontFamily: 'serif' }}>
-            {formatVND(50000)}
+            {formatVND(5000)}
           </div>
           <p style={{ margin: '6px 0 0', color: '#475569', fontSize: '0.86rem' }}>
             Chỉ thu khi gia sư đã đồng ý lịch học.
@@ -106,8 +106,8 @@ export default function PaymentView() {
           </label>
           <input
             type="number"
-            min="10000"
-            step="10000"
+            min="5000"
+            step="5000"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             style={{ width: '100%', border: '1.5px solid #0f172a', borderRadius: '12px', padding: '12px 14px', fontWeight: 800, fontSize: '1rem' }}
