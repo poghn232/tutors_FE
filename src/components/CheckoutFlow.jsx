@@ -136,15 +136,55 @@ export default function CheckoutFlow({
     setIsCreatingClass(true);
     try {
       const payload = buildBookingPayload();
-      const bookData = createdBookingData || {
-        id: null,
-        className: payload.className,
-        subjectName: payload.subjectName,
-        tutorName: payload.tutorName,
-        scheduleDescription: payload.scheduleDescription,
-        status: 'ACTIVE'
-      };
-      setCreatedClassInfo(bookData);
+      
+      // If the class was already created via SePay webhook (createdBookingData has an id),
+      // skip creating again.
+      if (createdBookingData && createdBookingData.id) {
+        setCreatedClassInfo(createdBookingData);
+      } else {
+        // Actually call the backend API to create the class
+        try {
+          const createPayload = {
+            className: payload.className,
+            subjectId: payload.subjectId,
+            subjectName: payload.subjectName,
+            tutorId: payload.tutorId,
+            tutorName: payload.tutorName,
+            studentName: payload.studentName,
+            studentId: payload.studentId,
+            scheduleDescription: payload.scheduleDescription,
+            date: payload.date,
+            time: payload.time,
+            amount: payload.amount,
+            orderCode: payload.orderCode,
+            paymentMethod: payload.paymentMethod
+          };
+          const res = await classService.createClass(createPayload);
+          if (res && res.data) {
+            setCreatedClassInfo(res.data);
+          } else {
+            // Fallback to local data if API returns unexpected format
+            setCreatedClassInfo({
+              id: res?.id || null,
+              className: payload.className,
+              subjectName: payload.subjectName,
+              tutorName: payload.tutorName,
+              scheduleDescription: payload.scheduleDescription,
+              status: 'PENDING_TUTOR_APPROVAL'
+            });
+          }
+        } catch (apiErr) {
+          console.warn('API tạo lớp học gặp lỗi, sử dụng dữ liệu local:', apiErr);
+          setCreatedClassInfo({
+            id: null,
+            className: payload.className,
+            subjectName: payload.subjectName,
+            tutorName: payload.tutorName,
+            scheduleDescription: payload.scheduleDescription,
+            status: 'PENDING_TUTOR_APPROVAL'
+          });
+        }
+      }
     } catch (err) {
       console.warn('Lưu lớp học vào database gặp cảnh báo:', err);
     } finally {
@@ -170,7 +210,7 @@ export default function CheckoutFlow({
             subjectName: details.subject || 'Toán học',
             tutorName: currentTutor.fullName,
             scheduleDescription: `${details.date} lúc ${details.time}`,
-            status: 'ACTIVE'
+            status: 'PENDING_TUTOR_APPROVAL'
           });
         }
       } catch (e) {
@@ -232,7 +272,7 @@ export default function CheckoutFlow({
           subjectName: details.subject || 'Toán học',
           tutorName: currentTutor.fullName,
           scheduleDescription: `${details.date} lúc ${details.time}`,
-          status: 'ACTIVE'
+          status: 'PENDING_TUTOR_APPROVAL'
         });
       } else {
         alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
@@ -942,7 +982,7 @@ export default function CheckoutFlow({
               <div className="figma-summary-divider" />
 
               <div className="figma-summary-total">
-                <span>Tiền chuyển khoản</span>
+                <span>Phí kết nối</span>
                 <span style={{ color: '#059669' }}>{formatVND(finalTotal)}</span>
               </div>
 
