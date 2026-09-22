@@ -114,10 +114,16 @@ export default function RegisterPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      await authService.sendRegisterOtp(email.trim().toLowerCase(), fullName.trim());
-      setSuccessMsg(`Mã xác thực OTP đã được gửi về Gmail: ${email.trim().toLowerCase()}`);
+      const res = await authService.sendRegisterOtp(email.trim().toLowerCase(), fullName.trim());
+      const devOtp = res?.data;
+      if (devOtp) {
+        setSuccessMsg(`Mã xác thực OTP (thử nghiệm): ${devOtp}`);
+        setOtp(String(devOtp).split('').slice(0, 6));
+      } else {
+        setSuccessMsg(`Mã xác thực OTP đã được gửi về Gmail: ${email.trim().toLowerCase()}`);
+        setOtp(['', '', '', '', '', '']);
+      }
       setCountdown(60);
-      setOtp(['', '', '', '', '', '']);
       setStep(2);
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Không thể gửi mã xác nhận OTP. Vui lòng kiểm tra lại email hoặc kết nối máy chủ.';
@@ -134,12 +140,18 @@ export default function RegisterPage({ onNavigate }) {
     setSuccessMsg('');
     setLoading(true);
     try {
-      await authService.sendRegisterOtp(email.trim().toLowerCase(), fullName.trim());
-      setSuccessMsg(`Đã gửi lại mã xác thực mới về Gmail: ${email.trim().toLowerCase()}`);
+      const res = await authService.sendRegisterOtp(email.trim().toLowerCase(), fullName.trim());
+      const devOtp = res?.data;
+      if (devOtp) {
+        setSuccessMsg(`Đã cấp lại mã OTP mới: ${devOtp}`);
+        setOtp(String(devOtp).split('').slice(0, 6));
+      } else {
+        setSuccessMsg(`Đã gửi lại mã xác thực mới về Gmail: ${email.trim().toLowerCase()}`);
+        setOtp(['', '', '', '', '', '']);
+      }
       setCountdown(60);
-      setOtp(['', '', '', '', '', '']);
     } catch (err) {
-      setError(err.response?.data?.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
+      setError(err.response?.data?.message || err.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

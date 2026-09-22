@@ -78,8 +78,15 @@ export default function ForgotPasswordPage({ onNavigate }) {
 
     setLoading(true);
     try {
-      await authService.forgotPassword(email);
-      setSuccessMessage(`Mã xác nhận 6 số đã được gửi về Gmail: ${email}`);
+      const res = await authService.forgotPassword(email);
+      const devOtp = res?.data;
+      if (devOtp) {
+        setSuccessMessage(`Mã xác nhận OTP (thử nghiệm): ${devOtp}`);
+        setOtp(String(devOtp).split('').slice(0, 6));
+      } else {
+        setSuccessMessage(`Mã xác nhận 6 số đã được gửi về Gmail: ${email}`);
+        setOtp(['', '', '', '', '', '']);
+      }
       setCountdown(60);
       setStep(2);
     } catch (err) {
@@ -96,12 +103,18 @@ export default function ForgotPasswordPage({ onNavigate }) {
     setSuccessMessage('');
     setLoading(true);
     try {
-      await authService.forgotPassword(account.trim().toLowerCase());
-      setSuccessMessage(`Đã gửi lại mã xác nhận mới về Gmail: ${account}`);
+      const res = await authService.forgotPassword(account.trim().toLowerCase());
+      const devOtp = res?.data;
+      if (devOtp) {
+        setSuccessMessage(`Đã cấp lại mã OTP mới: ${devOtp}`);
+        setOtp(String(devOtp).split('').slice(0, 6));
+      } else {
+        setSuccessMessage(`Đã gửi lại mã xác nhận mới về Gmail: ${account}`);
+        setOtp(['', '', '', '', '', '']);
+      }
       setCountdown(60);
-      setOtp(['', '', '', '', '', '']);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
+      setErrorMessage(err.response?.data?.message || err.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
