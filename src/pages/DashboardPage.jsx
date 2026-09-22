@@ -1115,9 +1115,11 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               user={user} 
               onNavigateToTutors={() => handleTabChange('tutors')} 
               onNavigateToVip={() => handleTabChange('vip')}
+              onNavigateToAssignments={() => handleTabChange('assignments')}
               onRequireAuth={onRequireAuth}
             />
           )}
+
 
           {currentTab === 'tutors' && user?.role !== 'ADMIN' && (
             <TutorCatalog 

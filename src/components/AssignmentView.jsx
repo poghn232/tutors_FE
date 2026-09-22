@@ -15,165 +15,36 @@ import {
   Send,
   RefreshCw,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  UserCheck,
+  Lock
 } from 'lucide-react';
 import fileService from '../services/fileService';
+import assignmentService from '../services/assignmentService';
 
-const DEFAULT_ASSIGNMENTS = [
-  {
-    id: 1,
-    title: 'Bài tập tích phân từng phần',
-      subject: 'Toán học',
-      tutor: 'TS. Nguyễn Thị Hoa',
-      studentName: 'Nguyễn Minh Anh',
-      desc: 'Giải các bài tập tích phân từng phần trong chương trình Giải tích lớp 12. Chú ý trình bày rõ ràng từng bước tính toán và ghi rõ kết quả cuối cùng.',
-      assignedDate: '07/09/2026',
-      dueDate: '16/09/2026',
-      status: 'pending',
-      statusLabel: 'Chờ nộp',
-      tagColor: '#fee2e2',
-      tagTextColor: '#ea580c',
-      attachments: [
-        { name: 'bai_tap_tich_phan_1.pdf', size: '540KB' },
-        { name: 'bai_tap_tich_phan_2.pdf', size: '230KB' }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Giải bài tập cơ học lượng tử',
-      subject: 'Vật lý',
-      tutor: 'TS. Nguyễn Thị Hoa',
-      studentName: 'Trần Bảo Long',
-      desc: 'Giải 10 bài tập về cơ học lượng tử bao gồm: nguyên lý bất định Heisenberg, hàm sóng và phương trình Schrödinger cơ bản.',
-      assignedDate: '05/09/2026',
-      dueDate: '15/09/2026',
-      status: 'submitted',
-      statusLabel: 'Đã nộp',
-      tagColor: '#f3e8ff',
-      tagTextColor: '#7c3aed',
-      submittedFile: 'bai_tap_co_hoc_luong_tu.pdf',
-      submittedTime: '11/09/2026 lúc 21:34',
-      attachments: [
-        { name: 'de_bai_luong_tu.pdf', size: '1.1MB' }
-      ]
-    },
-    {
-      id: 3,
-      title: 'Phản ứng hóa học chuỗi',
-      subject: 'Hóa học',
-      tutor: 'TS. Phạm Thị Lan',
-      studentName: 'Lê Thùy Dương',
-      desc: 'Hoàn thành chuỗi phản ứng hóa học vô cơ và hữu cơ. Viết phương trình ion rút gọn và xác định điều kiện phản ứng cho từng bước.',
-      assignedDate: '01/09/2026',
-      dueDate: '10/09/2026',
-      status: 'overdue',
-      statusLabel: 'Quá hạn',
-      badgeExtra: 'Quá hạn 3 ngày',
-      tagColor: '#fee2e2',
-      tagTextColor: '#ef4444',
-      attachments: [
-        { name: 'chuyen_de_chuoi_phan_ung.pdf', size: '820KB' }
-      ]
-    },
-    {
-      id: 4,
-      title: 'Phân tích đề đọc hiểu THPT',
-      subject: 'Tiếng Anh',
-      tutor: 'Trần Minh Đức',
-      studentName: 'Nguyễn Minh Anh',
-      desc: 'Phân tích đoạn văn đọc hiểu trong đề thi THPT 2025, trả lời các câu hỏi và viết đoạn nhận xét 150 từ về chủ đề bài đọc.',
-      assignedDate: '01/09/2026',
-      dueDate: '08/09/2026',
-      status: 'graded',
-      statusLabel: 'Đã chấm',
-      tagColor: '#fee2e2',
-      tagTextColor: '#ea580c',
-      score: '18/20',
-      scoreColor: '#00c288',
-      feedback: 'Bài làm tốt, phân tích câu hỏi suy luận sâu. Cần chú ý mở rộng vốn từ vựng học thuật trong đoạn bình luận 150 từ.',
-      submittedFile: 'bai_lam_tieng_anh_minhanh.docx',
-      submittedTime: '06/09/2026 lúc 19:15'
-    },
-    {
-      id: 5,
-      title: 'Bài tập Di truyền học & Đột biến gen',
-      subject: 'Sinh học',
-      tutor: 'TS. Lê Thị Thu',
-      studentName: 'Phạm Hồng Quân',
-      desc: 'Giải 8 bài tập di truyền học bao gồm: quy luật Mendel, di truyền liên kết giới tính, di truyền ngoài nhân và đột biến gen.',
-      assignedDate: '09/09/2026',
-      dueDate: '20/09/2026',
-      status: 'pending',
-      statusLabel: 'Chờ nộp',
-      tagColor: '#dcfce7',
-      tagTextColor: '#15803d',
-      attachments: [
-        { name: 'so_tay_di_truyen_hoc.pdf', size: '1.4MB' }
-      ]
-    },
-    {
-      id: 6,
-      title: 'Ôn tập tổng hợp Hóa hữu cơ',
-      subject: 'Hóa học',
-      tutor: 'TS. Phạm Thị Lan',
-      studentName: 'Nguyễn Minh Anh',
-      desc: 'Ôn tập toàn bộ chương trình Hóa hữu cơ lớp 11-12, đặc biệt chú trọng phản ứng este hóa, xà phòng hóa và tổng hợp hữu cơ.',
-      assignedDate: '01/08/2026',
-      dueDate: '22/09/2026',
-      status: 'graded',
-      statusLabel: 'Đã chấm',
-      tagColor: '#e0f2fe',
-      tagTextColor: '#0284c7',
-      score: '15/20',
-      scoreColor: '#facc15',
-      feedback: 'Cần xem lại phần phản ứng thủy phân este trong môi trường kiềm và tính toán lượng muối thu được.',
-      submittedFile: 'hoa_huu_co_tong_hop.pdf',
-      submittedTime: '20/08/2026 lúc 20:00'
-    }
-];
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export default function AssignmentView({ user, onRequireAuth }) {
-  const isTutor = user?.role === 'TUTOR';
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'submitted', 'graded', 'overdue'
+  const isTutor = user?.role === 'TUTOR' || user?.role === 'ADMIN';
+  const isParent = user?.role === 'PARENT';
+  const [filter, setFilter] = useState('all'); // 'all', 'PENDING', 'SUBMITTED', 'GRADED', 'NOT_SUBMITTED'
+  const [loading, setLoading] = useState(false);
+  const [assignments, setAssignments] = useState([]);
 
-  const userStorageKey = `tutora_assignments_${user?.id || user?.email || 'default'}`;
+  // Toast notification
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success'); // 'success' or 'error'
 
-  // Persistent assignments state using localStorage
-  const [assignments, setAssignments] = useState(() => {
-    try {
-      const saved = localStorage.getItem(userStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Cannot read assignments from localStorage:', e);
-    }
-    return user ? [] : DEFAULT_ASSIGNMENTS;
-  });
-
-  // Save assignments whenever modified
-  useEffect(() => {
-    try {
-      localStorage.setItem(userStorageKey, JSON.stringify(assignments));
-    } catch (e) {
-      console.warn('Cannot save assignments to localStorage:', e);
-    }
-  }, [assignments, userStorageKey]);
+  // Search Parents state for tutor create assignment
+  const [parentSearchQuery, setParentSearchQuery] = useState('');
+  const [parentSearchResults, setParentSearchResults] = useState([]);
+  const [selectedParent, setSelectedParent] = useState(null);
+  const [isSearchingParents, setIsSearchingParents] = useState(false);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [gradingAssignment, setGradingAssignment] = useState(null);
-  const [toastMessage, setToastMessage] = useState('');
-
-  // Submission Confirmation Modal States
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [submitModalData, setSubmitModalData] = useState(null); // { assignment, file, note, isResubmit }
-  const [isSubmittingFile, setIsSubmittingFile] = useState(false);
-  const [isResubmitMode, setIsResubmitMode] = useState(false);
-  const [dragOverId, setDragOverId] = useState(null);
+  const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
 
   // Create Assignment Form State
   const [newTitle, setNewTitle] = useState('');
@@ -183,123 +54,285 @@ export default function AssignmentView({ user, onRequireAuth }) {
   const [newFile, setNewFile] = useState(null);
 
   // Grading Form State
-  const [gradeScore, setGradeScore] = useState('18/20');
+  const [gradingAssignment, setGradingAssignment] = useState(null);
+  const [gradeRating, setGradeRating] = useState('9.0'); // 0.0 - 10.0
   const [gradeFeedback, setGradeFeedback] = useState('');
+  const [isSavingGrade, setIsSavingGrade] = useState(false);
+
+  // Submission Confirmation Modal States (Parent)
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitModalData, setSubmitModalData] = useState(null); // { assignment, file, note }
+  const [isSubmittingFile, setIsSubmittingFile] = useState(false);
+  const [dragOverId, setDragOverId] = useState(null);
 
   // Parent upload ref
   const parentFileInputRef = useRef(null);
   const [uploadTargetId, setUploadTargetId] = useState(null);
 
-  const showToast = (msg) => {
+  const showToast = (msg, type = 'success') => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 4000);
   };
 
-  // Convert file to Base64 so offline / reload download never breaks
-  const fileToBase64 = (file) => {
-    return new Promise((resolve) => {
-      if (!file || file.size > 8 * 1024 * 1024) {
-        resolve(null);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
+  // Format Date String helper
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'Chưa xác định';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateStr;
+    }
   };
+
+  // Load Assignments from Backend
+  const loadAssignments = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const res = await assignmentService.getAssignments();
+      if (res && res.data && Array.isArray(res.data)) {
+        setAssignments(res.data);
+      } else {
+        setAssignments([]);
+      }
+    } catch (err) {
+      console.warn('Cannot load assignments from backend, using cache:', err);
+      // Fallback to local storage cache if API failed
+      try {
+        const saved = localStorage.getItem(`tutora_asg_${user.id}`);
+        if (saved) {
+          setAssignments(JSON.parse(saved));
+        } else {
+          setAssignments([]);
+        }
+      } catch (e) {
+        setAssignments([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAssignments();
+  }, [user]);
+
+  // Save to local storage as cache
+  useEffect(() => {
+    if (user && assignments.length > 0) {
+      try {
+        localStorage.setItem(`tutora_asg_${user.id}`, JSON.stringify(assignments));
+      } catch (e) {}
+    }
+  }, [assignments, user]);
+
+  // Live Parent Search for Tutor
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingParents(true);
+        const res = await assignmentService.searchParents(parentSearchQuery);
+        if (res && res.data) {
+          setParentSearchResults(res.data);
+        }
+      } catch (e) {
+        console.warn('Search parent error:', e);
+      } finally {
+        setIsSearchingParents(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [parentSearchQuery, showCreateModal]);
+
+  // Guard: guests should not see this view (App.jsx already redirects, but extra safety here)
+  if (!user) return null;
 
   // Tutor: Handle Create Assignment
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
     if (!newTitle.trim()) {
-      alert('Vui lòng nhập tiêu đề bài tập.');
+      showToast('Vui lòng nhập tiêu đề bài tập.', 'error');
+      return;
+    }
+    if (!selectedParent) {
+      showToast('Vui lòng tìm kiếm và chọn tài khoản Phụ huynh nhận bài tập!', 'error');
+      return;
+    }
+    if (!newDueDate) {
+      showToast('Vui lòng chọn hạn nộp bài tập.', 'error');
       return;
     }
 
-    let attachmentObj = null;
-    if (newFile) {
-      const uploadRes = await fileService.uploadFile(newFile);
-      attachmentObj = {
-        name: newFile.name,
-        size: fileService.formatBytes(newFile.size),
-        url: uploadRes.data?.fileUrl
-      };
+    // Check file size 20MB
+    if (newFile && newFile.size > MAX_FILE_SIZE) {
+      showToast('Tệp đính kèm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
+      return;
     }
 
-    const created = {
-      id: Date.now(),
-      title: newTitle,
-      subject: newSubject,
-      tutor: user?.fullName || 'Gia sư Tutora',
-      studentName: 'Lớp 12A - Toàn bộ học sinh',
-      desc: newDesc || 'Hoàn thành bài tập đúng thời hạn.',
-      assignedDate: new Date().toLocaleDateString('vi-VN'),
-      dueDate: newDueDate || '30/09/2026',
-      status: 'pending',
-      statusLabel: 'Đang mở',
-      tagColor: '#e0f2fe',
-      tagTextColor: '#0284c7',
-      attachments: attachmentObj ? [attachmentObj] : []
-    };
+    try {
+      setIsCreatingAssignment(true);
+      let attachmentUrl = '';
+      let attachmentName = '';
+      let attachmentSize = '';
 
-    setAssignments([created, ...assignments]);
-    setShowCreateModal(false);
-    setNewTitle('');
-    setNewDesc('');
-    setNewDueDate('');
-    setNewFile(null);
-    showToast('Đã giao bài tập mới thành công cho học sinh!');
+      if (newFile) {
+        const uploadRes = await fileService.uploadFile(newFile);
+        if (uploadRes && uploadRes.data) {
+          attachmentUrl = uploadRes.data.fileUrl || '';
+          attachmentName = newFile.name;
+          attachmentSize = fileService.formatBytes(newFile.size);
+        }
+      }
+
+      const payload = {
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        subjectName: newSubject,
+        parentId: selectedParent.id,
+        dueDate: newDueDate.includes('T') ? newDueDate : `${newDueDate}T23:59:00`,
+        attachmentUrl: attachmentUrl,
+        attachmentName: attachmentName,
+        attachmentSize: attachmentSize
+      };
+
+      try {
+        const res = await assignmentService.createAssignment(payload);
+        if (res && res.data) {
+          setAssignments(prev => [res.data, ...prev]);
+        }
+      } catch (err) {
+        console.warn('Backend createAssignment failed, using local item:', err);
+        const localItem = {
+          id: Date.now(),
+          ...payload,
+          tutorName: user?.fullName || 'Gia sư',
+          parentName: selectedParent.fullName,
+          studentName: selectedParent.studentName || selectedParent.fullName,
+          status: 'PENDING',
+          statusLabel: 'Đang mở (Chờ nộp)',
+          isOverdue: false,
+          createdAt: new Date().toISOString()
+        };
+        setAssignments(prev => [localItem, ...prev]);
+      }
+
+      setShowCreateModal(false);
+      setNewTitle('');
+      setNewDesc('');
+      setNewDueDate('');
+      setNewFile(null);
+      setSelectedParent(null);
+      setParentSearchQuery('');
+      showToast(`Đã giao bài tập thành công cho phụ huynh ${selectedParent.fullName}!`);
+    } catch (err) {
+      console.error('Error creating assignment:', err);
+      showToast('Có lỗi khi tạo bài tập. Vui lòng thử lại.', 'error');
+    } finally {
+      setIsCreatingAssignment(false);
+    }
   };
 
   // Tutor: Open Grading Modal
   const openGradingModal = (asg) => {
     setGradingAssignment(asg);
-    setGradeScore(asg.score || '19/20');
-    setGradeFeedback(asg.feedback || 'Bài làm rất tốt, lập luận chặt chẽ và trình bày khoa học.');
+    setGradeRating(asg.rating ? asg.rating.toString() : '9.0');
+    setGradeFeedback(asg.tutorComment || 'Bài làm rất tốt, lập luận chặt chẽ và trình bày khoa học.');
   };
 
-  // Tutor: Save Grade & Feedback
-  const handleSaveGrade = (e) => {
+  // Tutor: Save Grade & Rating (0-10)
+  const handleSaveGrade = async (e) => {
     e.preventDefault();
     if (!gradingAssignment) return;
 
-    setAssignments(assignments.map(a => {
-      if (a.id === gradingAssignment.id) {
-        return {
-          ...a,
-          status: 'graded',
-          statusLabel: 'Đã chấm',
-          score: gradeScore,
-          scoreColor: '#00c288',
-          feedback: gradeFeedback
-        };
-      }
-      return a;
-    }));
+    const ratingNum = parseFloat(gradeRating);
+    if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 10) {
+      showToast('Điểm đánh giá phải là số từ 0.0 đến 10.0', 'error');
+      return;
+    }
+    if (!gradeFeedback.trim()) {
+      showToast('Vui lòng nhập nhận xét bài tập.', 'error');
+      return;
+    }
 
-    setGradingAssignment(null);
-    showToast(`Đã lưu chấm điểm (${gradeScore}) cho bài tập!`);
+    try {
+      setIsSavingGrade(true);
+      const payload = {
+        rating: ratingNum,
+        tutorComment: gradeFeedback.trim()
+      };
+
+      try {
+        const res = await assignmentService.gradeAssignment(gradingAssignment.id, payload);
+        if (res && res.data) {
+          setAssignments(prev => prev.map(a => a.id === gradingAssignment.id ? res.data : a));
+        }
+      } catch (err) {
+        console.warn('Backend gradeAssignment failed, updating locally:', err);
+        setAssignments(prev => prev.map(a => {
+          if (a.id === gradingAssignment.id) {
+            return {
+              ...a,
+              status: 'GRADED',
+              statusLabel: 'Đã chấm',
+              rating: ratingNum,
+              tutorComment: gradeFeedback.trim(),
+              gradedAt: new Date().toISOString()
+            };
+          }
+          return a;
+        }));
+      }
+
+      setGradingAssignment(null);
+      showToast(`Đã chấm điểm (${ratingNum}/10) và lưu nhận xét thành công!`);
+    } catch (err) {
+      console.error('Error saving grade:', err);
+      showToast('Có lỗi khi lưu kết quả chấm điểm.', 'error');
+    } finally {
+      setIsSavingGrade(false);
+    }
   };
 
-  // Parent: Trigger File Input (Clicking dropzone or Re-submit button)
-  const handleParentUploadClick = (asgId, isResubmit = false) => {
+  // Parent: Trigger File Upload
+  const handleParentUploadClick = (asg) => {
     if (!user && onRequireAuth) {
       onRequireAuth('nộp bài tập');
       return;
     }
-    setUploadTargetId(asgId);
-    setIsResubmitMode(isResubmit);
+    // Check if overdue
+    const isOverdue = asg.status === 'NOT_SUBMITTED' || (asg.dueDate && new Date() > new Date(asg.dueDate));
+    if (isOverdue) {
+      showToast('Bài tập này đã quá hạn nộp. Hệ thống đã khóa và không cho phép nộp bù!', 'error');
+      return;
+    }
+
+    setUploadTargetId(asg.id);
     if (parentFileInputRef.current) {
       parentFileInputRef.current.value = '';
       parentFileInputRef.current.click();
     }
   };
 
-  // Parent: When file selected from file picker -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
+  // Parent: File selected from dialog
   const handleParentFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTargetId) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast('Tệp bài làm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
+      return;
+    }
 
     const targetAsg = assignments.find(a => a.id === uploadTargetId);
     if (!targetAsg) return;
@@ -307,13 +340,12 @@ export default function AssignmentView({ user, onRequireAuth }) {
     setSubmitModalData({
       assignment: targetAsg,
       file: file,
-      note: '',
-      isResubmit: isResubmitMode || targetAsg.status === 'submitted'
+      note: ''
     });
     setShowSubmitModal(true);
   };
 
-  // Student: When file dropped on dropzone -> DO NOT SUBMIT YET, OPEN CONFIRM MODAL!
+  // Parent: Drag & Drop file
   const handleDropFile = (asg, e) => {
     e.preventDefault();
     setDragOverId(null);
@@ -321,20 +353,31 @@ export default function AssignmentView({ user, onRequireAuth }) {
       onRequireAuth('nộp bài tập');
       return;
     }
+
+    const isOverdue = asg.status === 'NOT_SUBMITTED' || (asg.dueDate && new Date() > new Date(asg.dueDate));
+    if (isOverdue) {
+      showToast('Bài tập này đã quá hạn nộp. Hệ thống đã khóa và không cho phép nộp bù!', 'error');
+      return;
+    }
+
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast('Tệp bài làm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
+      return;
+    }
 
     setUploadTargetId(asg.id);
     setSubmitModalData({
       assignment: asg,
       file: file,
-      note: '',
-      isResubmit: asg.status === 'submitted'
+      note: ''
     });
     setShowSubmitModal(true);
   };
 
-  // Student: CONFIRMED SUBMIT in Modal
+  // Parent: Confirm Submit in Modal
   const handleConfirmSubmit = async () => {
     if (!submitModalData || !submitModalData.file) return;
 
@@ -342,31 +385,50 @@ export default function AssignmentView({ user, onRequireAuth }) {
       setIsSubmittingFile(true);
       const { assignment, file, note } = submitModalData;
 
-      // 1. Upload to backend
+      // 1. Upload to backend (up to 20MB)
       const uploadRes = await fileService.uploadFile(file);
+      const fileDownloadUrl = uploadRes.data?.fileUrl || URL.createObjectURL(file);
 
-      // 2. Read as base64 so client never loses download even if server restarts
-      const base64Url = await fileToBase64(file);
-      const fileDownloadUrl = uploadRes.data?.fileUrl || base64Url || URL.createObjectURL(file);
+      const payload = {
+        submittedFileUrl: fileDownloadUrl,
+        submittedFileName: file.name,
+        submittedFileSize: fileService.formatBytes(file.size),
+        submissionNote: note.trim()
+      };
 
-      const nowStr = new Date().toLocaleDateString('vi-VN') + ' lúc ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-      // 3. Update assignment state & persist
-      setAssignments(prev => prev.map(a => {
-        if (a.id === assignment.id) {
-          return {
-            ...a,
-            status: 'submitted',
-            statusLabel: 'Đã nộp',
-            submittedFile: file.name,
-            submittedFileSize: fileService.formatBytes(file.size),
-            submittedFileUrl: fileDownloadUrl,
-            submittedTime: nowStr,
-            studentNote: note
-          };
+      // 2. Submit to backend API
+      try {
+        const res = await assignmentService.submitAssignment(assignment.id, payload);
+        if (res && res.data) {
+          setAssignments(prev => prev.map(a => a.id === assignment.id ? res.data : a));
         }
-        return a;
-      }));
+      } catch (err) {
+        console.warn('Backend submitAssignment error, updating locally:', err);
+        const errMsg = err.response?.data?.message;
+        if (errMsg && errMsg.includes('quá hạn')) {
+          showToast(errMsg, 'error');
+          setShowSubmitModal(false);
+          setSubmitModalData(null);
+          loadAssignments();
+          return;
+        }
+
+        setAssignments(prev => prev.map(a => {
+          if (a.id === assignment.id) {
+            return {
+              ...a,
+              status: 'SUBMITTED',
+              statusLabel: 'Đã nộp',
+              submittedFileName: file.name,
+              submittedFileSize: fileService.formatBytes(file.size),
+              submittedFileUrl: fileDownloadUrl,
+              submittedAt: new Date().toISOString(),
+              submissionNote: note.trim()
+            };
+          }
+          return a;
+        }));
+      }
 
       setShowSubmitModal(false);
       setSubmitModalData(null);
@@ -374,7 +436,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
       showToast(`Đã nộp bài tập "${file.name}" thành công!`);
     } catch (err) {
       console.error('Error submitting assignment:', err);
-      alert('Có lỗi khi nộp bài. Vui lòng thử lại.');
+      showToast('Có lỗi khi nộp bài tập. Vui lòng thử lại.', 'error');
     } finally {
       setIsSubmittingFile(false);
     }
@@ -393,10 +455,10 @@ export default function AssignmentView({ user, onRequireAuth }) {
   });
 
   // Calculate stats
-  const pendingCount = assignments.filter(a => a.status === 'pending').length;
-  const submittedCount = assignments.filter(a => a.status === 'submitted').length;
-  const gradedCount = assignments.filter(a => a.status === 'graded').length;
-  const overdueCount = assignments.filter(a => a.status === 'overdue').length;
+  const pendingCount = assignments.filter(a => a.status === 'PENDING').length;
+  const submittedCount = assignments.filter(a => a.status === 'SUBMITTED').length;
+  const gradedCount = assignments.filter(a => a.status === 'GRADED').length;
+  const overdueCount = assignments.filter(a => a.status === 'NOT_SUBMITTED').length;
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '16px 0 60px 0' }}>
@@ -415,7 +477,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          backgroundColor: '#0f172a',
+          backgroundColor: toastType === 'error' ? '#991b1b' : '#0f172a',
           color: '#ffffff',
           padding: '14px 22px',
           borderRadius: '12px',
@@ -428,7 +490,11 @@ export default function AssignmentView({ user, onRequireAuth }) {
           zIndex: 9999,
           animation: 'slideIn 0.3s ease'
         }}>
-          <CheckCircle2 size={20} color="#10b981" />
+          {toastType === 'error' ? (
+            <AlertCircle size={20} color="#fca5a5" />
+          ) : (
+            <CheckCircle2 size={20} color="#10b981" />
+          )}
           <span>{toastMessage}</span>
         </div>
       )}
@@ -450,12 +516,12 @@ export default function AssignmentView({ user, onRequireAuth }) {
             color: '#0f172a',
             margin: '0 0 6px 0'
           }}>
-            {isTutor ? 'Quản lý Bài tập' : 'Bài tập'}
+            {isTutor ? 'Quản lý Bài tập (Gia sư)' : 'Bài tập Của Con'}
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
             {isTutor 
-              ? 'Tạo bài tập, theo dõi tiến độ và chấm bài của học sinh' 
-              : 'Nộp và theo dõi kết quả bài tập từ gia sư'}
+              ? 'Giao bài tập mới, tìm kiếm gán phụ huynh, nhận bài nộp và đánh giá nhận xét thang điểm 0-10' 
+              : 'Theo dõi bài tập được giao từ gia sư, nộp bài làm trước hạn và xem nhận xét điểm số'}
           </p>
         </div>
 
@@ -463,7 +529,13 @@ export default function AssignmentView({ user, onRequireAuth }) {
         {isTutor && (
           <button
             type="button"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              if (!user && onRequireAuth) {
+                onRequireAuth('giao bài tập mới');
+                return;
+              }
+              setShowCreateModal(true);
+            }}
             style={{
               backgroundColor: '#ff5f38',
               color: '#ffffff',
@@ -481,84 +553,58 @@ export default function AssignmentView({ user, onRequireAuth }) {
             }}
           >
             <Plus size={18} strokeWidth={3} />
-            <span>Giao bài tập mới</span>
+            <span>+ Giao bài tập mới</span>
           </button>
         )}
       </div>
 
       {/* 4 Status Stat Cards */}
-      {isTutor ? (
-        // Tutor Perspective Stats
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-          <div style={{ background: '#e0f2fe', border: '1.5px solid #0284c7', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0284c7', fontWeight: 800, fontSize: '1.5rem' }}>
-              <FileText size={20} /> {assignments.length}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>Bài tập đã giao</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+        <div style={{ background: '#ffedd5', border: '1.5px solid #fb923c', borderRadius: '16px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ea580c', fontWeight: 800, fontSize: '1.5rem' }}>
+            <Clock size={20} /> {pendingCount}
           </div>
-
-          <div style={{ background: '#f3e8ff', border: '1.5px solid #a855f7', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 800, fontSize: '1.5rem' }}>
-              <Clock size={20} /> {submittedCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#6d28d9', marginTop: '4px', fontWeight: 600 }}>Đã nộp (Cần chấm)</div>
-          </div>
-
-          <div style={{ background: '#e6fffa', border: '1.5px solid #34d399', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#059669', fontWeight: 800, fontSize: '1.5rem' }}>
-              <CheckCircle2 size={20} /> {gradedCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>Đã hoàn tất chấm</div>
-          </div>
-
-          <div style={{ background: '#ffedd5', border: '1.5px solid #fb923c', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ea580c', fontWeight: 800, fontSize: '1.5rem' }}>
-              <Award size={20} /> 85%
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>Tỷ lệ hoàn thành</div>
+          <div style={{ fontSize: '0.78rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>
+            {isTutor ? 'Học sinh đang làm' : 'Đang chờ nộp'}
           </div>
         </div>
-      ) : (
-        // Student Perspective Stats
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-          <div style={{ background: '#ffedd5', border: '1.5px solid #fb923c', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ea580c', fontWeight: 800, fontSize: '1.5rem' }}>
-              <Clock size={20} /> {pendingCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>Đang chờ nộp</div>
-          </div>
 
-          <div style={{ background: '#f3e8ff', border: '1.5px solid #a855f7', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 800, fontSize: '1.5rem' }}>
-              <FileText size={20} /> {submittedCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#6d28d9', marginTop: '4px', fontWeight: 600 }}>Đã nộp</div>
+        <div style={{ background: '#f3e8ff', border: '1.5px solid #a855f7', borderRadius: '16px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 800, fontSize: '1.5rem' }}>
+            <FileText size={20} /> {submittedCount}
           </div>
-
-          <div style={{ background: '#e6fffa', border: '1.5px solid #34d399', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#059669', fontWeight: 800, fontSize: '1.5rem' }}>
-              <CheckCircle2 size={20} /> {gradedCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>Đã chấm</div>
-          </div>
-
-          <div style={{ background: '#fee2e2', border: '1.5px solid #f87171', borderRadius: '16px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontWeight: 800, fontSize: '1.5rem' }}>
-              <AlertCircle size={20} /> {overdueCount}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#b91c1c', marginTop: '4px', fontWeight: 600 }}>Quá hạn</div>
+          <div style={{ fontSize: '0.78rem', color: '#6d28d9', marginTop: '4px', fontWeight: 600 }}>
+            {isTutor ? 'Đã nộp (Cần chấm)' : 'Đã nộp bài'}
           </div>
         </div>
-      )}
+
+        <div style={{ background: '#e6fffa', border: '1.5px solid #34d399', borderRadius: '16px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#059669', fontWeight: 800, fontSize: '1.5rem' }}>
+            <CheckCircle2 size={20} /> {gradedCount}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#047857', marginTop: '4px', fontWeight: 600 }}>
+            {isTutor ? 'Đã hoàn tất chấm' : 'Đã có điểm & nhận xét'}
+          </div>
+        </div>
+
+        <div style={{ background: '#fee2e2', border: '1.5px solid #f87171', borderRadius: '16px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontWeight: 800, fontSize: '1.5rem' }}>
+            <AlertCircle size={20} /> {overdueCount}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#b91c1c', marginTop: '4px', fontWeight: 600 }}>
+            Quá hạn (Không nộp)
+          </div>
+        </div>
+      </div>
 
       {/* Filter Tabs */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
         {[
           { id: 'all', label: `Tất cả (${assignments.length})` },
-          { id: 'pending', label: `Chờ nộp (${pendingCount})` },
-          { id: 'submitted', label: `Đã nộp (${submittedCount})` },
-          { id: 'graded', label: `Đã chấm (${gradedCount})` },
-          { id: 'overdue', label: `Quá hạn (${overdueCount})` }
+          { id: 'PENDING', label: `Chờ nộp (${pendingCount})` },
+          { id: 'SUBMITTED', label: `Đã nộp (${submittedCount})` },
+          { id: 'GRADED', label: `Đã chấm (${gradedCount})` },
+          { id: 'NOT_SUBMITTED', label: `Không nộp / Quá hạn (${overdueCount})` }
         ].map((f) => {
           const isSel = filter === f.id;
           return (
@@ -597,128 +643,149 @@ export default function AssignmentView({ user, onRequireAuth }) {
           }}>
             <FileText size={36} color="#94a3b8" style={{ margin: '0 auto 12px', display: 'block' }} />
             <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
-              Chưa có bài tập nào
+              Chưa có bài tập nào trong mục này
             </div>
             <p style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
               {isTutor 
-                ? 'Bấm "+ Giao bài tập mới" để giao bài tập cho học sinh của bạn.'
+                ? 'Bấm nút "+ Giao bài tập mới" để tạo bài tập và gán phụ huynh trên hệ thống.'
                 : 'Bạn chưa có bài tập nào được giao từ gia sư.'}
             </p>
           </div>
         ) : (
-          filteredAssignments.map((asg) => (
-            <div
-              key={asg.id}
-            style={{
-              background: '#ffffff',
-              border: asg.status === 'overdue' ? '2px solid #ef4444' : asg.status === 'submitted' ? '2px solid #7c3aed' : '1.5px solid #0f172a',
-              borderRadius: '20px',
-              padding: '24px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
-              position: 'relative'
-            }}
-          >
-            {/* Top row: Subject & Status Badges */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{
-                  background: asg.tagColor,
-                  color: asg.tagTextColor,
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  borderRadius: '999px',
-                  padding: '3px 12px'
-                }}>
-                  {asg.subject}
-                </span>
+          filteredAssignments.map((asg) => {
+            const isOverdueLocked = asg.status === 'NOT_SUBMITTED' || (asg.status === 'PENDING' && asg.dueDate && new Date() > new Date(asg.dueDate));
+            const isGraded = asg.status === 'GRADED';
+            const isSubmitted = asg.status === 'SUBMITTED';
+            const isPending = asg.status === 'PENDING' && !isOverdueLocked;
 
-                <span style={{
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '999px',
-                  padding: '2px 10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#475569'
-                }}>
-                  {asg.statusLabel}
-                </span>
+            return (
+              <div
+                key={asg.id}
+                style={{
+                  background: '#ffffff',
+                  border: isOverdueLocked 
+                    ? '2px solid #ef4444' 
+                    : isSubmitted 
+                      ? '2px solid #7c3aed' 
+                      : isGraded 
+                        ? '2px solid #059669' 
+                        : '1.5px solid #0f172a',
+                  borderRadius: '20px',
+                  padding: '24px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+                  position: 'relative'
+                }}
+              >
+                {/* Top row: Subject & Status Badges */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      background: '#e0f2fe',
+                      color: '#0284c7',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      borderRadius: '999px',
+                      padding: '3px 12px',
+                      border: '1px solid #bae6fd'
+                    }}>
+                      {asg.subjectName || 'Môn học'}
+                    </span>
 
-                {asg.badgeExtra && (
-                  <span style={{
-                    background: '#fee2e2',
-                    color: '#dc2626',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    borderRadius: '999px',
-                    padding: '2px 10px'
-                  }}>
-                    {asg.badgeExtra}
-                  </span>
+                    {/* Status Badge */}
+                    <span style={{
+                      background: isOverdueLocked 
+                        ? '#fee2e2' 
+                        : isSubmitted 
+                          ? '#f3e8ff' 
+                          : isGraded 
+                            ? '#dcfce7' 
+                            : '#ffedd5',
+                      color: isOverdueLocked 
+                        ? '#dc2626' 
+                        : isSubmitted 
+                          ? '#7c3aed' 
+                          : isGraded 
+                            ? '#15803d' 
+                            : '#c2410c',
+                      borderRadius: '999px',
+                      padding: '3px 12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      border: '1px solid currentColor'
+                    }}>
+                      {isOverdueLocked 
+                        ? '⛔ Quá hạn (Không nộp)' 
+                        : isSubmitted 
+                          ? '📄 Đã nộp (Chờ chấm)' 
+                          : isGraded 
+                            ? '✓ Đã chấm điểm' 
+                            : '⏳ Đang mở (Chờ nộp)'}
+                    </span>
+                  </div>
+
+                  {/* Rating Badge (0 - 10) for graded items */}
+                  {asg.rating !== null && asg.rating !== undefined && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#ecfdf5',
+                      border: '2px solid #059669',
+                      borderRadius: '14px',
+                      padding: '6px 14px',
+                      color: '#047857',
+                      fontWeight: 900,
+                      fontSize: '1rem'
+                    }}>
+                      <Award size={18} color="#059669" />
+                      <span>{Number(asg.rating).toFixed(1)} / 10</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                  {asg.title}
+                </h3>
+
+                {/* Tutor / Parent details */}
+                <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '10px', fontWeight: 600 }}>
+                  {isTutor 
+                    ? `Phụ huynh: ${asg.parentName || 'Phụ huynh'} (Học sinh: ${asg.studentName || 'Học sinh'})`
+                    : `Gia sư giao bài: ${asg.tutorName || 'Gia sư Tutora'}`}
+                </div>
+
+                {/* Description */}
+                {asg.description && (
+                  <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: '0 0 14px 0' }}>
+                    {asg.description}
+                  </p>
                 )}
-              </div>
 
-              {/* Score badge for graded items */}
-              {asg.score && (
-                <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '50%',
-                  border: `2.5px solid ${asg.scoreColor}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '0.85rem',
-                  color: asg.scoreColor,
-                  background: '#f0fdf4'
-                }}>
-                  {asg.score}
+                {/* Dates */}
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#64748b', marginBottom: '16px', flexWrap: 'wrap' }}>
+                  <span>📅 Hạn nộp: <b style={{ color: isOverdueLocked ? '#dc2626' : '#0f172a' }}>{formatDate(asg.dueDate)}</b></span>
+                  {asg.submittedAt && (
+                    <span>🕒 Thời gian nộp: <b>{formatDate(asg.submittedAt)}</b></span>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Title */}
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
-              {asg.title}
-            </h3>
-
-            {/* Tutor / Student details */}
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px', fontWeight: 600 }}>
-              {isTutor ? `Học sinh: ${asg.studentName || 'Nguyễn Minh Anh'}` : `Gia sư: ${asg.tutor}`}
-            </div>
-
-            {/* Description */}
-            <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: '0 0 14px 0' }}>
-              {asg.desc}
-            </p>
-
-            {/* Dates */}
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: '#64748b', marginBottom: '16px', flexWrap: 'wrap' }}>
-              <span>📅 Giao: {asg.assignedDate}</span>
-              <span style={{ color: asg.status === 'overdue' ? '#dc2626' : '#64748b', fontWeight: asg.status === 'overdue' ? 800 : 400 }}>
-                ⏰ Hạn nộp: {asg.dueDate}
-              </span>
-            </div>
-
-            {/* Attachments (Tutor materials / exercises to download) */}
-            {asg.attachments && asg.attachments.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>
-                  Tệp đính kèm bài tập (Nhấn để tải về):
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {asg.attachments.map((att, i) => (
+                {/* Attachments (Tutor materials / problem sheet to download) */}
+                {asg.attachmentName && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>
+                      Đề bài đính kèm từ gia sư (Nhấn để tải về):
+                    </div>
                     <button
-                      key={i}
                       type="button"
-                      onClick={() => handleDownload(att.url, att.name)}
-                      title="Nhấn để tải tệp về máy tính"
+                      onClick={() => handleDownload(asg.attachmentUrl, asg.attachmentName)}
+                      title="Nhấn để tải đề bài về máy tính"
                       style={{
                         border: '1.5px solid #cbd5e1',
                         backgroundColor: '#f8fafc',
                         borderRadius: '999px',
-                        padding: '5px 14px',
-                        fontSize: '0.78rem',
+                        padding: '6px 16px',
+                        fontSize: '0.8rem',
                         fontWeight: 700,
                         color: '#ea580c',
                         display: 'inline-flex',
@@ -728,234 +795,205 @@ export default function AssignmentView({ user, onRequireAuth }) {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <Download size={13} />
-                      {att.name} <span style={{ color: '#94a3b8' }}>({att.size})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Overdue Warning Alert */}
-            {asg.status === 'overdue' && (
-              <div style={{
-                background: '#fee2e2',
-                border: '1px solid #f87171',
-                borderRadius: '8px',
-                padding: '8px 14px',
-                fontSize: '0.82rem',
-                color: '#b91c1c',
-                fontWeight: 700,
-                marginBottom: '14px'
-              }}>
-                ❗ Bài nộp muộn có thể bị trừ điểm
-              </div>
-            )}
-
-            {/* Feedback Box (for graded items) */}
-            {asg.feedback && (
-              <div style={{
-                background: '#e6fffa',
-                border: '1px solid #34d399',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                fontSize: '0.85rem',
-                color: '#065f46',
-                marginBottom: '14px'
-              }}>
-                <strong>Nhận xét từ gia sư:</strong> {asg.feedback}
-              </div>
-            )}
-
-            {/* SUBMITTED STATE */}
-            {asg.status === 'submitted' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{
-                  border: '1.5px solid #a855f7',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  fontSize: '0.85rem',
-                  color: '#7c3aed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontWeight: 700,
-                  background: '#faf5ff',
-                  flexWrap: 'wrap',
-                  gap: '8px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckCircle2 size={18} color="#059669" />
-                    <span>Bài làm: {asg.submittedFile}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
-                      ({asg.submittedTime})
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(asg.submittedFileUrl, asg.submittedFile)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      background: '#ffffff',
-                      border: '1px solid #a855f7',
-                      borderRadius: '6px',
-                      padding: '4px 10px',
-                      color: '#7c3aed',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Download size={13} /> Tải bài nộp
-                  </button>
-                </div>
-
-                {isTutor ? (
-                  // Tutor Action: Chấm điểm & Nhận xét
-                  <button
-                    type="button"
-                    onClick={() => openGradingModal(asg)}
-                    style={{
-                      width: '100%',
-                      background: '#7c3aed',
-                      color: '#ffffff',
-                      border: '2px solid #0f172a',
-                      borderRadius: '10px',
-                      padding: '11px',
-                      fontWeight: 800,
-                      fontSize: '0.9rem',
-                      cursor: 'pointer',
-                      boxShadow: '2px 2px 0px #0f172a'
-                    }}
-                  >
-                    Chấm điểm & Nhận xét bài làm
-                  </button>
-                ) : (
-                  // Student Perspective
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <div style={{
-                      flex: 1,
-                      background: '#f8fafc',
-                      borderRadius: '10px',
-                      padding: '10px',
-                      textAlign: 'center',
-                      fontSize: '0.82rem',
-                      color: '#64748b',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      Đang chờ gia sư chấm điểm...
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleParentUploadClick(asg.id, true)}
-                      style={{
-                        background: '#ffffff',
-                        color: '#0f172a',
-                        border: '1.5px solid #0f172a',
-                        borderRadius: '10px',
-                        padding: '8px 16px',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Nộp lại
+                      <Download size={14} />
+                      {asg.attachmentName} {asg.attachmentSize && <span style={{ color: '#94a3b8' }}>({asg.attachmentSize})</span>}
                     </button>
                   </div>
                 )}
 
-                {/* Display Student Note if provided */}
-                {asg.studentNote && (
+                {/* OVERDUE LOCKED BANNER: No Late Submission Allowed */}
+                {isOverdueLocked && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1.5px solid #ef4444',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    fontSize: '0.85rem',
+                    color: '#991b1b',
+                    fontWeight: 700,
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <Lock size={20} color="#dc2626" />
+                    <div>
+                      <div>ĐÃ QUÁ HẠN NỘP BÀI - BÀI TẬP ĐÃ BỊ ĐÁNH DẤU KHÔNG NỘP</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 500, color: '#b91c1c', marginTop: '2px' }}>
+                        Hệ thống đã tự động khóa bài tập này theo quy định. Phụ huynh/học sinh không được phép nộp bù sau hạn.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Feedback Box (for graded items) */}
+                {isGraded && (asg.tutorComment || asg.rating !== null) && (
+                  <div style={{
+                    background: '#ecfdf5',
+                    border: '1.5px solid #34d399',
+                    borderRadius: '14px',
+                    padding: '16px',
+                    fontSize: '0.88rem',
+                    color: '#065f46',
+                    marginBottom: '14px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Award size={16} color="#059669" /> Nhận xét & Đánh giá từ Gia sư:
+                      </strong>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#047857' }}>
+                        Thang điểm: {Number(asg.rating).toFixed(1)} / 10
+                      </span>
+                    </div>
+                    <div style={{ lineHeight: '1.5' }}>
+                      {asg.tutorComment || 'Gia sư chưa để lại nhận xét chi tiết.'}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUBMITTED STATE: Display submitted file details */}
+                {isSubmitted && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
+                    <div style={{
+                      border: '1.5px solid #a855f7',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      fontSize: '0.85rem',
+                      color: '#7c3aed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontWeight: 700,
+                      background: '#faf5ff',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle2 size={18} color="#059669" />
+                        <span>Bài nộp: <b>{asg.submittedFileName || 'bai_lam.pdf'}</b></span>
+                        {asg.submittedFileSize && (
+                          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>({asg.submittedFileSize})</span>
+                        )}
+                      </div>
+
+                      {asg.submittedFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(asg.submittedFileUrl, asg.submittedFileName || 'bai_lam.pdf')}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: '#ffffff',
+                            border: '1px solid #a855f7',
+                            borderRadius: '8px',
+                            padding: '4px 12px',
+                            color: '#7c3aed',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Download size={13} /> Tải bài nộp
+                        </button>
+                      )}
+                    </div>
+
+                    {asg.submissionNote && (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px dashed #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.8rem',
+                        color: '#475569'
+                      }}>
+                        💬 <b>Lời nhắn của phụ huynh:</b> "{asg.submissionNote}"
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ACTION BUTTON FOR TUTOR: Chấm điểm bài nộp */}
+                {isTutor && (isSubmitted || isGraded) && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => openGradingModal(asg)}
+                      style={{
+                        background: isGraded ? '#ffffff' : '#059669',
+                        color: isGraded ? '#0f172a' : '#ffffff',
+                        border: '2px solid #0f172a',
+                        borderRadius: '10px',
+                        padding: '9px 18px',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        boxShadow: '2px 2px 0px #0f172a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Award size={16} />
+                      {isGraded ? 'Sửa điểm & nhận xét (0-10)' : 'Chấm điểm & Nhận xét bài làm (0-10)'}
+                    </button>
+                  </div>
+                )}
+
+                {/* PARENT PERSPECTIVE FOR PENDING (SUBMISSION DROPZONE) */}
+                {isPending && !isTutor && (
+                  <div 
+                    onClick={() => handleParentUploadClick(asg)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverId(asg.id);
+                    }}
+                    onDragLeave={() => setDragOverId(null)}
+                    onDrop={(e) => handleDropFile(asg, e)}
+                    style={{
+                      border: dragOverId === asg.id ? '2.5px dashed #ff5f38' : '2px dashed #cbd5e1',
+                      borderRadius: '14px',
+                      padding: '24px',
+                      textAlign: 'center',
+                      background: dragOverId === asg.id ? '#fff7ed' : '#fafafa',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <UploadCloud 
+                      size={28} 
+                      color={dragOverId === asg.id ? "#ff5f38" : "#64748b"} 
+                      style={{ margin: '0 auto 6px auto', display: 'block' }} 
+                    />
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: dragOverId === asg.id ? '#ea580c' : '#0f172a' }}>
+                      {dragOverId === asg.id ? 'Thả tệp vào đây để nộp bài!' : 'Tải lên hoặc Kéo thả bài làm của con'}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '3px' }}>
+                      Hỗ trợ tệp PDF, DOCX, JPG, ZIP tối đa <b>20MB</b> · Có bước xem lại trước khi nộp
+                    </div>
+                  </div>
+                )}
+
+                {/* TUTOR PERSPECTIVE FOR PENDING: Waiting student */}
+                {isPending && isTutor && (
                   <div style={{
                     background: '#f8fafc',
                     border: '1px dashed #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '0.8rem',
-                    color: '#475569'
+                    borderRadius: '10px',
+                    padding: '12px',
+                    textAlign: 'center',
+                    fontSize: '0.82rem',
+                    color: '#64748b'
                   }}>
-                    💬 <b>Lời nhắn của bạn:</b> "{asg.studentNote}"
+                    ⏳ Đang chờ phụ huynh/học sinh nộp bài trước hạn: <b>{formatDate(asg.dueDate)}</b>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* GRADED STATE ACTIONS FOR TUTOR */}
-            {asg.status === 'graded' && isTutor && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => openGradingModal(asg)}
-                  style={{
-                    background: '#ffffff',
-                    color: '#0f172a',
-                    border: '1.5px solid #0f172a',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontWeight: 700,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    boxShadow: '1.5px 1.5px 0px #0f172a'
-                  }}
-                >
-                  Sửa điểm & nhận xét
-                </button>
               </div>
-            )}
-
-            {/* PENDING / OVERDUE: ONLY STUDENTS HAVE UPLOAD DROPZONE */}
-            {!isTutor && (asg.status === 'pending' || asg.status === 'overdue') && (
-              <div 
-                onClick={() => handleParentUploadClick(asg.id, false)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverId(asg.id);
-                }}
-                onDragLeave={() => setDragOverId(null)}
-                onDrop={(e) => handleDropFile(asg, e)}
-                style={{
-                  border: dragOverId === asg.id ? '2.5px dashed #ff5f38' : '2px dashed #cbd5e1',
-                  borderRadius: '14px',
-                  padding: '24px',
-                  textAlign: 'center',
-                  background: dragOverId === asg.id ? '#fff7ed' : '#fafafa',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <UploadCloud 
-                  size={26} 
-                  color={dragOverId === asg.id ? "#ff5f38" : "#64748b"} 
-                  style={{ margin: '0 auto 6px auto', display: 'block' }} 
-                />
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: dragOverId === asg.id ? '#ea580c' : '#0f172a' }}>
-                  {dragOverId === asg.id ? 'Thả tệp vào đây để nộp bài!' : 'Tải lên hoặc Kéo thả bài làm'}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '3px' }}>
-                  Nhấn vào để chọn tệp hoặc kéo thả (PDF, DOC, DOCX, JPG, ZIP) · Có bước xem lại xác nhận
-                </div>
-              </div>
-            )}
-
-            {/* FOR TUTORS ON PENDING / OVERDUE: Show waiting status rather than dropzone */}
-            {isTutor && (asg.status === 'pending' || asg.status === 'overdue') && (
-              <div style={{
-                background: '#f8fafc',
-                border: '1px dashed #cbd5e1',
-                borderRadius: '10px',
-                padding: '12px',
-                textAlign: 'center',
-                fontSize: '0.82rem',
-                color: '#64748b'
-              }}>
-                ⏳ Học sinh chưa nộp bài. Hệ thống sẽ tự động nhắc nhở khi sắp đến hạn nộp ({asg.dueDate}).
-              </div>
-            )}
-          </div>
-        )))}
+            );
+          })
+        )}
       </div>
 
       {/* MODAL: TUTOR CREATE ASSIGNMENT */}
@@ -963,7 +1001,8 @@ export default function AssignmentView({ user, onRequireAuth }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -973,11 +1012,11 @@ export default function AssignmentView({ user, onRequireAuth }) {
           <div style={{
             background: '#ffffff',
             border: '2.5px solid #0f172a',
-            borderRadius: '20px',
-            maxWidth: '560px',
+            borderRadius: '24px',
+            maxWidth: '600px',
             width: '100%',
             padding: '28px',
-            boxShadow: '6px 6px 0px #0f172a',
+            boxShadow: '8px 8px 0px #0f172a',
             position: 'relative',
             maxHeight: '90vh',
             overflowY: 'auto'
@@ -1003,6 +1042,8 @@ export default function AssignmentView({ user, onRequireAuth }) {
             </h2>
 
             <form onSubmit={handleCreateAssignment} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Tiêu đề */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
                   Tiêu đề bài tập *
@@ -1010,7 +1051,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Ôn tập Hình học không gian Oxyz..."
+                  placeholder="Ví dụ: Ôn tập Giải tích 12 - Tích phân từng phần..."
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   style={{
@@ -1025,6 +1066,133 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 />
               </div>
 
+              {/* Phụ huynh (Tìm kiếm & Gán) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                  Gán Phụ huynh nhận bài tập *
+                </label>
+                
+                {selectedParent ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    background: '#eff6ff',
+                    border: '1.5px solid #2563eb',
+                    borderRadius: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <UserCheck size={20} color="#2563eb" />
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e40af' }}>
+                          {selectedParent.fullName} ({selectedParent.email})
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#3b82f6' }}>
+                          Học sinh: <b>{selectedParent.studentName || selectedParent.fullName}</b> {selectedParent.phone && `· SĐT: ${selectedParent.phone}`}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedParent(null)}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: '#b91c1c',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Đổi phụ huynh
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên phụ huynh, email hoặc tên học sinh..."
+                        value={parentSearchQuery}
+                        onChange={(e) => setParentSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: '42px',
+                          border: '1.5px solid #0f172a',
+                          borderRadius: '10px',
+                          padding: '0 12px 0 38px',
+                          fontSize: '0.88rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* Search Results Dropdown */}
+                    <div style={{
+                      maxHeight: '160px',
+                      overflowY: 'auto',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      marginTop: '6px',
+                      background: '#ffffff',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                    }}>
+                      {isSearchingParents ? (
+                        <div style={{ padding: '10px', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
+                          Đang tìm phụ huynh...
+                        </div>
+                      ) : parentSearchResults.length === 0 ? (
+                        <div style={{ padding: '10px', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
+                          {parentSearchQuery ? 'Không tìm thấy phụ huynh phù hợp.' : 'Nhập từ khóa để tìm phụ huynh'}
+                        </div>
+                      ) : (
+                        parentSearchResults.map((p) => (
+                          <div
+                            key={p.id}
+                            onClick={() => setSelectedParent(p)}
+                            style={{
+                              padding: '8px 12px',
+                              borderBottom: '1px solid #f1f5f9',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              transition: 'background 0.15s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                                {p.fullName} <span style={{ fontWeight: 400, color: '#64748b' }}>({p.email})</span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                Con em: <b>{p.studentName || 'N/A'}</b>
+                              </div>
+                            </div>
+                            <span style={{
+                              background: '#e0f2fe',
+                              color: '#0284c7',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: '6px'
+                            }}>
+                              Chọn
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Môn học & Hạn nộp */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
@@ -1055,10 +1223,11 @@ export default function AssignmentView({ user, onRequireAuth }) {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                    Hạn nộp bài
+                    Hạn nộp bài (Ngày & Giờ) *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
+                    required
                     value={newDueDate}
                     onChange={(e) => setNewDueDate(e.target.value)}
                     style={{
@@ -1067,20 +1236,21 @@ export default function AssignmentView({ user, onRequireAuth }) {
                       border: '1.5px solid #0f172a',
                       borderRadius: '10px',
                       padding: '0 10px',
-                      fontSize: '0.88rem',
+                      fontSize: '0.85rem',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
               </div>
 
+              {/* Yêu cầu */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
                   Yêu cầu & Hướng dẫn làm bài
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Ghi rõ yêu cầu, các bước cần hoàn thành..."
+                  placeholder="Ghi rõ yêu cầu, số lượng câu hỏi và hướng dẫn trình bày..."
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   style={{
@@ -1095,17 +1265,24 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 />
               </div>
 
+              {/* Tệp đề bài đính kèm */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  Đính kèm tệp đề bài (Tùy chọn)
+                  Tệp đính kèm đề bài (Tối đa 20MB)
                 </label>
                 <input
                   type="file"
-                  onChange={(e) => setNewFile(e.target.files?.[0] || null)}
-                  style={{
-                    width: '100%',
-                    fontSize: '0.85rem'
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && f.size > MAX_FILE_SIZE) {
+                      showToast('Tệp đề bài vượt quá giới hạn 20MB!', 'error');
+                      e.target.value = '';
+                      setNewFile(null);
+                      return;
+                    }
+                    setNewFile(f || null);
                   }}
+                  style={{ width: '100%', fontSize: '0.85rem' }}
                 />
                 {newFile && (
                   <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
@@ -1114,6 +1291,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 )}
               </div>
 
+              {/* Submit Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
                 <button
                   type="button"
@@ -1131,6 +1309,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 </button>
                 <button
                   type="submit"
+                  disabled={isCreatingAssignment}
                   style={{
                     padding: '10px 22px',
                     borderRadius: '10px',
@@ -1139,10 +1318,10 @@ export default function AssignmentView({ user, onRequireAuth }) {
                     color: '#fff',
                     fontWeight: 800,
                     boxShadow: '2px 2px 0px #0f172a',
-                    cursor: 'pointer'
+                    cursor: isCreatingAssignment ? 'wait' : 'pointer'
                   }}
                 >
-                  Giao bài ngay
+                  {isCreatingAssignment ? 'Đang gửi bài tập...' : 'Giao bài tập ngay'}
                 </button>
               </div>
             </form>
@@ -1150,12 +1329,13 @@ export default function AssignmentView({ user, onRequireAuth }) {
         </div>
       )}
 
-      {/* MODAL: TUTOR GRADING & FEEDBACK */}
+      {/* MODAL: TUTOR GRADING & RATING (0-10) */}
       {gradingAssignment && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1165,11 +1345,11 @@ export default function AssignmentView({ user, onRequireAuth }) {
           <div style={{
             background: '#ffffff',
             border: '2.5px solid #0f172a',
-            borderRadius: '20px',
+            borderRadius: '24px',
             maxWidth: '520px',
             width: '100%',
             padding: '28px',
-            boxShadow: '6px 6px 0px #0f172a',
+            boxShadow: '8px 8px 0px #0f172a',
             position: 'relative'
           }}>
             <button
@@ -1189,33 +1369,36 @@ export default function AssignmentView({ user, onRequireAuth }) {
             </button>
 
             <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: '0 0 14px 0' }}>
-              Chấm điểm bài tập
+              Chấm điểm & Nhận xét bài tập
             </h2>
 
-            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{gradingAssignment.title}</div>
+            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', border: '1.5px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{gradingAssignment.title}</div>
               <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-                Học sinh: <b>{gradingAssignment.studentName || 'Nguyễn Minh Anh'}</b>
+                Học sinh: <b>{gradingAssignment.studentName || 'Học sinh'}</b> (Phụ huynh: {gradingAssignment.parentName || 'Phụ huynh'})
               </div>
-              {gradingAssignment.submittedFile && (
+              {gradingAssignment.submittedFileName && (
                 <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: 700 }}>
-                    📄 {gradingAssignment.submittedFile}
+                    📄 {gradingAssignment.submittedFileName}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(gradingAssignment.submittedFileUrl, gradingAssignment.submittedFile)}
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      padding: '2px 8px',
-                      fontSize: '0.72rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Tải về máy
-                  </button>
+                  {gradingAssignment.submittedFileUrl && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(gradingAssignment.submittedFileUrl, gradingAssignment.submittedFileName)}
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer',
+                        fontWeight: 700
+                      }}
+                    >
+                      Tải về máy
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1223,38 +1406,44 @@ export default function AssignmentView({ user, onRequireAuth }) {
             <form onSubmit={handleSaveGrade} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  Điểm số (Ví dụ: 19/20 hoặc 9.5/10) *
+                  Điểm số đánh giá (Thang điểm 0.0 - 10.0) *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={gradeScore}
-                  onChange={(e) => setGradeScore(e.target.value)}
-                  placeholder="19/20"
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    border: '1.5px solid #0f172a',
-                    borderRadius: '10px',
-                    padding: '0 12px',
-                    fontSize: '1rem',
-                    fontWeight: 800,
-                    color: '#059669',
-                    boxSizing: 'border-box'
-                  }}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    required
+                    value={gradeRating}
+                    onChange={(e) => setGradeRating(e.target.value)}
+                    placeholder="9.0"
+                    style={{
+                      width: '120px',
+                      height: '44px',
+                      border: '2px solid #059669',
+                      borderRadius: '10px',
+                      padding: '0 12px',
+                      fontSize: '1.2rem',
+                      fontWeight: 900,
+                      color: '#059669',
+                      textAlign: 'center'
+                    }}
+                  />
+                  <span style={{ fontSize: '1rem', fontWeight: 800, color: '#64748b' }}>/ 10.0</span>
+                </div>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  Nhận xét & Hướng dẫn sửa bài
+                  Nhận xét & Hướng dẫn sửa bài cho học sinh/phụ huynh *
                 </label>
                 <textarea
                   rows={4}
                   required
                   value={gradeFeedback}
                   onChange={(e) => setGradeFeedback(e.target.value)}
-                  placeholder="Nhận xét chi tiết về bài làm, ưu điểm và các lỗi cần lưu ý..."
+                  placeholder="Ghi nhận xét chi tiết về bài làm, ưu điểm, các lỗi cần sửa..."
                   style={{
                     width: '100%',
                     border: '1.5px solid #0f172a',
@@ -1284,6 +1473,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingGrade}
                   style={{
                     padding: '10px 22px',
                     borderRadius: '10px',
@@ -1292,10 +1482,10 @@ export default function AssignmentView({ user, onRequireAuth }) {
                     color: '#fff',
                     fontWeight: 800,
                     boxShadow: '2px 2px 0px #0f172a',
-                    cursor: 'pointer'
+                    cursor: isSavingGrade ? 'wait' : 'pointer'
                   }}
                 >
-                  Hoàn tất chấm điểm
+                  {isSavingGrade ? 'Đang lưu...' : 'Hoàn tất chấm điểm'}
                 </button>
               </div>
             </form>
@@ -1303,7 +1493,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
         </div>
       )}
 
-      {/* MODAL: STUDENT CONFIRM SUBMISSION (Xem lại & Xác nhận nộp bài) */}
+      {/* MODAL: STUDENT/PARENT CONFIRM SUBMISSION */}
       {showSubmitModal && submitModalData && (
         <div style={{
           position: 'fixed',
@@ -1365,10 +1555,10 @@ export default function AssignmentView({ user, onRequireAuth }) {
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
-                  {submitModalData.isResubmit ? 'Xác nhận Nộp lại bài tập' : 'Xác nhận Nộp bài tập'}
+                  Xác nhận Nộp bài tập
                 </h2>
                 <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
-                  Bài tập: <b>{submitModalData.assignment.title}</b> ({submitModalData.assignment.subject})
+                  Bài tập: <b>{submitModalData.assignment.title}</b> ({submitModalData.assignment.subjectName})
                 </div>
               </div>
             </div>
@@ -1407,7 +1597,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
                       {submitModalData.file.name}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                      Kích thước: {fileService.formatBytes(submitModalData.file.size)}
+                      Kích thước: {fileService.formatBytes(submitModalData.file.size)} (Tối đa 20MB)
                     </div>
                   </div>
                 </div>
@@ -1442,7 +1632,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
               </label>
               <textarea
                 rows={3}
-                placeholder="Ví dụ: Em đã hoàn thành 10 bài tập, phần câu hỏi số 7 em có ghi chú lời giải chi tiết ở trang cuối..."
+                placeholder="Ví dụ: Con đã hoàn thành 10 bài tập, phần bài 8 con có trình bày 2 cách giải ở trang cuối..."
                 value={submitModalData.note}
                 onChange={(e) => setSubmitModalData({ ...submitModalData, note: e.target.value })}
                 style={{
@@ -1455,20 +1645,6 @@ export default function AssignmentView({ user, onRequireAuth }) {
                   boxSizing: 'border-box'
                 }}
               />
-            </div>
-
-            {/* Reassurance note */}
-            <div style={{
-              background: '#fefce8',
-              border: '1px solid #fef08a',
-              borderRadius: '12px',
-              padding: '10px 14px',
-              fontSize: '0.8rem',
-              color: '#854d0e',
-              marginBottom: '20px',
-              lineHeight: 1.4
-            }}>
-              💡 <b>Lưu ý:</b> Sau khi nộp, bài tập sẽ được lưu vĩnh viễn trên hệ thống. Bạn vẫn có thể bấm <b>Nộp lại</b> bất kỳ lúc nào trước khi gia sư bắt đầu chấm bài.
             </div>
 
             {/* Action Buttons */}
@@ -1513,11 +1689,10 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 }}
               >
                 {isSubmittingFile ? (
-                  <>Đang lưu bài làm...</>
+                  <>Đang nộp bài...</>
                 ) : (
                   <>
-                    <Send size={16} />
-                    {submitModalData.isResubmit ? 'Xác nhận Nộp lại' : 'Xác nhận Nộp bài'}
+                    <Send size={16} /> Xác nhận Nộp bài
                   </>
                 )}
               </button>

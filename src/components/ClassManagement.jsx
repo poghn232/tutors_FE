@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { classService } from '../services/classService';
+import { assignmentService } from '../services/assignmentService';
 import { useAuth } from '../context/AuthContext';
 import { 
   Calendar as CalendarIcon, 
@@ -14,16 +15,19 @@ import {
   Plus,
   PlusCircle,
   Bell,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 
-export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onRequireAuth }) {
+export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
   const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
   const [dbClasses, setDbClasses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+
 
   // Modal State for Adding Class / Free Schedule Slot
   const [showAddModal, setShowAddModal] = useState(false);
@@ -89,9 +93,23 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     }
   };
 
+  const loadAssignments = async () => {
+    if (!user) return;
+    try {
+      const res = await assignmentService.getAssignments();
+      if (res && res.data && Array.isArray(res.data)) {
+        setAssignments(res.data);
+      }
+    } catch (err) {
+      console.warn('Cannot fetch assignments for ClassManagement:', err);
+    }
+  };
+
   useEffect(() => {
     loadClasses();
+    loadAssignments();
   }, [user]);
+
 
   const handleCreateCustomClass = async (e) => {
     e.preventDefault();
@@ -689,7 +707,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             Thông báo
           </h3>
 
-          {allMappedClasses.length === 0 ? (
+          {allMappedClasses.length === 0 && assignments.length === 0 ? (
             <div style={{
               background: '#ffffff',
               border: '1.5px dashed #cbd5e1',
@@ -701,12 +719,113 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               <Bell size={24} color="#94a3b8" style={{ margin: '0 auto 8px', display: 'block' }} />
               <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Chưa có thông báo mới</div>
               <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>
-                Khi bạn gửi yêu cầu kết nối gia sư hoặc có cập nhật về lớp học, các thông báo sẽ hiển thị ở đây.
+                Khi bạn gửi yêu cầu kết nối gia sư hoặc có bài tập mới từ gia sư, các thông báo sẽ hiển thị ở đây.
               </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* Assignment Notifications for Parents / Tutors */}
+              {assignments.map((asg) => {
+                if (asg.status === 'PENDING') {
+                  return (
+                    <div key={`asg-${asg.id}`} style={{
+                      background: '#fff7ed',
+                      border: '1.5px solid #fed7aa',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <FileText size={20} color="#ea580c" />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#9a3412' }}>
+                            📝 Bài tập mới: {asg.title} ({asg.subjectName})
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#c2410c', marginTop: '2px' }}>
+                            {user?.role === 'TUTOR' 
+                              ? `Đã giao cho phụ huynh ${asg.parentName}. Hạn nộp: ${asg.dueDate ? asg.dueDate.replace('T', ' ') : ''}` 
+                              : `Gia sư ${asg.tutorName} đã giao bài tập. Vui lòng nộp bài trước hạn để không bị đánh dấu trễ!`}
+                          </div>
+                        </div>
+                      </div>
+                      {onNavigateToAssignments && (
+                        <button
+                          type="button"
+                          onClick={onNavigateToAssignments}
+                          style={{
+                            background: '#ea580c',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '6px 16px',
+                            fontSize: '0.82rem',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {user?.role === 'TUTOR' ? 'Xem bài tập' : 'Xem & Nộp bài'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                if (asg.status === 'GRADED' && user?.role === 'PARENT') {
+                  return (
+                    <div key={`asg-${asg.id}`} style={{
+                      background: '#ecfdf5',
+                      border: '1.5px solid #a7f3d0',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <CheckCircle2 size={20} color="#059669" />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#065f46' }}>
+                            ⭐ Gia sư {asg.tutorName} đã chấm điểm bài tập: {asg.title}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#047857', marginTop: '2px' }}>
+                            Điểm đánh giá: <b>{Number(asg.rating).toFixed(1)} / 10.0</b> · {asg.tutorComment ? `"${asg.tutorComment}"` : 'Đã có kết quả'}
+                          </div>
+                        </div>
+                      </div>
+                      {onNavigateToAssignments && (
+                        <button
+                          type="button"
+                          onClick={onNavigateToAssignments}
+                          style={{
+                            background: '#059669',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '6px 16px',
+                            fontSize: '0.82rem',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Xem chi tiết
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Class Status Notifications */}
               {allMappedClasses.map((item, idx) => {
+
                 if (item.rawStatus === 'PENDING_TUTOR_APPROVAL') {
                   return (
                     <div key={item.id || idx} style={{
