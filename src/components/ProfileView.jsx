@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import fileService from '../services/fileService';
 import { userService } from '../services/userService';
+import { isValidEmail, isValidPhone, normalizePhone } from '../utils/validation';
 import { 
   Camera, 
   ArrowLeft, 
@@ -172,11 +173,30 @@ export default function ProfileView({ onBack }) {
       setSaving(true);
       setSaveError('');
 
+      const accountEmail = isTutor ? tutorEmail : email;
+      const accountPhone = isTutor ? tutorPhone : phone;
+      if (!isValidEmail(accountEmail)) {
+        setSaveError('Địa chỉ email không đúng định dạng.');
+        return;
+      }
+      if (!isValidPhone(accountPhone)) {
+        setSaveError('Số điện thoại không đúng định dạng. Hãy nhập số Việt Nam 10 chữ số.');
+        return;
+      }
+      if (!isTutor && !isValidPhone(parentPhone)) {
+        setSaveError('Số điện thoại phụ huynh không đúng định dạng.');
+        return;
+      }
+      if (!isTutor && parentEmail.trim() && !isValidEmail(parentEmail)) {
+        setSaveError('Email phụ huynh không đúng định dạng.');
+        return;
+      }
+
       let payload = {};
       if (isTutor) {
         payload = {
           fullName: `${tutorLastName} ${tutorFirstName}`.trim() || user?.fullName || 'Gia sư Tutora',
-          phone: (tutorPhone || '').trim(),
+          phone: normalizePhone(tutorPhone),
           bio: tutorFullBio || tutorShortBio,
           qualification: tutorDisplayName,
           certificatesJson: JSON.stringify(certificates)
@@ -184,11 +204,11 @@ export default function ProfileView({ onBack }) {
       } else {
         payload = {
           fullName: (fullName || '').trim() || user?.fullName || 'Học viên Tutora',
-          phone: (phone || '').trim(),
+          phone: normalizePhone(phone),
           schoolName: school,
           address: address,
           gradeLevel: grade,
-          emergencyContact: parentPhone
+          emergencyContact: normalizePhone(parentPhone)
         };
       }
 
@@ -1919,7 +1939,8 @@ export default function ProfileView({ onBack }) {
                   Số điện thoại học sinh
                 </label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="tel"
                   placeholder="Ví dụ: 0912345678 (Bỏ trống khi mới tạo)..."
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
                   value={phone}

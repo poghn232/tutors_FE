@@ -117,7 +117,7 @@ export default function LessonList({ user }) {
   // Active students list (derived from real lessons if logged in)
   const activeStudents = user ? Array.from(new Set(lessons.map(l => l.studentName || l.classEntity?.studentName).filter(Boolean))).map(name => {
     const sLessons = lessons.filter(l => (l.studentName || l.classEntity?.studentName) === name);
-    const sub = sLessons[0]?.subject || sLessons[0]?.classEntity?.subjectName || 'Môn học';
+    const sub = sLessons[0]?.subjectName || sLessons[0]?.subject || sLessons[0]?.classEntity?.subjectName || 'Môn học';
     const words = name.trim().split(' ');
     const initials = words.length > 1 ? (words[0][0] + words[words.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
     return {
@@ -204,11 +204,12 @@ export default function LessonList({ user }) {
   };
 
   const handleOpenNoteModal = (lesson) => {
+    const note = lesson.lessonNote || {};
     setSelectedLessonForNote(lesson);
-    setRawNoteInput(lesson.rawNote || '');
-    setAiSummaryInput(lesson.aiSummary || '');
-    setKeyLearningsInput(lesson.keyLearnings || '');
-    setAreasImprovementInput(lesson.areasForImprovement || '');
+    setRawNoteInput(note.rawTutorNote || lesson.rawNote || '');
+    setAiSummaryInput(note.aiSummary || lesson.aiSummary || '');
+    setKeyLearningsInput(note.keyLearnings || lesson.keyLearnings || '');
+    setAreasImprovementInput(note.areasForImprovement || lesson.areasForImprovement || '');
     setNoteSuccessMsg('');
   };
 
@@ -220,7 +221,7 @@ export default function LessonList({ user }) {
 
     try {
       setAiGenerating(true);
-      const res = await lessonService.generateAINote(selectedLessonForNote.id, rawNoteInput);
+      const res = await lessonService.suggestAiNote(selectedLessonForNote.id, rawNoteInput);
       if (res.success && res.data) {
         setAiSummaryInput(res.data.aiSummary || '');
         setKeyLearningsInput(res.data.keyLearnings || '');
@@ -241,12 +242,12 @@ export default function LessonList({ user }) {
     try {
       setNoteSubmitting(true);
       const payload = {
-        rawNote: rawNoteInput,
+        rawTutorNote: rawNoteInput,
         aiSummary: aiSummaryInput,
         keyLearnings: keyLearningsInput,
         areasForImprovement: areasImprovementInput
       };
-      const res = await lessonService.updateLessonNote(selectedLessonForNote.id, payload);
+      const res = await lessonService.saveLessonNote(selectedLessonForNote.id, payload);
       if (res.success) {
         setNoteSuccessMsg('Lưu thông tin ghi chú thành công!');
         fetchLessons();
@@ -612,7 +613,7 @@ export default function LessonList({ user }) {
             ) : (
               filteredLessons.map((lesson) => {
               const name = lesson.studentName || (lesson.classEntity?.studentName) || 'Học sinh';
-              const subject = lesson.subject || (lesson.classEntity?.subjectName) || 'Toán học';
+              const subject = lesson.subjectName || lesson.subject || (lesson.classEntity?.subjectName) || 'Toán học';
               const timeDisplay = lesson.time 
                 ? `${lesson.date} · ${lesson.time} · ${lesson.duration}`
                 : `${lesson.startTime ? new Date(lesson.startTime).toLocaleString('vi-VN') : '10:00'}`;
@@ -1319,7 +1320,7 @@ export default function LessonList({ user }) {
                 </label>
                 {classList.length === 0 ? (
                   <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>
-                    Chưa có lớp học được tạo trong hệ thống. Lớp mẫu sẽ được áp dụng.
+                    Chưa có lớp học thuộc tài khoản của bạn. Hãy tạo hoặc kết nối lớp trước khi lên lịch buổi học.
                   </p>
                 ) : (
                   <select

@@ -4,6 +4,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, UserRound, Info, X, MailCheck, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
 import { authService } from '../services/authService';
+import { isValidEmail, isValidPhone, normalizePhone } from '../utils/validation';
 
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
@@ -96,9 +97,14 @@ export default function RegisterPage({ onNavigate }) {
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
       setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: yourname@gmail.com).');
+      return;
+    }
+
+    if (!isValidPhone(phone)) {
+      setError('Số điện thoại không đúng định dạng. Hãy nhập số Việt Nam 10 chữ số, ví dụ 0901234567.');
       return;
     }
 
@@ -114,7 +120,7 @@ export default function RegisterPage({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await authService.sendRegisterOtp(email.trim().toLowerCase(), fullName.trim());
+      const res = await authService.sendRegisterOtp(normalizedEmail, fullName.trim());
       const devOtp = res?.data;
       if (devOtp) {
         setSuccessMsg(`Mã xác thực OTP (thử nghiệm): ${devOtp}`);
@@ -184,7 +190,7 @@ export default function RegisterPage({ onNavigate }) {
       const res = await register({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone ? phone.trim() : '',
+        phone: normalizePhone(phone),
         password,
         role,
         otp: otpCode
@@ -317,6 +323,7 @@ export default function RegisterPage({ onNavigate }) {
                 <input
                   id="phone"
                   type="tel"
+                  inputMode="tel"
                   className="auth-input"
                   placeholder="Số điện thoại liên hệ"
                   value={phone}

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 import { classService } from '../services/classService';
+import { isValidEmail } from '../utils/validation';
 
 export default function CheckoutFlow({ 
   tutor, 
@@ -297,7 +298,7 @@ export default function CheckoutFlow({
   const isPaymentValid = () => {
     if (paymentMethod === 'vietqr') return true;
     if (paymentMethod === 'apple') return true;
-    if (paymentMethod === 'paypal') return paypalEmail.includes('@');
+    if (paymentMethod === 'paypal') return isValidEmail(paypalEmail);
     if (paymentMethod === 'card') return cardNumber.trim().length >= 12 && cardExpiry.trim() && cardCvv.trim();
     return true;
   };

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Check, KeyRound, LockKeyhole, MailCheck, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
 import { authService } from '../services/authService';
+import { isValidEmail } from '../utils/validation';
 
 export default function ForgotPasswordPage({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -70,8 +71,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: yourname@gmail.com).');
       return;
     }

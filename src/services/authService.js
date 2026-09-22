@@ -106,10 +106,10 @@ export const authService = {
 
   getAllowedViews(role) {
     if (role === 'ADMIN') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
+      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
     }
     if (role === 'TUTOR') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'schedule', 'profile'];
+      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'profile'];
     }
     if (role === 'PARENT') {
       return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'vip', 'checkout'];

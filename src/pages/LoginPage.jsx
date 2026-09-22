@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, Eye, EyeOff, UserRound, Info, X } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
+import { isValidEmail } from '../utils/validation';
 
 export default function LoginPage({ onNavigate }) {
   const { login, loginWithGoogle } = useAuth();
@@ -27,9 +28,15 @@ export default function LoginPage({ onNavigate }) {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: yourname@gmail.com).');
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await login({ email: email.trim(), password, role: selectedRole }, rememberMe);
+      const res = await login({ email: normalizedEmail, password, role: selectedRole }, rememberMe);
       if (res.success) {
         const userRole = res.data?.user?.role;
         if (!userRole) {
