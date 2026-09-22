@@ -1,5 +1,21 @@
 import api from './api';
 
+const OTP_REQUEST_TIMEOUT = 45000;
+
+export function getOtpRequestErrorMessage(error, fallbackMessage) {
+  const errorCode = error?.code;
+  const errorMessage = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+  const isTimeout = errorCode === 'ECONNABORTED'
+    || errorCode === 'ETIMEDOUT'
+    || errorMessage.includes('timeout');
+
+  if (isTimeout) {
+    return 'Máy chủ đang xử lý gửi email OTP nhưng phản hồi chậm. Vui lòng kiểm tra hộp thư sau ít phút trước khi gửi lại.';
+  }
+
+  return error?.response?.data?.message || fallbackMessage;
+}
+
 export const authService = {
   // Lưu token & user tùy theo lựa chọn Remember Me
   saveSession(token, user, rememberMe = true) {
@@ -119,13 +135,21 @@ export const authService = {
 
   // Đăng ký: Gửi OTP xác thực về Gmail
   async sendRegisterOtp(email, fullName = '') {
-    const response = await api.post('/auth/send-register-otp', { email, fullName });
+    const response = await api.post(
+      '/auth/send-register-otp',
+      { email, fullName },
+      { timeout: OTP_REQUEST_TIMEOUT }
+    );
     return response.data;
   },
 
   // Quên mật khẩu: Gửi OTP về Gmail
   async forgotPassword(email) {
-    const response = await api.post('/auth/forgot-password', { email });
+    const response = await api.post(
+      '/auth/forgot-password',
+      { email },
+      { timeout: OTP_REQUEST_TIMEOUT }
+    );
     return response.data;
   },
 

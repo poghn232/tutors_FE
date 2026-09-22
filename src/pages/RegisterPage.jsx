@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { BookOpen, UserRound, Info, X, MailCheck, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
-import { authService } from '../services/authService';
+import { authService, getOtpRequestErrorMessage } from '../services/authService';
 import { isValidEmail, isValidPhone, normalizePhone } from '../utils/validation';
 
 export default function RegisterPage({ onNavigate }) {
@@ -132,7 +132,10 @@ export default function RegisterPage({ onNavigate }) {
       setCountdown(60);
       setStep(2);
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Không thể gửi mã xác nhận OTP. Vui lòng kiểm tra lại email hoặc kết nối máy chủ.';
+      const msg = getOtpRequestErrorMessage(
+        err,
+        'Không thể gửi mã xác nhận OTP. Vui lòng kiểm tra lại email hoặc kết nối máy chủ.'
+      );
       setError(msg);
     } finally {
       setLoading(false);
@@ -157,7 +160,7 @@ export default function RegisterPage({ onNavigate }) {
       }
       setCountdown(60);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
+      setError(getOtpRequestErrorMessage(err, 'Gửi lại mã thất bại. Vui lòng thử lại.'));
     } finally {
       setLoading(false);
     }

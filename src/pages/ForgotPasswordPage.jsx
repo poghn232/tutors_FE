@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Check, KeyRound, LockKeyhole, MailCheck, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import TutoraLogo from '../components/TutoraLogo';
-import { authService } from '../services/authService';
+import { authService, getOtpRequestErrorMessage } from '../services/authService';
 import { isValidEmail } from '../utils/validation';
 
 export default function ForgotPasswordPage({ onNavigate }) {
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
       setCountdown(60);
       setStep(2);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Không thể gửi mã xác nhận. Vui lòng kiểm tra lại email.');
+      setErrorMessage(getOtpRequestErrorMessage(err, 'Không thể gửi mã xác nhận. Vui lòng kiểm tra lại email.'));
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
       }
       setCountdown(60);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Gửi lại mã thất bại. Vui lòng thử lại.');
+      setErrorMessage(getOtpRequestErrorMessage(err, 'Gửi lại mã thất bại. Vui lòng thử lại.'));
     } finally {
       setLoading(false);
     }
