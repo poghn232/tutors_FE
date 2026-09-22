@@ -114,7 +114,7 @@ export const authService = {
     if (role === 'PARENT') {
       return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'vip', 'checkout'];
     }
-    return ['tutors', 'classes', 'materials', 'vip', 'assignments', 'checkout'];
+    return ['tutors', 'classes', 'materials', 'vip', 'checkout'];
   },
 
   // Đăng ký: Gửi OTP xác thực về Gmail

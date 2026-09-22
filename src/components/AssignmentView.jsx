@@ -25,76 +25,6 @@ import assignmentService from '../services/assignmentService';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const DEFAULT_ASSIGNMENTS = [
-  {
-    id: 1,
-    title: 'Bài tập tích phân từng phần',
-    subjectName: 'Toán học',
-    tutorName: 'TS. Nguyễn Thị Hoa',
-    parentName: 'Nguyễn Văn Hùng',
-    studentName: 'Nguyễn Minh Anh',
-    description: 'Giải các bài tập tích phân từng phần trong chương trình Giải tích lớp 12. Chú ý trình bày rõ ràng từng bước tính toán và ghi rõ kết quả cuối cùng.',
-    dueDate: '2026-09-30T23:59:00',
-    status: 'PENDING',
-    statusLabel: 'Chờ nộp',
-    attachmentUrl: '',
-    attachmentName: 'bai_tap_tich_phan_12.pdf',
-    attachmentSize: '540 KB',
-    isOverdue: false
-  },
-  {
-    id: 2,
-    title: 'Giải bài tập cơ học lượng tử',
-    subjectName: 'Vật lý',
-    tutorName: 'TS. Nguyễn Thị Hoa',
-    parentName: 'Trần Văn Long',
-    studentName: 'Trần Bảo Long',
-    description: 'Giải 10 bài tập về cơ học lượng tử bao gồm: nguyên lý bất định Heisenberg, hàm sóng và phương trình Schrödinger cơ bản.',
-    dueDate: '2026-09-28T23:59:00',
-    status: 'SUBMITTED',
-    statusLabel: 'Đã nộp',
-    submittedFileName: 'bai_tap_co_hoc_luong_tu.pdf',
-    submittedFileSize: '1.1 MB',
-    submittedAt: '2026-09-24T21:34:00',
-    attachmentName: 'de_bai_luong_tu.pdf',
-    attachmentSize: '1.1 MB',
-    isOverdue: false
-  },
-  {
-    id: 3,
-    title: 'Phản ứng hóa học chuỗi vô cơ & hữu cơ',
-    subjectName: 'Hóa học',
-    tutorName: 'TS. Phạm Thị Lan',
-    parentName: 'Lê Văn Dương',
-    studentName: 'Lê Thùy Dương',
-    description: 'Hoàn thành chuỗi phản ứng hóa học vô cơ và hữu cơ. Viết phương trình ion rút gọn và xác định điều kiện phản ứng cho từng bước.',
-    dueDate: '2026-09-10T23:59:00',
-    status: 'NOT_SUBMITTED',
-    statusLabel: 'Không nộp (Quá hạn)',
-    attachmentName: 'chuyen_de_chuoi_phan_ung.pdf',
-    attachmentSize: '820 KB',
-    isOverdue: true
-  },
-  {
-    id: 4,
-    title: 'Phân tích đề đọc hiểu THPT Tiếng Anh',
-    subjectName: 'Tiếng Anh',
-    tutorName: 'Trần Minh Đức',
-    parentName: 'Nguyễn Văn Hùng',
-    studentName: 'Nguyễn Minh Anh',
-    description: 'Phân tích đoạn văn đọc hiểu trong đề thi THPT, trả lời các câu hỏi và viết đoạn nhận xét 150 từ về chủ đề bài đọc.',
-    dueDate: '2026-09-08T23:59:00',
-    status: 'GRADED',
-    statusLabel: 'Đã chấm',
-    rating: 9.0,
-    tutorComment: 'Bài làm rất tốt, phân tích câu hỏi suy luận sâu. Cần chú ý mở rộng vốn từ vựng học thuật trong đoạn bình luận 150 từ.',
-    submittedFileName: 'bai_lam_tieng_anh_minhanh.docx',
-    submittedFileSize: '650 KB',
-    submittedAt: '2026-09-06T19:15:00',
-    isOverdue: false
-  }
-];
-
 export default function AssignmentView({ user, onRequireAuth }) {
   const isTutor = user?.role === 'TUTOR' || user?.role === 'ADMIN';
   const isParent = user?.role === 'PARENT';
@@ -165,10 +95,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
 
   // Load Assignments from Backend
   const loadAssignments = async () => {
-    if (!user) {
-      setAssignments(DEFAULT_ASSIGNMENTS);
-      return;
-    }
+    if (!user) return;
 
     try {
       setLoading(true);
@@ -179,17 +106,17 @@ export default function AssignmentView({ user, onRequireAuth }) {
         setAssignments([]);
       }
     } catch (err) {
-      console.warn('Cannot load assignments from backend, using fallback:', err);
-      // Fallback to local storage if API failed
+      console.warn('Cannot load assignments from backend, using cache:', err);
+      // Fallback to local storage cache if API failed
       try {
         const saved = localStorage.getItem(`tutora_asg_${user.id}`);
         if (saved) {
           setAssignments(JSON.parse(saved));
         } else {
-          setAssignments(DEFAULT_ASSIGNMENTS);
+          setAssignments([]);
         }
       } catch (e) {
-        setAssignments(DEFAULT_ASSIGNMENTS);
+        setAssignments([]);
       }
     } finally {
       setLoading(false);
@@ -227,6 +154,9 @@ export default function AssignmentView({ user, onRequireAuth }) {
     }, 300);
     return () => clearTimeout(timer);
   }, [parentSearchQuery, showCreateModal]);
+
+  // Guard: guests should not see this view (App.jsx already redirects, but extra safety here)
+  if (!user) return null;
 
   // Tutor: Handle Create Assignment
   const handleCreateAssignment = async (e) => {
