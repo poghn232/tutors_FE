@@ -96,6 +96,12 @@ export default function RegisterPage({ onNavigate }) {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: yourname@gmail.com).');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự.');
       return;
@@ -114,7 +120,7 @@ export default function RegisterPage({ onNavigate }) {
       setOtp(['', '', '', '', '', '']);
       setStep(2);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Không thể gửi mã xác nhận OTP. Vui lòng kiểm tra lại email.';
+      const msg = err.response?.data?.message || err.message || 'Không thể gửi mã xác nhận OTP. Vui lòng kiểm tra lại email hoặc kết nối máy chủ.';
       setError(msg);
     } finally {
       setLoading(false);

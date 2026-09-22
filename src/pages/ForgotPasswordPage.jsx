@@ -70,6 +70,12 @@ export default function ForgotPasswordPage({ onNavigate }) {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: yourname@gmail.com).');
+      return;
+    }
+
     setLoading(true);
     try {
       await authService.forgotPassword(email);
@@ -77,7 +83,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
       setCountdown(60);
       setStep(2);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Không thể gửi mã xác nhận. Vui lòng kiểm tra lại email.');
+      setErrorMessage(err.response?.data?.message || err.message || 'Không thể gửi mã xác nhận. Vui lòng kiểm tra lại email.');
     } finally {
       setLoading(false);
     }
