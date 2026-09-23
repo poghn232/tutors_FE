@@ -54,6 +54,17 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(number) ? number : fallback;
 };
 
+const getOptionalRate = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const rate = Number(value);
+  return Number.isFinite(rate) && rate > 0 ? rate : null;
+};
+
+const formatVND = (value) => `${new Intl.NumberFormat('vi-VN').format(value)}đ`;
+
 const getDegree = (qualification) => {
   const match = qualification.match(/(Cử nhân|Thạc sĩ|Tiến sĩ|Bác sĩ|Kỹ sư)/i);
   return match ? match[1] : 'Chưa cập nhật';
@@ -73,6 +84,12 @@ const normalizeTutor = (rawTutor, index) => {
   }
 
   const fullName = getText(rawTutor?.fullName, 'Gia sư chưa cập nhật tên');
+  const hourlyRate = getOptionalRate(rawTutor?.hourlyRate);
+  const priceNegotiable = rawTutor?.priceNegotiable === true
+    || rawTutor?.priceNegotiable === 'true'
+    || rawTutor?.isNegotiable === true
+    || rawTutor?.isNegotiable === 'true'
+    || hourlyRate === null;
 
   return {
     id: rawTutor?.id ?? `tutor-${index}`,
@@ -92,7 +109,8 @@ const normalizeTutor = (rawTutor, index) => {
     avatarUrl: getText(rawTutor?.avatarUrl),
     bio: getText(rawTutor?.bio, 'Gia sư chưa cập nhật phần giới thiệu.'),
     avatarColor: getText(rawTutor?.avatarColor, AVATAR_COLORS[index % AVATAR_COLORS.length]),
-    hourlyRate: toNumber(rawTutor?.hourlyRate, 250000) || 250000,
+    hourlyRate,
+    priceNegotiable,
     verificationStatus: getText(rawTutor?.verificationStatus, 'PENDING').toUpperCase(),
     createdAt: rawTutor?.createdAt || null
   };
@@ -566,8 +584,8 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
               >
                 <div>
                   {/* Top row: Avatar, Info, Price */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: '1 1 220px' }}>
                       <div style={{
                         width: '48px',
                         height: '48px',
@@ -593,11 +611,11 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                         )}
                       </div>
 
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', lineHeight: 1.2 }}>
                           {tutor.fullName}
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '3px' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {tutor.school}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
@@ -614,20 +632,30 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                       </div>
                     </div>
 
-                    {tutor.verificationStatus !== 'APPROVED' && (
-                      <span style={{
-                        background: '#fff7ed',
-                        color: '#c2410c',
-                        border: '1px solid #fdba74',
-                        borderRadius: '999px',
-                        padding: '4px 8px',
-                        fontSize: '0.7rem',
-                        fontWeight: 800,
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {tutor.verificationStatus === 'REJECTED' ? 'Đã từ chối' : 'Đang chờ duyệt'}
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '7px', flexShrink: 0 }}>
+                      {tutor.verificationStatus !== 'APPROVED' && (
+                        <span style={{
+                          background: '#fff7ed',
+                          color: '#c2410c',
+                          border: '1px solid #fdba74',
+                          borderRadius: '999px',
+                          padding: '4px 8px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {tutor.verificationStatus === 'REJECTED' ? 'Đã từ chối' : 'Đang chờ duyệt'}
+                        </span>
+                      )}
+                      <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#7c3aed' }}>
+                          {tutor.priceNegotiable ? 'Trao đổi thêm' : formatVND(tutor.hourlyRate)}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                          {tutor.priceNegotiable ? 'Học phí' : '/buổi'}
+                        </div>
+                      </div>
+                    </div>
 
                   </div>
 

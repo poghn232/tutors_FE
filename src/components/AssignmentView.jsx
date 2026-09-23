@@ -23,8 +23,6 @@ import {
 import fileService from '../services/fileService';
 import assignmentService from '../services/assignmentService';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-
 export default function AssignmentView({ user, onRequireAuth }) {
   const isTutor = user?.role === 'TUTOR' || user?.role === 'ADMIN';
   const isParent = user?.role === 'PARENT';
@@ -174,10 +172,12 @@ export default function AssignmentView({ user, onRequireAuth }) {
       return;
     }
 
-    // Check file size 20MB
-    if (newFile && newFile.size > MAX_FILE_SIZE) {
-      showToast('Tệp đính kèm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
-      return;
+    if (newFile) {
+      const validation = fileService.validateFile(newFile);
+      if (!validation.valid) {
+        showToast(validation.message, 'error');
+        return;
+      }
     }
 
     try {
@@ -329,8 +329,9 @@ export default function AssignmentView({ user, onRequireAuth }) {
     const file = e.target.files?.[0];
     if (!file || !uploadTargetId) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      showToast('Tệp bài làm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
+    const validation = fileService.validateFile(file);
+    if (!validation.valid) {
+      showToast(validation.message, 'error');
       return;
     }
 
@@ -363,8 +364,9 @@ export default function AssignmentView({ user, onRequireAuth }) {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      showToast('Tệp bài làm vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
+    const validation = fileService.validateFile(file);
+    if (!validation.valid) {
+      showToast(validation.message, 'error');
       return;
     }
 
@@ -467,6 +469,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
       <input 
         type="file" 
         ref={parentFileInputRef} 
+        accept={fileService.ACCEPTED_FILE_TYPES}
         style={{ display: 'none' }} 
         onChange={handleParentFileChange}
       />
@@ -1272,13 +1275,17 @@ export default function AssignmentView({ user, onRequireAuth }) {
                 </label>
                 <input
                   type="file"
+                  accept={fileService.ACCEPTED_FILE_TYPES}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f && f.size > MAX_FILE_SIZE) {
-                      showToast('Tệp đề bài vượt quá giới hạn 20MB!', 'error');
-                      e.target.value = '';
-                      setNewFile(null);
-                      return;
+                    if (f) {
+                      const validation = fileService.validateFile(f);
+                      if (!validation.valid) {
+                        showToast(validation.message, 'error');
+                        e.target.value = '';
+                        setNewFile(null);
+                        return;
+                      }
                     }
                     setNewFile(f || null);
                   }}

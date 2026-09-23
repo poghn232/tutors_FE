@@ -1,6 +1,83 @@
 import api from './api';
 
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_REQUEST_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_FILES_PER_REQUEST = 8;
+
+const IMAGE_FILE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const DOCUMENT_FILE_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv'];
+const VIDEO_FILE_EXTENSIONS = ['.mp4', '.webm', '.mov'];
+const ARCHIVE_FILE_EXTENSIONS = ['.zip'];
+const ALL_FILE_EXTENSIONS = [
+  ...IMAGE_FILE_EXTENSIONS,
+  ...DOCUMENT_FILE_EXTENSIONS,
+  ...VIDEO_FILE_EXTENSIONS,
+  ...ARCHIVE_FILE_EXTENSIONS
+];
+const MATERIAL_FILE_EXTENSIONS = [
+  ...DOCUMENT_FILE_EXTENSIONS,
+  ...VIDEO_FILE_EXTENSIONS,
+  ...ARCHIVE_FILE_EXTENSIONS
+];
+
+const getExtension = (fileName = '') => {
+  const lastDot = fileName.lastIndexOf('.');
+  return lastDot > 0 ? fileName.slice(lastDot).toLowerCase() : '';
+};
+
 export const fileService = {
+  MAX_FILE_SIZE_BYTES,
+  MAX_IMAGE_SIZE_BYTES,
+  MAX_REQUEST_SIZE_BYTES,
+  MAX_FILES_PER_REQUEST,
+  IMAGE_FILE_EXTENSIONS,
+  MATERIAL_FILE_EXTENSIONS,
+  ALL_FILE_EXTENSIONS,
+  ACCEPTED_IMAGE_TYPES: IMAGE_FILE_EXTENSIONS.join(','),
+  ACCEPTED_MATERIAL_TYPES: MATERIAL_FILE_EXTENSIONS.join(','),
+  ACCEPTED_FILE_TYPES: ALL_FILE_EXTENSIONS.join(','),
+
+  /**
+   * Validate a file before it is selected or sent to the backend.
+   */
+  validateFile(file, options = {}) {
+    if (!file || !Number.isFinite(file.size) || file.size <= 0) {
+      return { valid: false, message: 'Vui lòng chọn tệp cần tải lên.' };
+    }
+
+    const maxSize = options.maxSize ?? MAX_FILE_SIZE_BYTES;
+    const allowedExtensions = (options.allowedExtensions || ALL_FILE_EXTENSIONS)
+      .map((extension) => extension.toLowerCase().startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`);
+
+    if (file.size > maxSize) {
+      return {
+        valid: false,
+        message: `Tệp "${file.name}" vượt quá giới hạn ${this.formatBytes(maxSize)}.`
+      };
+    }
+
+    const extension = getExtension(file.name);
+    if (!allowedExtensions.includes(extension)) {
+      return {
+        valid: false,
+        message: `Kiểu tệp không được hỗ trợ. Chỉ chấp nhận: ${allowedExtensions.map((item) => item.slice(1).toUpperCase()).join(', ')}.`
+      };
+    }
+
+    return { valid: true, extension };
+  },
+
+  assertValidFile(file, options = {}) {
+    const validation = this.validateFile(file, options);
+    if (!validation.valid) {
+      const error = new Error(validation.message);
+      error.code = 'FILE_VALIDATION';
+      throw error;
+    }
+    return file;
+  },
+
   /**
    * Helper to format image / file URLs
    */
@@ -16,11 +93,13 @@ export const fileService = {
   },
 
   /**
-   * Upload single file to backend (with client-side fallback if backend is offline)
+   * Upload a single validated file to the backend.
    * @param {File} file 
    * @returns {Promise<{success: boolean, data: {fileUrl: string, originalName: string, size: number}}>}
    */
-  async uploadFile(file) {
+  async uploadFile(file, options = {}) {
+    this.assertValidFile(file, options);
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -29,75 +108,72 @@ export const fileService = {
         headers: { 'Content-Type': undefined },
       });
 
-      if (response.data && response.data.success) {
-        const fileData = response.data.data;
-        return {
-          success: true,
-          data: {
-            ...fileData,
-            fileUrl: this.getFileUrl(fileData.fileUrl)
-          },
-        };
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Tải tệp lên thất bại.');
       }
-    } catch (error) {
-      console.warn('Backend upload unavailable, falling back to local ObjectURL:', error.message);
-    }
 
-    // Local fallback for offline/demo operation
-    const localUrl = URL.createObjectURL(file);
-    return {
-      success: true,
-      data: {
-        fileId: 'local_' + Date.now(),
-        originalName: file.name,
-        fileName: file.name,
-        fileUrl: localUrl,
-        size: file.size,
-        contentType: file.type,
-      },
-    };
+      const fileData = response.data.data;
+      return {
+        success: true,
+        data: {
+          ...fileData,
+          fileUrl: this.getFileUrl(fileData.fileUrl)
+        },
+      };
+    } catch (error) {
+      if (error.response?.data?.message) {
+        error.message = error.response.data.message;
+      }
+      throw error;
+    }
   },
 
   /**
-   * Upload multiple files
+   * Upload multiple validated files.
    */
-  async uploadMultipleFiles(files) {
+  async uploadMultipleFiles(files, options = {}) {
+    const fileList = Array.from(files || []);
+    if (fileList.length === 0) {
+      throw new Error('Vui lòng chọn ít nhất một tệp cần tải lên.');
+    }
+    if (fileList.length > MAX_FILES_PER_REQUEST) {
+      throw new Error(`Mỗi lần chỉ được tải lên tối đa ${MAX_FILES_PER_REQUEST} tệp.`);
+    }
+
+    const totalSize = fileList.reduce((total, file) => total + file.size, 0);
+    const maxRequestSize = options.maxRequestSize ?? MAX_REQUEST_SIZE_BYTES;
+    if (totalSize > maxRequestSize) {
+      throw new Error(`Tổng dung lượng các tệp không được vượt quá ${this.formatBytes(maxRequestSize)}.`);
+    }
+
+    fileList.forEach((file) => this.assertValidFile(file, options));
+
     const formData = new FormData();
-    Array.from(files).forEach((file) => formData.append('files', file));
+    fileList.forEach((file) => formData.append('files', file));
 
     try {
       const response = await api.post('/files/upload-multiple', formData, {
         headers: { 'Content-Type': undefined },
       });
 
-      if (response.data && response.data.success) {
-        const list = (response.data.data || []).map(item => ({
-          ...item,
-          fileUrl: this.getFileUrl(item.fileUrl)
-        }));
-        return {
-          success: true,
-          data: list,
-        };
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Tải các tệp lên thất bại.');
       }
+
+      const list = (response.data.data || []).map(item => ({
+        ...item,
+        fileUrl: this.getFileUrl(item.fileUrl)
+      }));
+      return {
+        success: true,
+        data: list,
+      };
     } catch (error) {
-      console.warn('Backend upload-multiple unavailable, falling back to local ObjectURLs');
+      if (error.response?.data?.message) {
+        error.message = error.response.data.message;
+      }
+      throw error;
     }
-
-    // Local fallback
-    const mockList = Array.from(files).map((file, idx) => ({
-      fileId: 'local_' + Date.now() + '_' + idx,
-      originalName: file.name,
-      fileName: file.name,
-      fileUrl: URL.createObjectURL(file),
-      size: file.size,
-      contentType: file.type,
-    }));
-
-    return {
-      success: true,
-      data: mockList,
-    };
   },
 
   /**

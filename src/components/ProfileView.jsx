@@ -263,7 +263,10 @@ export default function ProfileView({ onBack }) {
     if (!file) return;
     try {
       setUploadingAvatar(true);
-      const res = await fileService.uploadFile(file);
+      const res = await fileService.uploadFile(file, {
+        maxSize: fileService.MAX_IMAGE_SIZE_BYTES,
+        allowedExtensions: fileService.IMAGE_FILE_EXTENSIONS
+      });
       const newAvatarUrl = res.data?.fileUrl;
       if (newAvatarUrl) {
         await userService.updateProfile({ avatarUrl: newAvatarUrl });
@@ -295,7 +298,10 @@ export default function ProfileView({ onBack }) {
 
     try {
       setUploadingCert(true);
-      const res = await fileService.uploadFile(newCertFile);
+      const res = await fileService.uploadFile(newCertFile, {
+        maxSize: fileService.MAX_IMAGE_SIZE_BYTES,
+        allowedExtensions: fileService.IMAGE_FILE_EXTENSIONS
+      });
       const newCert = {
         id: Date.now(),
         title: newCertTitle.trim(),
@@ -538,10 +544,27 @@ export default function ProfileView({ onBack }) {
               <div>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={fileService.ACCEPTED_IMAGE_TYPES}
                   required
                   ref={certFileInputRef}
-                  onChange={(e) => setNewCertFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) {
+                      setNewCertFile(null);
+                      return;
+                    }
+                    const validation = fileService.validateFile(file, {
+                      maxSize: fileService.MAX_IMAGE_SIZE_BYTES,
+                      allowedExtensions: fileService.IMAGE_FILE_EXTENSIONS
+                    });
+                    if (!validation.valid) {
+                      alert(validation.message);
+                      e.target.value = '';
+                      setNewCertFile(null);
+                      return;
+                    }
+                    setNewCertFile(file);
+                  }}
                   style={{ fontSize: '0.78rem', width: '100%' }}
                 />
               </div>
@@ -1130,7 +1153,7 @@ export default function ProfileView({ onBack }) {
                     type="file"
                     ref={avatarFileInputRef}
                     style={{ display: 'none' }}
-                    accept="image/*"
+                    accept={fileService.ACCEPTED_IMAGE_TYPES}
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         handleAvatarUpload(e.target.files[0]);
@@ -1762,7 +1785,7 @@ export default function ProfileView({ onBack }) {
                 type="file"
                 ref={parentAvatarFileInputRef}
                 style={{ display: 'none' }}
-                accept="image/*"
+                accept={fileService.ACCEPTED_IMAGE_TYPES}
                 onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
                     handleAvatarUpload(e.target.files[0]);

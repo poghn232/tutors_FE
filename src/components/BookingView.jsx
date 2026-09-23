@@ -19,6 +19,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
     reviewsCount: 127,
     studentsCount: 243,
     hourlyRate: 250000,
+    priceNegotiable: false,
     subjects: ['Toán học', 'Vật lý', 'Tin học'],
     hobbies: ['Cờ vua', 'Leo núi', 'Origami', 'Vật lý thiên văn'],
     bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
@@ -34,6 +35,9 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
   const [showCheckout, setShowCheckout] = useState(false);
 
   const verificationStatus = currentTutor.verificationStatus || 'PENDING';
+  const hasHourlyRate = !currentTutor.priceNegotiable
+    && Number.isFinite(Number(currentTutor.hourlyRate))
+    && Number(currentTutor.hourlyRate) > 0;
   const verificationLabel = verificationStatus === 'APPROVED'
     ? 'Đã xác minh'
     : verificationStatus === 'REJECTED'
@@ -106,7 +110,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
           time: selectedTime,
           duration: '60 phút',
           format: 'Gọi video (Google Meet)',
-          lessonPrice: currentTutor.hourlyRate || 250000,
+          lessonPrice: hasHourlyRate ? currentTutor.hourlyRate : 250000,
           bookingFeeRate: 0.05,
           meetLink: 'meet.google.com/abc-def-ghi'
         }}
@@ -440,9 +444,9 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a' }}>
-                    {formatVND(currentTutor.hourlyRate)}
+                    {hasHourlyRate ? formatVND(currentTutor.hourlyRate) : 'Trao đổi thêm'}
                   </span>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/buổi</span>
+                  {hasHourlyRate && <span style={{ fontSize: '0.85rem', color: '#64748b' }}>/buổi</span>}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>
                   (Học phí tham khảo · Tự thỏa thuận trực tiếp)

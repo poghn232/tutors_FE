@@ -321,7 +321,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 setShowAddModal(true);
               }}
             >
-              <PlusCircle size={18} /> + Thêm Lịch Rảnh / Tạo Lớp
+              <PlusCircle size={18} /> Thêm Lịch Rảnh / Tạo Lớp
             </button>
           ) : (
             <>
@@ -338,7 +338,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                   setShowAddModal(true);
                 }}
               >
-                <Plus size={18} /> + Thêm Lớp Học Mới
+                <Plus size={18} /> Thêm Lớp Học Mới
               </button>
 
               <button 

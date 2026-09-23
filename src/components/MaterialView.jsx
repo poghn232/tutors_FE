@@ -25,8 +25,6 @@ import fileService from '../services/fileService';
 import materialService from '../services/materialService';
 import VietQRCheckoutModal from './VietQRCheckoutModal';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-
 export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
   const isAdmin = user?.role === 'ADMIN';
   const isTutor = user?.role === 'TUTOR';
@@ -161,9 +159,14 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
       return;
     }
 
-    if (newFile && newFile.size > MAX_FILE_SIZE) {
-      showToast('Tệp tài liệu vượt quá giới hạn 20MB. Vui lòng chọn tệp nhỏ hơn.', 'error');
-      return;
+    if (newFile) {
+      const validation = fileService.validateFile(newFile, {
+        allowedExtensions: fileService.MATERIAL_FILE_EXTENSIONS
+      });
+      if (!validation.valid) {
+        showToast(validation.message, 'error');
+        return;
+      }
     }
 
     try {
@@ -174,7 +177,9 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
 
       // Upload new file if selected
       if (newFile) {
-        const uploadRes = await fileService.uploadFile(newFile);
+        const uploadRes = await fileService.uploadFile(newFile, {
+          allowedExtensions: fileService.MATERIAL_FILE_EXTENSIONS
+        });
         if (uploadRes && uploadRes.data) {
           fileUrl = uploadRes.data.fileUrl || null;
           fileName = newFile.name;
@@ -1167,12 +1172,29 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
               {/* File Upload (Max 20MB) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  Tệp đính kèm (PDF, DOCX, MP4, ZIP - Tối đa 20MB) {!editingMaterial && '*'}
+                  Tệp đính kèm (PDF, DOCX, XLSX, PPTX, MP4, ZIP - Tối đa 20MB) {!editingMaterial && '*'}
                 </label>
                 <input
                   type="file"
+                  accept={fileService.ACCEPTED_MATERIAL_TYPES}
                   required={!editingMaterial && !editingMaterial?.fileUrl}
-                  onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) {
+                      setNewFile(null);
+                      return;
+                    }
+                    const validation = fileService.validateFile(file, {
+                      allowedExtensions: fileService.MATERIAL_FILE_EXTENSIONS
+                    });
+                    if (!validation.valid) {
+                      showToast(validation.message, 'error');
+                      e.target.value = '';
+                      setNewFile(null);
+                      return;
+                    }
+                    setNewFile(file);
+                  }}
                   style={{
                     width: '100%',
                     fontSize: '0.85rem'
