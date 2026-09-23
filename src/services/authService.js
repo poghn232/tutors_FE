@@ -133,7 +133,7 @@ export const authService = {
     return ['tutors', 'classes', 'materials', 'vip', 'checkout'];
   },
 
-  // Đăng ký: Gửi OTP xác thực về Gmail
+  // Đăng ký: Gửi OTP xác thực qua email
   async sendRegisterOtp(email, fullName = '') {
     const response = await api.post(
       '/auth/send-register-otp',
@@ -143,7 +143,7 @@ export const authService = {
     return response.data;
   },
 
-  // Quên mật khẩu: Gửi OTP về Gmail
+  // Quên mật khẩu: Gửi OTP qua email
   async forgotPassword(email) {
     const response = await api.post(
       '/auth/forgot-password',

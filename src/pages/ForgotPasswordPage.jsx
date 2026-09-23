@@ -60,7 +60,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
     }
   };
 
-  // Step 1: Submit email to request OTP via Gmail
+  // Step 1: Submit email to request OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -84,7 +84,9 @@ export default function ForgotPasswordPage({ onNavigate }) {
         setSuccessMessage(`Mã xác nhận OTP (thử nghiệm): ${devOtp}`);
         setOtp(String(devOtp).split('').slice(0, 6));
       } else {
-        setSuccessMessage(`Mã xác nhận 6 số đã được gửi về Gmail: ${email}`);
+        setSuccessMessage(
+          res?.message || 'Yêu cầu gửi mã OTP đã được tiếp nhận. Vui lòng kiểm tra hộp thư trong ít phút.'
+        );
         setOtp(['', '', '', '', '', '']);
       }
       setCountdown(60);
@@ -109,7 +111,9 @@ export default function ForgotPasswordPage({ onNavigate }) {
         setSuccessMessage(`Đã cấp lại mã OTP mới: ${devOtp}`);
         setOtp(String(devOtp).split('').slice(0, 6));
       } else {
-        setSuccessMessage(`Đã gửi lại mã xác nhận mới về Gmail: ${account}`);
+        setSuccessMessage(
+          res?.message || 'Yêu cầu gửi lại mã OTP đã được tiếp nhận. Vui lòng kiểm tra hộp thư trong ít phút.'
+        );
         setOtp(['', '', '', '', '', '']);
       }
       setCountdown(60);
@@ -245,7 +249,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
                 </div>
               </div>
               <p className="forgot-copy">
-                Hệ thống sẽ tự động gửi mã xác minh 6 số qua Gmail để xác thực chủ tài khoản.
+                Hệ thống sẽ tự động gửi mã xác minh 6 số qua email để xác thực chủ tài khoản.
               </p>
               <input
                 type="email"
@@ -259,7 +263,7 @@ export default function ForgotPasswordPage({ onNavigate }) {
                 required
               />
               <button className="auth-primary" type="submit" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                {loading ? <><Loader2 size={18} className="animate-spin" /> Đang gửi mã về Gmail...</> : 'Gửi mã xác minh về Gmail'}
+                {loading ? <><Loader2 size={18} className="animate-spin" /> Đang gửi mã qua email...</> : 'Gửi mã xác minh qua email'}
               </button>
               <button className="forgot-back" type="button" onClick={() => onNavigate('login')}>← Quay lại đăng nhập</button>
             </form>
@@ -272,11 +276,11 @@ export default function ForgotPasswordPage({ onNavigate }) {
                 <span><MailCheck size={24} /></span>
                 <div>
                   <h1>Xác minh mã OTP</h1>
-                  <p>Kiểm tra hộp thư Gmail</p>
+                  <p>Kiểm tra hộp thư email</p>
                 </div>
               </div>
               <div className="otp-notice">
-                <span>Mã xác thực đã được gửi đến <strong>{maskedAccount}</strong></span>
+                <span>Yêu cầu gửi mã xác thực cho <strong>{maskedAccount}</strong> đã được tiếp nhận</span>
                 <button type="button" onClick={() => { setStep(1); setErrorMessage(''); }}>Sửa email</button>
               </div>
               <div className="otp-grid">

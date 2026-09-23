@@ -9,7 +9,7 @@ import { isValidEmail, isValidPhone, normalizePhone } from '../utils/validation'
 export default function RegisterPage({ onNavigate }) {
   const { register, loginWithGoogle } = useAuth();
   
-  const [step, setStep] = useState(1); // 1: Thông tin tài khoản, 2: Xác thực OTP Gmail
+  const [step, setStep] = useState(1); // 1: Thông tin tài khoản, 2: Xác thực OTP email
   const [role, setRole] = useState(() => localStorage.getItem('giasuhq_last_role') || 'PARENT');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -86,7 +86,7 @@ export default function RegisterPage({ onNavigate }) {
     googleLoginTrigger();
   };
 
-  // Bước 1: Kiểm tra form & Gửi OTP về Gmail
+  // Bước 1: Kiểm tra form & Gửi OTP qua email
   const handleRequestOtp = async (e) => {
     e.preventDefault();
     setError('');
@@ -126,7 +126,9 @@ export default function RegisterPage({ onNavigate }) {
         setSuccessMsg(`Mã xác thực OTP (thử nghiệm): ${devOtp}`);
         setOtp(String(devOtp).split('').slice(0, 6));
       } else {
-        setSuccessMsg(`Mã xác thực OTP đã được gửi về Gmail: ${email.trim().toLowerCase()}`);
+        setSuccessMsg(
+          res?.message || 'Yêu cầu gửi mã xác thực đã được tiếp nhận. Vui lòng kiểm tra hộp thư trong ít phút.'
+        );
         setOtp(['', '', '', '', '', '']);
       }
       setCountdown(60);
@@ -155,7 +157,9 @@ export default function RegisterPage({ onNavigate }) {
         setSuccessMsg(`Đã cấp lại mã OTP mới: ${devOtp}`);
         setOtp(String(devOtp).split('').slice(0, 6));
       } else {
-        setSuccessMsg(`Đã gửi lại mã xác thực mới về Gmail: ${email.trim().toLowerCase()}`);
+        setSuccessMsg(
+          res?.message || 'Yêu cầu gửi lại mã xác thực đã được tiếp nhận. Vui lòng kiểm tra hộp thư trong ít phút.'
+        );
         setOtp(['', '', '', '', '', '']);
       }
       setCountdown(60);
@@ -317,7 +321,7 @@ export default function RegisterPage({ onNavigate }) {
                   id="email"
                   type="email"
                   className="auth-input"
-                  placeholder="Địa chỉ Gmail / Email *"
+                  placeholder="Địa chỉ email *"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -355,7 +359,7 @@ export default function RegisterPage({ onNavigate }) {
                 </div>
 
                 <button type="submit" className="auth-primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  {loading ? <><Loader2 size={18} className="animate-spin" /> Đang gửi mã xác thực Gmail...</> : 'Tiếp tục xác nhận OTP'}
+                  {loading ? <><Loader2 size={18} className="animate-spin" /> Đang gửi mã xác thực...</> : 'Tiếp tục xác nhận OTP'}
                 </button>
               </form>
 
@@ -390,10 +394,10 @@ export default function RegisterPage({ onNavigate }) {
                   <MailCheck size={28} />
                 </div>
                 <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                  Xác thực mã OTP Gmail
+                  Xác thực mã OTP qua email
                 </h3>
                 <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
-                  Mã xác minh gồm 6 số đã được gửi đến:<br />
+                  Kiểm tra mã xác minh gồm 6 số trong hộp thư của:<br />
                   <strong style={{ color: '#2563eb' }}>{email}</strong>
                 </p>
               </div>
