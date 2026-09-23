@@ -1,11 +1,102 @@
-import React, { useState } from 'react';
-import { 
-  Search, 
-  Star, 
-  ChevronDown, 
-  SlidersHorizontal 
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, RefreshCw, Search } from 'lucide-react';
 import BookingView from './BookingView';
+import { tutorService } from '../services/tutorService';
+
+const DEFAULT_SUBJECTS = [
+  'Toán học',
+  'Vật lý',
+  'Hóa học',
+  'Sinh học',
+  'Tiếng Anh',
+  'Lịch sử',
+  'Tin học',
+  'Âm nhạc',
+  'Mỹ thuật',
+  'Tiếng Tây Ban Nha',
+  'Tiếng Pháp',
+  'Luyện thi THPT'
+];
+
+const DEFAULT_HOBBIES = [
+  'Cờ vua',
+  'Âm nhạc',
+  'Thể thao',
+  'Nghệ thuật',
+  'Công nghệ',
+  'Gaming',
+  'Nấu ăn',
+  'Du lịch',
+  'Hoạt động ngoài trời',
+  'Điện ảnh'
+];
+
+const AVATAR_COLORS = ['#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f97316'];
+
+const getText = (value, fallback = '') => (
+  typeof value === 'string' && value.trim() ? value.trim() : fallback
+);
+
+const toList = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => getText(item)).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value.split(/[,;|\n]+/).map((item) => item.trim()).filter(Boolean);
+  }
+
+  return [];
+};
+
+const toNumber = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const getDegree = (qualification) => {
+  const match = qualification.match(/(Cử nhân|Thạc sĩ|Tiến sĩ|Bác sĩ|Kỹ sư)/i);
+  return match ? match[1] : 'Chưa cập nhật';
+};
+
+const normalizeTutor = (rawTutor, index) => {
+  const subject = getText(rawTutor?.subject);
+  const qualification = getText(rawTutor?.qualification) || subject;
+  const subjects = toList(rawTutor?.subjects);
+
+  if (!subjects.length && subject && subject.toLowerCase() !== 'chưa cập nhật') {
+    subjects.push(...toList(subject));
+  }
+
+  if (!subjects.length) {
+    subjects.push('Chưa cập nhật môn dạy');
+  }
+
+  const fullName = getText(rawTutor?.fullName, 'Gia sư chưa cập nhật tên');
+
+  return {
+    id: rawTutor?.id ?? `tutor-${index}`,
+    fullName,
+    school: qualification || 'Chưa cập nhật hồ sơ',
+    degree: getDegree(qualification),
+    gender: getText(rawTutor?.gender, 'Khác'),
+    rating: toNumber(rawTutor?.rating),
+    reviewsCount: toNumber(rawTutor?.reviewsCount),
+    experienceYears: toNumber(rawTutor?.experienceYears),
+    studentsCount: toNumber(rawTutor?.studentsCount),
+    subjects,
+    hobbies: toList(rawTutor?.hobbies),
+    phone: getText(rawTutor?.phone),
+    facebookUrl: getText(rawTutor?.facebookUrl),
+    email: getText(rawTutor?.email),
+    avatarUrl: getText(rawTutor?.avatarUrl),
+    bio: getText(rawTutor?.bio, 'Gia sư chưa cập nhật phần giới thiệu.'),
+    avatarColor: getText(rawTutor?.avatarColor, AVATAR_COLORS[index % AVATAR_COLORS.length]),
+    hourlyRate: toNumber(rawTutor?.hourlyRate, 250000) || 250000,
+    verificationStatus: getText(rawTutor?.verificationStatus, 'PENDING').toUpperCase(),
+    createdAt: rawTutor?.createdAt || null
+  };
+};
 
 export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequireAuth }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,183 +107,60 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
   const [selectedHobby, setSelectedHobby] = useState('all');
   const [sortBy, setSortBy] = useState('rating_desc');
   const [activeBookingTutor, setActiveBookingTutor] = useState(null);
+  const [tutorsList, setTutorsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-  // 8 Tutors exactly matching Figma 15:2008
-  const tutorsList = [
-    {
-      id: 1,
-      fullName: 'TS. Nguyễn Thị Hoa',
-      school: 'Tiến sĩ · ĐH Quốc gia Hà Nội',
-      degree: 'Tiến sĩ',
-      gender: 'Nữ',
-      rating: 4.9,
-      reviewsCount: 127,
-      experienceYears: 8,
-      studentsCount: 243,
-      subjects: ['Toán học', 'Vật lý', 'Tin học'],
-      hobbies: ['Cờ vua', 'Đọc sách'],
-      phone: '0901 234 567',
-      facebookUrl: 'https://facebook.com/giasu.nguyenthihoa',
-      email: 'tutor.nguyen@giasuhq.com',
-      bio: 'Tiến sĩ Toán học ứng dụng tại ĐH Quốc gia Hà Nội. Tôi giúp học sinh hiểu toán học qua các ứng dụng thực tế. 8+ năm kinh nghiệm từ THCS đến đại học.',
-      avatarColor: '#22c55e'
-    },
-    {
-      id: 2,
-      fullName: 'TS. Phạm Thị Lan',
-      school: 'Tiến sĩ · ĐH Y Hà Nội',
-      degree: 'Tiến sĩ',
-      gender: 'Nữ',
-      rating: 4.9,
-      reviewsCount: 203,
-      experienceYears: 10,
-      studentsCount: 312,
-      subjects: ['Hóa học', 'Sinh học'],
-      hobbies: ['Nấu ăn', 'Du lịch'],
-      phone: '0902 222 333',
-      facebookUrl: 'https://facebook.com/giasu.phamthilan',
-      email: 'tutor.lan@giasuhq.com',
-      bio: 'Tiến sĩ Y khoa tại ĐH Y Hà Nội. Chuyên luyện thi y dược và khoa học tự nhiên. 96% học sinh đậu kỳ thi quốc gia.',
-      avatarColor: '#f59e0b'
-    },
-    {
-      id: 3,
-      fullName: 'TS. Lê Thị Thu',
-      school: 'Tiến sĩ · ĐH Stanford (Hoa Kỳ)',
-      degree: 'Tiến sĩ',
-      gender: 'Nữ',
-      rating: 4.9,
-      reviewsCount: 158,
-      experienceYears: 12,
-      studentsCount: 289,
-      subjects: ['Sinh học', 'Hóa học', 'Luyện thi THPT'],
-      hobbies: ['Thể thao', 'Nghệ thuật'],
-      phone: '0903 333 444',
-      facebookUrl: 'https://facebook.com/giasu.lethithu',
-      email: 'tutor.thu@giasuhq.com',
-      bio: 'Cựu giảng viên đại học với niềm đam mê làm cho khoa học trở nên thú vị. Sử dụng thí nghiệm thực hành và ví dụ thực tế để xây dựng hiểu biết sâu.',
-      avatarColor: '#ef4444'
-    },
-    {
-      id: 4,
-      fullName: 'Trần Minh Đức',
-      school: 'Thạc sĩ · ĐH Ngoại Thương',
-      degree: 'Thạc sĩ',
-      gender: 'Nam',
-      rating: 4.8,
-      reviewsCount: 89,
-      experienceYears: 6,
-      studentsCount: 178,
-      subjects: ['Tiếng Anh', 'Lịch sử', 'Luyện thi THPT'],
-      hobbies: ['Du lịch', 'Điện ảnh'],
-      phone: '0904 444 555',
-      facebookUrl: 'https://facebook.com/giasu.tranminhduc',
-      email: 'tutor.duc@giasuhq.com',
-      bio: 'Thạc sĩ Giáo dục tại ĐH Ngoại Thương. Cựu giáo viên THPT, chuyên gia luyện thi đại học với tỉ lệ học sinh đậu 95%.',
-      avatarColor: '#8b5cf6'
-    },
-    {
-      id: 5,
-      fullName: 'Vũ Thị Mai',
-      school: 'Thạc sĩ · ĐH Sorbonne',
-      degree: 'Thạc sĩ',
-      gender: 'Nữ',
-      rating: 4.8,
-      reviewsCount: 76,
-      experienceYears: 7,
-      studentsCount: 134,
-      subjects: ['Tiếng Pháp', 'Tiếng Tây Ban Nha', 'Mỹ thuật'],
-      hobbies: ['Nghệ thuật', 'Du lịch'],
-      phone: '0905 555 666',
-      facebookUrl: 'https://facebook.com/giasu.vuthimai',
-      email: 'tutor.mai@giasuhq.com',
-      bio: 'Người Pháp gốc Việt, Thạc sĩ Lịch sử Nghệ thuật tại Sorbonne. Dạy ngôn ngữ qua văn hóa - nghệ thuật, điện ảnh, ẩm thực và văn học.',
-      avatarColor: '#ec4899'
-    },
-    {
-      id: 6,
-      fullName: 'Lê Văn Hùng',
-      school: 'Cử nhân · ĐH Bách Khoa TP.HCM',
-      degree: 'Cử nhân',
-      gender: 'Nam',
-      rating: 4.7,
-      reviewsCount: 54,
-      experienceYears: 4,
-      studentsCount: 87,
-      subjects: ['Tin học', 'Toán học'],
-      hobbies: ['Công nghệ', 'Gaming'],
-      phone: '0906 666 777',
-      facebookUrl: 'https://facebook.com/giasu.levanhung',
-      email: 'tutor.hung@giasuhq.com',
-      bio: 'Kỹ sư phần mềm tại VNG. Dạy lập trình theo phương pháp thực hành - học viên tạo ra sản phẩm thật sau mỗi khóa học.',
-      avatarColor: '#06b6d4'
-    },
-    {
-      id: 7,
-      fullName: 'Đỗ Thanh Tùng',
-      school: 'Thạc sĩ · ĐH Bách Khoa Hà Nội',
-      degree: 'Thạc sĩ',
-      gender: 'Nam',
-      rating: 4.7,
-      reviewsCount: 93,
-      experienceYears: 6,
-      studentsCount: 201,
-      subjects: ['Toán học', 'Vật lý', 'Luyện thi THPT'],
-      hobbies: ['Cờ vua', 'Thể thao'],
-      phone: '0907 777 888',
-      facebookUrl: 'https://facebook.com/giasu.dothanhtung',
-      email: 'tutor.tung@giasuhq.com',
-      bio: 'Thạc sĩ Vật lý tại ĐH Bách Khoa. Chuyên luyện thi THPT quốc gia và Olympic Toán. Hơn 200 học sinh tăng điểm trung bình 2.5 điểm.',
-      avatarColor: '#10b981'
-    },
-    {
-      id: 8,
-      fullName: 'Nguyễn Quốc Bảo',
-      school: 'Cử nhân · Nhạc viện Hà Nội',
-      degree: 'Cử nhân',
-      gender: 'Nam',
-      rating: 4.6,
-      reviewsCount: 41,
-      experienceYears: 5,
-      studentsCount: 62,
-      subjects: ['Âm nhạc', 'Toán học'],
-      hobbies: ['Âm nhạc', 'Hoạt động ngoài trời'],
-      phone: '0908 888 999',
-      facebookUrl: 'https://facebook.com/giasu.nguyenquocbao',
-      email: 'tutor.bao@giasuhq.com',
-      bio: 'Tốt nghiệp Nhạc viện Hà Nội và yêu thích Toán học. Tìm ra mối liên hệ giữa lý thuyết âm nhạc và toán học để truyền cảm hứng cho học sinh.',
-      avatarColor: '#f97316'
-    }
-  ];
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTutors = async () => {
+      setLoading(true);
+      setLoadError('');
+
+      try {
+        const response = await tutorService.getTutors();
+        if (response?.success === false) {
+          throw new Error(response.message || 'Không thể tải danh sách gia sư.');
+        }
+
+        const records = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response)
+            ? response
+            : [];
+
+        if (!cancelled) {
+          setTutorsList(records.map(normalizeTutor));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTutorsList([]);
+          setLoadError(error.response?.data?.message || error.message || 'Không thể tải danh sách gia sư.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadTutors();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
 
   const subjectsList = [
     'Tất cả môn học',
-    'Toán học',
-    'Vật lý',
-    'Hóa học',
-    'Sinh học',
-    'Tiếng Anh',
-    'Lịch sử',
-    'Tin học',
-    'Âm nhạc',
-    'Mỹ thuật',
-    'Tiếng Tây Ban Nha',
-    'Tiếng Pháp',
-    'Luyện thi THPT'
+    ...Array.from(new Set([
+      ...DEFAULT_SUBJECTS,
+      ...tutorsList.flatMap((tutor) => tutor.subjects)
+    ]))
   ];
 
-  const hobbiesList = [
-    'Cờ vua',
-    'Âm nhạc',
-    'Thể thao',
-    'Nghệ thuật',
-    'Công nghệ',
-    'Gaming',
-    'Nấu ăn',
-    'Du lịch',
-    'Hoạt động ngoài trời',
-    'Điện ảnh'
-  ];
+  const hobbiesList = DEFAULT_HOBBIES;
 
   // Filtering
   const filteredTutors = tutorsList.filter((t) => {
@@ -210,6 +178,17 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
     const matchHobby = selectedHobby === 'all' || (t.hobbies && t.hobbies.includes(selectedHobby));
 
     return matchSearch && matchSubject && matchGender && matchEducation && matchRating && matchHobby;
+  }).sort((a, b) => {
+    if (sortBy === 'exp_desc') {
+      return b.experienceYears - a.experienceYears;
+    }
+
+    const ratingDifference = b.rating - a.rating;
+    if (ratingDifference !== 0) {
+      return ratingDifference;
+    }
+
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
   if (activeBookingTutor) {
@@ -493,10 +472,84 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
         {/* RIGHT CONTENT: 2-COLUMN TUTOR CARDS GRID (Exact Figma 15:2008) */}
         <div>
           <div style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '16px' }}>
-            {filteredTutors.length} gia sư được tìm thấy
+            {loading ? 'Đang tải danh sách gia sư...' : `${filteredTutors.length} gia sư được tìm thấy`}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+          {loading && (
+            <div style={{
+              minHeight: '180px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              color: '#64748b',
+              background: '#ffffff',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '16px'
+            }}>
+              <Loader2 size={20} className="animate-spin" />
+              Đang tải dữ liệu từ hệ thống...
+            </div>
+          )}
+
+          {!loading && loadError && (
+            <div style={{
+              minHeight: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              textAlign: 'center',
+              color: '#991b1b',
+              background: '#fef2f2',
+              border: '1.5px solid #fecaca',
+              borderRadius: '16px',
+              padding: '24px'
+            }}>
+              <div>{loadError}</div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((value) => value + 1)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: '1.5px solid #991b1b',
+                  borderRadius: '8px',
+                  padding: '8px 14px',
+                  background: '#ffffff',
+                  color: '#991b1b',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                <RefreshCw size={16} /> Thử tải lại
+              </button>
+            </div>
+          )}
+
+          {!loading && !loadError && filteredTutors.length === 0 && (
+            <div style={{
+              minHeight: '180px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              color: '#64748b',
+              background: '#ffffff',
+              border: '1.5px solid #cbd5e1',
+              borderRadius: '16px',
+              padding: '24px'
+            }}>
+              {tutorsList.length === 0
+                ? 'Chưa có gia sư nào được tạo trong hệ thống.'
+                : 'Không tìm thấy gia sư phù hợp với bộ lọc hiện tại.'}
+            </div>
+          )}
+
+          {!loading && !loadError && filteredTutors.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
             {filteredTutors.map((tutor) => (
               <div
                 key={tutor.id}
@@ -529,7 +582,15 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                         fontSize: '1.2rem',
                         flexShrink: 0
                       }}>
-                        {tutor.fullName.charAt(tutor.fullName.lastIndexOf(' ') + 1)}
+                        {tutor.avatarUrl ? (
+                          <img
+                            src={tutor.avatarUrl}
+                            alt={tutor.fullName}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }}
+                          />
+                        ) : (
+                          tutor.fullName.charAt(tutor.fullName.lastIndexOf(' ') + 1)
+                        )}
                       </div>
 
                       <div>
@@ -540,12 +601,33 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                           {tutor.school}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                          <span style={{ color: '#f59e0b', fontSize: '0.85rem' }}>★★★★★</span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>{tutor.rating}</span>
-                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({tutor.reviewsCount})</span>
+                          {tutor.rating > 0 ? (
+                            <>
+                              <span style={{ color: '#f59e0b', fontSize: '0.85rem' }}>★★★★★</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>{tutor.rating}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({tutor.reviewsCount})</span>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Chưa có đánh giá</span>
+                          )}
                         </div>
                       </div>
                     </div>
+
+                    {tutor.verificationStatus !== 'APPROVED' && (
+                      <span style={{
+                        background: '#fff7ed',
+                        color: '#c2410c',
+                        border: '1px solid #fdba74',
+                        borderRadius: '999px',
+                        padding: '4px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {tutor.verificationStatus === 'REJECTED' ? 'Đã từ chối' : 'Đang chờ duyệt'}
+                      </span>
+                    )}
 
                   </div>
 
@@ -592,7 +674,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                   borderTop: '1px solid #f1f5f9'
                 }}>
                   <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    {tutor.experienceYears} năm kinh nghiệm · {tutor.studentsCount} học sinh
+                    {tutor.experienceYears > 0 ? `${tutor.experienceYears} năm kinh nghiệm` : 'Chưa cập nhật kinh nghiệm'}
+                    {' · '}
+                    {tutor.studentsCount > 0 ? `${tutor.studentsCount} học sinh` : 'Chưa có học sinh'}
                   </div>
 
                   <button
@@ -616,7 +700,8 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

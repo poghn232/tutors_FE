@@ -33,6 +33,13 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
   const [selectedTime, setSelectedTime] = useState('9:00 SA');
   const [showCheckout, setShowCheckout] = useState(false);
 
+  const verificationStatus = currentTutor.verificationStatus || 'PENDING';
+  const verificationLabel = verificationStatus === 'APPROVED'
+    ? 'Đã xác minh'
+    : verificationStatus === 'REJECTED'
+      ? 'Chưa được duyệt'
+      : 'Đang chờ duyệt';
+
   const availableDays = [
     'T2 14/09',
     'T4 16/09',
@@ -169,15 +176,15 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                     </svg>
                   </div>
                   <span style={{
-                    background: '#e6fffa',
-                    color: '#059669',
+                    background: verificationStatus === 'APPROVED' ? '#e6fffa' : '#fff7ed',
+                    color: verificationStatus === 'APPROVED' ? '#059669' : '#c2410c',
                     fontSize: '0.72rem',
                     fontWeight: 800,
                     borderRadius: '999px',
                     padding: '2px 8px',
-                    border: '1px solid #34d399'
+                    border: verificationStatus === 'APPROVED' ? '1px solid #34d399' : '1px solid #fdba74'
                   }}>
-                    Đã xác minh
+                    {verificationLabel}
                   </span>
                 </div>
 

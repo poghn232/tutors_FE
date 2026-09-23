@@ -1,6 +1,6 @@
 import React from 'react';
 import TutoraLogo from './TutoraLogo';
-import { Mail, Phone, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 export default function Footer({ onNavigate }) {
   return (
@@ -38,7 +38,7 @@ export default function Footer({ onNavigate }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* Facebook */}
             <a 
-              href="https://facebook.com/giasu.vn" 
+              href="https://www.facebook.com/profile.php?id=61594484406186"
               target="_blank" 
               rel="noreferrer"
               style={{
@@ -62,7 +62,7 @@ export default function Footer({ onNavigate }) {
 
             {/* Zalo */}
             <a 
-              href="https://zalo.me/0901234567" 
+              href="https://zalo.me/0358502232"
               target="_blank" 
               rel="noreferrer"
               style={{
@@ -87,7 +87,7 @@ export default function Footer({ onNavigate }) {
 
             {/* Gmail */}
             <a 
-              href="mailto:hotro@giasu.vn" 
+              href="mailto:giasututorasupport@gmail.com"
               style={{
                 width: '36px',
                 height: '36px',
@@ -252,8 +252,8 @@ export default function Footer({ onNavigate }) {
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Email hỗ trợ</div>
-                <a href="mailto:hotro@giasu.vn" style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 700, textDecoration: 'none' }}>
-                  hotro@giasu.vn
+                <a href="mailto:giasututorasupport@gmail.com" style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 700, textDecoration: 'none' }}>
+                  giasututorasupport@gmail.com
                 </a>
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function Footer({ onNavigate }) {
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Zalo hỗ trợ</div>
                 <div style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 700 }}>
-                  0901 234 567
+                  0358502232
                 </div>
               </div>
             </div>
@@ -302,8 +302,8 @@ export default function Footer({ onNavigate }) {
               </div>
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Fanpage Facebook</div>
-                <a href="https://facebook.com/giasu.vn" target="_blank" rel="noreferrer" style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 700, textDecoration: 'none' }}>
-                  facebook.com/giasu.vn
+                <a href="https://www.facebook.com/profile.php?id=61594484406186" target="_blank" rel="noreferrer" style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 700, textDecoration: 'none' }}>
+                  Facebook Tutora
                 </a>
               </div>
             </div>
