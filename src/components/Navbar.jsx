@@ -4,10 +4,7 @@ import TutoraLogo from './TutoraLogo';
 import { 
   LogOut, 
   UserCheck, 
-  CreditCard,
-  User,
-  Settings,
-  ShieldCheck
+  CreditCard
 } from 'lucide-react';
 
 export default function Navbar({ activeTab = 'classes', onNavigate }) {
@@ -30,6 +27,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'payment', label: 'Ví Kết Nối' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'assignments', label: 'Bài Tập' },
+    { id: 'progress', label: 'Tiến Độ AI' },
+    { id: 'promotions', label: 'Ưu Đãi' },
   ];
 
   const tutorNavItems = [
@@ -37,6 +36,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'classes', label: 'Lớp Dạy & Yêu Cầu' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'assignments', label: 'Bài Tập' },
+    { id: 'progress', label: 'Tiến Độ AI' },
+    { id: 'promotions', label: 'Ưu Đãi' },
     { id: 'profile', label: 'Hồ Sơ' },
   ];
 
@@ -46,6 +47,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'tutors', label: 'Danh Sách Gia Sư' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'payment', label: 'Ví Kết Nối' },
+    { id: 'progress', label: 'Tiến Độ AI' },
+    { id: 'promotions', label: 'Ưu Đãi' },
   ];
 
   const navItems = !user 

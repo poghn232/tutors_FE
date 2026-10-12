@@ -122,13 +122,13 @@ export const authService = {
 
   getAllowedViews(role) {
     if (role === 'ADMIN') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
+      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
     }
     if (role === 'TUTOR') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'profile'];
+      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile'];
     }
     if (role === 'PARENT') {
-      return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'vip', 'checkout'];
+      return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'progress', 'promotions', 'vip', 'checkout'];
     }
     return ['tutors', 'classes', 'materials', 'vip', 'checkout'];
   },

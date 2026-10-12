@@ -115,6 +115,18 @@ export const paymentService = {
         message: error.response?.data?.message || 'Không thể nạp số dư.'
       };
     }
+  },
+
+  async quoteVoucher(code, amount) {
+    try {
+      const response = await api.post('/vouchers/quote', { code, amount });
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Không thể kiểm tra voucher.'
+      };
+    }
   }
 };
 

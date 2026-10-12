@@ -61,6 +61,11 @@ function AppContent() {
 
     const rawHash = window.location.hash.replace('#', '');
     const hash = rawHash.split('?')[0];
+    const hashQuery = rawHash.includes('?') ? `?${rawHash.split('?').slice(1).join('?')}` : '';
+    const claimCode = new URLSearchParams(hashQuery).get('claim');
+    if (claimCode) {
+      window.sessionStorage.setItem('pendingVoucherClaim', claimCode);
+    }
 
     // Priority 1: VNPay Payment Callback
     if (window.location.search.includes('vnp_ResponseCode') || hash === 'payment-result') {
@@ -74,7 +79,7 @@ function AppContent() {
       const defaultView = authService.getDefaultViewForRole(user.role);
       const targetHash = hash && allowedViews.includes(hash) ? hash : defaultView;
       setCurrentView(targetHash);
-      window.history.replaceState({ view: targetHash }, '', '#' + targetHash);
+      window.history.replaceState({ view: targetHash }, '', '#' + targetHash + (targetHash === 'promotions' ? hashQuery : ''));
     } else {
       if (hash && authViews.includes(hash)) {
         setCurrentView(hash);

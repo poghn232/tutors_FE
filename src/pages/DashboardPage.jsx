@@ -12,6 +12,8 @@ import CheckoutFlow from '../components/CheckoutFlow';
 import VipPricingView from '../components/VipPricingView';
 import PaymentResultView from '../components/PaymentResultView';
 import AdminTutorVerificationDashboard from '../components/AdminTutorVerificationDashboard';
+import ProgressReportView from '../components/ProgressReportView';
+import PromotionView from '../components/PromotionView';
 import { 
   User, 
   Calendar, 
@@ -1160,6 +1162,14 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               user={user} 
               onRequireAuth={onRequireAuth}
             />
+          )}
+
+          {currentTab === 'progress' && (
+            <ProgressReportView user={user} />
+          )}
+
+          {currentTab === 'promotions' && (
+            <PromotionView />
           )}
 
           {currentTab === 'materials' && (

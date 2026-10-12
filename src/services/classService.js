@@ -29,8 +29,8 @@ export const classService = {
     return response.data;
   },
 
-  async payConnectionFee(id) {
-    const response = await api.post(`/classes/${id}/pay-connection-fee`);
+  async payConnectionFee(id, voucherCode = null) {
+    const response = await api.post(`/classes/${id}/pay-connection-fee`, { voucherCode });
     return response.data;
   }
 };

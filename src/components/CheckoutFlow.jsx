@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   RefreshCw,
   Phone,
-  MessageSquare
+  MessageSquare,
+  Gift
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 import { classService } from '../services/classService';
@@ -113,6 +114,8 @@ export default function CheckoutFlow({
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountMessage, setDiscountMessage] = useState('');
+  const [discountLoading, setDiscountLoading] = useState(false);
 
   // Link Meet copy state
   const [copiedLink, setCopiedLink] = useState(false);
@@ -129,6 +132,7 @@ export default function CheckoutFlow({
   };
 
   const [createdClassInfo, setCreatedClassInfo] = useState(null);
+  const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [isCreatingClass, setIsCreatingClass] = useState(false);
 
   const buildBookingPayload = () => ({
@@ -143,9 +147,12 @@ export default function CheckoutFlow({
     scheduleDescription: `${details.date} lúc ${details.time}`,
     date: details.date,
     time: details.time,
-    amount: finalTotal,
+    // The backend owns the original platform fee and verifies the transferred amount.
+    amount: CONNECTION_FEE,
+    paymentAmount: finalTotal,
     orderCode: bookingOrderCode,
-    paymentMethod: paymentMethod
+    paymentMethod: paymentMethod,
+    voucherCode: discountApplied ? discountCode.trim().toUpperCase() : null
   });
 
   const registerPendingBooking = async () => {
@@ -167,6 +174,7 @@ export default function CheckoutFlow({
       // skip creating again.
       if (createdBookingData && createdBookingData.id) {
         setCreatedClassInfo(createdBookingData);
+        setPaymentReceipt(createdBookingData);
       } else {
         // Actually call the backend API to create the class
         try {
@@ -234,6 +242,27 @@ export default function CheckoutFlow({
     }
   };
 
+  const handleConfirmedSepayResponse = (response) => {
+    if (!response?.data?.paid) return false;
+    if (!response.data.classId) {
+      alert('Thanh toán đã được ghi nhận nhưng chưa trả về lớp học. Vui lòng tải lại và kiểm tra mục Lớp học của tôi.');
+      return true;
+    }
+    confirmBookingInDatabase({
+      id: response.data.classId,
+      className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+      subjectName: details.subject || 'Toán học',
+      tutorName: currentTutor.fullName,
+      scheduleDescription: `${details.date} lúc ${details.time}`,
+      status: 'PENDING_TUTOR_APPROVAL',
+      finalAmount: response.data.finalAmount,
+      discountAmount: response.data.discountAmount,
+      voucherCode: response.data.voucherCode,
+      issuedVoucher: response.data.issuedVoucher
+    });
+    return true;
+  };
+
   // Polling check SePay webhook status for booking
   useEffect(() => {
     if (step !== 2 || paymentMethod !== 'vietqr') return;
@@ -245,14 +274,7 @@ export default function CheckoutFlow({
         const res = await paymentService.checkSepayStatus(bookingOrderCode);
         if (res && res.data && res.data.paid) {
           clearInterval(interval);
-          confirmBookingInDatabase({
-            id: res.data.classId || null,
-            className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
-            subjectName: details.subject || 'Toán học',
-            tutorName: currentTutor.fullName,
-            scheduleDescription: `${details.date} lúc ${details.time}`,
-            status: 'PENDING_TUTOR_APPROVAL'
-          });
+          handleConfirmedSepayResponse(res);
         }
       } catch (e) {
         // silent
@@ -276,14 +298,27 @@ export default function CheckoutFlow({
     }
   };
 
-  const handleApplyDiscount = () => {
+  const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return;
-    if (discountCode.trim().toUpperCase() === 'TUTORA' || discountCode.trim().toUpperCase() === 'GIASU10') {
-      const discount = Math.round(lessonPrice * 0.1); // 10% off
-      setDiscountAmount(discount);
-      setDiscountApplied(true);
-    } else {
-      alert('Mã giảm giá không hợp lệ. Bạn có thể thử mã "TUTORA" để được giảm 10%!');
+    try {
+      setDiscountLoading(true);
+      setDiscountMessage('');
+      const response = await paymentService.quoteVoucher(discountCode.trim(), CONNECTION_FEE);
+      if (response?.success && response.data?.valid) {
+        setDiscountAmount(Number(response.data.discountAmount || 0));
+        setDiscountApplied(true);
+        setDiscountMessage(response.data.message || 'Đã áp dụng voucher.');
+      } else {
+        setDiscountAmount(0);
+        setDiscountApplied(false);
+        setDiscountMessage(response?.message || 'Voucher không hợp lệ hoặc chưa được nhận.');
+      }
+    } catch (err) {
+      setDiscountAmount(0);
+      setDiscountApplied(false);
+      setDiscountMessage(err.response?.data?.message || 'Không thể kiểm tra voucher.');
+    } finally {
+      setDiscountLoading(false);
     }
   };
 
@@ -307,14 +342,7 @@ export default function CheckoutFlow({
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
       if (res && res.data && res.data.paid) {
-        confirmBookingInDatabase({
-          id: res.data.classId || null,
-          className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
-          subjectName: details.subject || 'Toán học',
-          tutorName: currentTutor.fullName,
-          scheduleDescription: `${details.date} lúc ${details.time}`,
-          status: 'PENDING_TUTOR_APPROVAL'
-        });
+        handleConfirmedSepayResponse(res);
       } else {
         alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
       }
@@ -1048,7 +1076,7 @@ export default function CheckoutFlow({
                       type="text" 
                       className="figma-text-input" 
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                      placeholder="Mã giảm giá (ví dụ: TUTORA)" 
+                      placeholder="Mã voucher của bạn"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
                     />
@@ -1057,9 +1085,15 @@ export default function CheckoutFlow({
                       className="figma-btn-primary"
                       style={{ padding: '8px 16px', fontSize: '0.85rem', width: 'auto' }}
                       onClick={handleApplyDiscount}
+                      disabled={discountLoading}
                     >
-                      Áp dụng
+                      {discountLoading ? 'Đang kiểm tra...' : 'Áp dụng'}
                     </button>
+                  </div>
+                )}
+                {discountMessage && (
+                  <div style={{ marginTop: '8px', fontSize: '0.78rem', color: discountApplied ? '#047857' : '#b91c1c', fontWeight: 700 }}>
+                    {discountMessage}
                   </div>
                 )}
               </div>
@@ -1085,6 +1119,17 @@ export default function CheckoutFlow({
               <p className="figma-success-subtitle" style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.5, margin: '0 auto', maxWidth: '540px' }}>
                 Bạn đã thanh toán phí kết nối nền tảng <strong>{formatVND(finalTotal)}</strong>. Dưới đây là <strong>thông tin liên lạc trực tiếp của gia sư</strong> để hai bên kết nối trao đổi.
               </p>
+              {paymentReceipt?.issuedVoucher && (
+                <div style={{ margin: '16px auto 0', maxWidth: '540px', display: 'flex', alignItems: 'flex-start', gap: '10px', textAlign: 'left', background: '#fff7ed', border: '1.5px solid #fb923c', borderRadius: '12px', padding: '12px 14px', color: '#9a3412' }}>
+                  <Gift size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong>Bạn vừa nhận voucher {paymentReceipt.issuedVoucher.code}</strong>
+                    <div style={{ marginTop: '3px', fontSize: '0.82rem', lineHeight: 1.45 }}>
+                      {paymentReceipt.issuedVoucher.name || 'Voucher cảm ơn thanh toán'} đã được lưu vào Kho Ưu Đãi và có thể dùng cho giao dịch tiếp theo.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* TUTOR DIRECT CONTACT CARD */}
