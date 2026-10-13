@@ -150,12 +150,12 @@ export default function CheckoutFlow({
   });
 
   const registerPendingBooking = async () => {
-    try {
-      const payload = buildBookingPayload();
-      await paymentService.registerPendingBooking(payload);
-    } catch (err) {
-      console.warn('Không thể lưu booking chờ thanh toán:', err);
+    const payload = buildBookingPayload();
+    const result = await paymentService.registerPendingBooking(payload);
+    if (!result?.success) {
+      throw new Error(result?.message || 'Không thể lưu booking chờ thanh toán.');
     }
+    return result;
   };
 
   const confirmBookingInDatabase = async (createdBookingData = null) => {
@@ -206,7 +206,10 @@ export default function CheckoutFlow({
           console.warn('classService.createClass failed, trying registerPendingBooking fallback:', apiErr);
           // Fallback: register through payment service (permitAll endpoint)
           try {
-            await paymentService.registerPendingBooking(payload);
+            const registration = await paymentService.registerPendingBooking(payload);
+            if (!registration?.success) {
+              throw new Error(registration?.message || 'Không thể lưu booking chờ thanh toán.');
+            }
             setCreatedClassInfo({
               id: null,
               className: payload.className,
@@ -239,8 +242,9 @@ export default function CheckoutFlow({
   const handleConfirmedSepayResponse = (response) => {
     if (!response?.data?.paid) return false;
     if (!response.data.classId) {
-      alert('Thanh toán đã được ghi nhận nhưng chưa trả về lớp học. Vui lòng tải lại và kiểm tra mục Lớp học của tôi.');
-      return true;
+      // The backend may need another poll to recover a durable pending class
+      // after a restart. Do not stop polling or claim success prematurely.
+      return false;
     }
     confirmBookingInDatabase({
       id: response.data.classId,
@@ -261,14 +265,24 @@ export default function CheckoutFlow({
   useEffect(() => {
     if (step !== 2 || paymentMethod !== 'vietqr') return;
 
-    registerPendingBooking();
+    registerPendingBooking().catch((error) => {
+      console.warn('Không thể lưu booking chờ thanh toán:', error);
+    });
 
+    let paidWithoutClassAttempts = 0;
     const interval = setInterval(async () => {
       try {
         const res = await paymentService.checkSepayStatus(bookingOrderCode);
         if (res && res.data && res.data.paid) {
-          clearInterval(interval);
-          handleConfirmedSepayResponse(res);
+          if (handleConfirmedSepayResponse(res)) {
+            clearInterval(interval);
+          } else {
+            paidWithoutClassAttempts += 1;
+            if (paidWithoutClassAttempts >= 12) {
+              clearInterval(interval);
+              alert(res.data.message || 'Thanh toán đã được ghi nhận nhưng hệ thống chưa khôi phục được lớp học. Vui lòng thử lại trong mục Lớp học của tôi.');
+            }
+          }
         }
       } catch (e) {
         // silent
@@ -328,7 +342,9 @@ export default function CheckoutFlow({
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
       if (res && res.data && res.data.paid) {
-        handleConfirmedSepayResponse(res);
+        if (!handleConfirmedSepayResponse(res)) {
+          alert(res.data.message || 'Thanh toán đã được ghi nhận nhưng hệ thống chưa trả về lớp học. Vui lòng chờ vài giây rồi kiểm tra lại.');
+        }
       } else {
         alert('Hệ thống đang chờ ngân hàng xác nhận giao dịch. Vui lòng chuyển khoản đúng nội dung và chờ giây lát.');
       }
