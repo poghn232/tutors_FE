@@ -36,6 +36,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const [newClassForm, setNewClassForm] = useState({
     className: '',
     subjectName: 'Toán học',
+    tutorId: '',
     partnerName: '',
     date: '2026-09-22',
     time: '18:00 - 20:00',
@@ -133,6 +134,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     try {
       const isTutor = user?.role === 'TUTOR';
       const isFreeSlot = isTutor && newClassForm.isFreeSlot;
+      if (!isTutor && !newClassForm.tutorId) {
+        setActionMessage('Bạn cần chọn một gia sư đã kết nối trước khi thêm lớp học.');
+        return;
+      }
       const sName = isFreeSlot 
         ? 'Lịch rảnh (Sẵn sàng nhận lớp)' 
         : (isTutor 
@@ -140,7 +145,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             : (user?.fullName || 'Học sinh'));
       const tName = isTutor 
         ? (user?.fullName || 'Gia sư') 
-        : (newClassForm.partnerName || 'TS. Nguyễn Thị Hoa');
+        : newClassForm.partnerName;
 
       const cName = newClassForm.className.trim() || 
         (isFreeSlot 
@@ -151,7 +156,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         className: cName,
         subjectName: newClassForm.subjectName,
         subjectId: 1,
-        tutorId: isTutor ? user?.id : 1,
+        tutorId: isTutor ? user?.id : Number(newClassForm.tutorId),
         tutorName: tName,
         studentName: sName,
         studentId: isTutor ? null : user?.id,
@@ -196,6 +201,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       setNewClassForm({
         className: '',
         subjectName: 'Toán học',
+        tutorId: '',
         partnerName: '',
         date: '2026-09-22',
         time: '18:00 - 20:00',
@@ -266,6 +272,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
       roomUrl: 'https://meet.google.com/tutora-class-' + c.id,
       rawStatus: c.status,
+      paidAt: c.paidAt,
       connectionFee: c.connectionFee,
       isFreeSlot: isFreeSlot,
       status: statusMeta.label,
@@ -291,7 +298,18 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const upcomingCount = upcomingClasses.length;
   const completedCount = historyClasses.length;
   const connectedClasses = allMappedClasses.filter(c =>
-    ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
+    c.paidAt || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
+  );
+  const connectedTutors = Array.from(
+    new Map(
+      dbClasses
+        .filter(c =>
+          c.tutorId &&
+          c.tutorName &&
+          (c.paidAt || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.status))
+        )
+        .map(c => [String(c.tutorId), { id: c.tutorId, name: c.tutorName }])
+    ).values()
   );
   const activeTutorCount = new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
@@ -1312,23 +1330,27 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                   <select
                     className="figma-text-input"
                     style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #0f172a' }}
-                    value={newClassForm.partnerName}
-                    onChange={(e) => setNewClassForm(prev => ({ ...prev, partnerName: e.target.value }))}
+                    value={newClassForm.tutorId}
+                    onChange={(e) => {
+                      const selectedTutor = connectedTutors.find(t => String(t.id) === e.target.value);
+                      setNewClassForm(prev => ({
+                        ...prev,
+                        tutorId: e.target.value,
+                        partnerName: selectedTutor?.name || ''
+                      }));
+                    }}
+                    required
                   >
                     <option value="">-- Chọn gia sư đã kết nối --</option>
-                    {[
-                      'TS. Nguyễn Thị Hoa',
-                      'TS. Phạm Thị Lan',
-                      'TS. Lê Thị Thu',
-                      'Trần Minh Đức',
-                      'Vũ Thị Mai',
-                      'Lê Văn Hùng',
-                      'Đỗ Thanh Tùng',
-                      'Nguyễn Quốc Bảo'
-                    ].map(t => (
-                      <option key={t} value={t}>{t}</option>
+                    {connectedTutors.map(tutor => (
+                      <option key={tutor.id} value={tutor.id}>{tutor.name}</option>
                     ))}
                   </select>
+                  {connectedTutors.length === 0 && (
+                    <div style={{ marginTop: '7px', color: '#b45309', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.4 }}>
+                      Bạn chưa có gia sư đã kết nối. Hãy gửi yêu cầu và chờ gia sư chấp nhận trước khi thêm lịch học.
+                    </div>
+                  )}
                 </div>
               )}
 
