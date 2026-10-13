@@ -21,6 +21,7 @@ import {
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
   const { updateUser } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
   const [dbClasses, setDbClasses] = useState([]);
@@ -94,7 +95,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   };
 
   const loadAssignments = async () => {
-    if (!user) return;
+    if (!user || isAdmin) return;
     try {
       const res = await assignmentService.getAssignments();
       if (res && res.data && Array.isArray(res.data)) {
@@ -113,6 +114,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const handleCreateCustomClass = async (e) => {
     e.preventDefault();
+    if (isAdmin) {
+      setActionMessage('Admin chỉ có quyền theo dõi lớp học, không tạo lớp thay cho phụ huynh hoặc gia sư.');
+      return;
+    }
     if (!user && onRequireAuth) {
       onRequireAuth('thêm lớp học hoặc lịch rảnh');
       return;
@@ -294,10 +299,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             color: '#0f172a',
             margin: '0 0 6px 0'
           }}>
-            Lớp Học Của Tôi
+            {isAdmin ? 'Quản Lý Tất Cả Lớp Học' : 'Lớp Học Của Tôi'}
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
-            Theo dõi buổi học và tiến trình học tập
+            {isAdmin ? 'Theo dõi trạng thái kết nối và hoạt động của các lớp trên hệ thống' : 'Theo dõi buổi học và tiến trình học tập'}
           </p>
           {actionMessage && (
             <p style={{ color: actionMessage.includes('Không thể') ? '#dc2626' : '#059669', fontSize: '0.9rem', margin: '8px 0 0', fontWeight: 700 }}>
@@ -307,7 +312,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {user?.role === 'TUTOR' ? (
+          {isAdmin ? null : user?.role === 'TUTOR' ? (
             <button 
               type="button"
               className="figma-btn-primary"
@@ -625,7 +630,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     </div>
 
                     {/* Action buttons & status-specific guidance */}
-                    {item.isFromDb && (user?.role === 'TUTOR' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
@@ -645,7 +650,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && (user?.role === 'TUTOR' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
                       <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
                         ✓ Lịch học đã được chấp nhận. Đang chờ phụ huynh thanh toán phí kết nối để kích hoạt lớp.
                       </div>
@@ -657,7 +662,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && (user?.role === 'PARENT' || user?.role === 'ADMIN') && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && user?.role === 'PARENT' && item.rawStatus === 'PENDING_PAYMENT' && (
                       <button
                         type="button"
                         onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}
@@ -674,7 +679,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.roomUrl && (!item.isFromDb || item.rawStatus === 'ACTIVE') && (
+                    {item.roomUrl && user?.role !== 'ADMIN' && (!item.isFromDb || item.rawStatus === 'ACTIVE') && (
                       <button
                         type="button"
                         onClick={() => {
@@ -707,7 +712,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             Thông báo
           </h3>
 
-          {allMappedClasses.length === 0 && assignments.length === 0 ? (
+          {allMappedClasses.length === 0 && (isAdmin || assignments.length === 0) ? (
             <div style={{
               background: '#ffffff',
               border: '1.5px dashed #cbd5e1',
@@ -719,14 +724,16 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               <Bell size={24} color="#94a3b8" style={{ margin: '0 auto 8px', display: 'block' }} />
               <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>Chưa có thông báo mới</div>
               <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>
-                Khi bạn gửi yêu cầu kết nối gia sư hoặc có bài tập mới từ gia sư, các thông báo sẽ hiển thị ở đây.
+                {isAdmin
+                  ? 'Các thay đổi trạng thái lớp học sẽ được hiển thị tại đây.'
+                  : 'Khi bạn gửi yêu cầu kết nối gia sư hoặc có bài tập mới từ gia sư, các thông báo sẽ hiển thị ở đây.'}
               </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
               {/* Assignment Notifications for Parents / Tutors */}
-              {assignments.map((asg) => {
+              {!isAdmin && assignments.map((asg) => {
                 if (asg.status === 'PENDING') {
                   return (
                     <div key={`asg-${asg.id}`} style={{

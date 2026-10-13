@@ -12,6 +12,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const isTutor = user?.role === 'TUTOR';
+  const isAdmin = user?.role === 'ADMIN';
 
   // Define tabs matching Figma screenshots
   const guestNavItems = [
@@ -46,8 +47,6 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
     { id: 'classes', label: 'Tất Cả Lớp Học' },
     { id: 'tutors', label: 'Danh Sách Gia Sư' },
     { id: 'materials', label: 'Tài Liệu' },
-    { id: 'payment', label: 'Ví Kết Nối' },
-    { id: 'progress', label: 'Tiến Độ AI' },
     { id: 'promotions', label: 'Ưu Đãi' },
   ];
 
@@ -90,7 +89,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
       }}>
         {/* Brand Logo (Figma totora style) */}
         <div 
-          onClick={() => onNavigate(user ? (isTutor ? 'dashboard' : 'classes') : 'tutors')} 
+          onClick={() => onNavigate(user ? (isTutor || isAdmin ? 'dashboard' : 'classes') : 'tutors')}
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
           <TutoraLogo size="md" />
@@ -200,6 +199,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
                     </div>
                   </div>
 
+                  {user.role !== 'ADMIN' && (
                   <button
                     type="button"
                     onClick={() => {
@@ -225,8 +225,9 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
                   >
                     <UserCheck size={16} color="#7c3aed" /> Hồ sơ cá nhân
                   </button>
+                  )}
 
-                  {!isTutor && (
+                  {user.role === 'PARENT' && (
                     <button
                       type="button"
                       onClick={() => {

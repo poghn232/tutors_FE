@@ -122,7 +122,7 @@ export const authService = {
 
   getAllowedViews(role) {
     if (role === 'ADMIN') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile', 'payment', 'vip', 'tutors', 'checkout'];
+      return ['dashboard', 'classes', 'materials', 'promotions', 'tutors'];
     }
     if (role === 'TUTOR') {
       return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile'];
