@@ -35,7 +35,7 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
     },
     {
       q: 'Thanh toán được bảo mật như thế nào?',
-      a: 'Tutora sử dụng tiêu chuẩn bảo mật mã hóa SSL 256-bit và liên kết với các đối tác thanh toán hàng đầu (Apple Pay, PayPal, thẻ Visa/MasterCard, cổng ngân hàng nội địa).'
+      a: 'Tutora hiện hỗ trợ thanh toán bằng mã VietQR qua MB Bank và được tự động đối soát thông qua SePay.'
     }
   ];
 

@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import paymentService from '../services/paymentService';
 import { classService } from '../services/classService';
-import { isValidEmail } from '../utils/validation';
 
 export default function CheckoutFlow({ 
   tutor, 
@@ -85,16 +84,11 @@ export default function CheckoutFlow({
     meetLink: 'meet.google.com/abc-def-ghi'
   };
 
-  // Payment method selection in Step 2: 'vietqr' | 'card' | 'paypal' | 'apple'
-  const [paymentMethod, setPaymentMethod] = useState('vietqr');
+  // SePay VietQR is the only supported payment method in the current MVP.
+  const paymentMethod = 'vietqr';
   const [bookingOrderCode, setBookingOrderCode] = useState(() => 'TUTORA' + Math.floor(100000 + Math.random() * 900000));
   const [copiedField, setCopiedField] = useState(null);
   const [timeLeft, setTimeLeft] = useState(600);
-  const [paypalEmail, setPaypalEmail] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
 
   const handleRegenerateQR = () => {
     setBookingOrderCode('TUTORA' + Math.floor(100000 + Math.random() * 900000));
@@ -330,14 +324,6 @@ export default function CheckoutFlow({
     }
   };
 
-  const isPaymentValid = () => {
-    if (paymentMethod === 'vietqr') return true;
-    if (paymentMethod === 'apple') return true;
-    if (paymentMethod === 'paypal') return isValidEmail(paypalEmail);
-    if (paymentMethod === 'card') return cardNumber.trim().length >= 12 && cardExpiry.trim() && cardCvv.trim();
-    return true;
-  };
-
   const handleCheckBookingPayment = async () => {
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
@@ -352,12 +338,7 @@ export default function CheckoutFlow({
   };
 
   const handleProcessPayment = () => {
-    if (paymentMethod === 'vietqr') {
-      handleCheckBookingPayment();
-      return;
-    }
-    if (!isPaymentValid()) return;
-    confirmBookingInDatabase();
+    handleCheckBookingPayment();
   };
 
   return (
@@ -548,41 +529,14 @@ export default function CheckoutFlow({
                 <div>
                   <h3 className="figma-card-heading">Phương thức Thanh toán</h3>
 
-                  {/* Segmented Payment Tabs */}
-                  <div className="figma-payment-tabs">
-                    <button
-                      type="button"
-                      className={`figma-payment-tab ${paymentMethod === 'vietqr' ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod('vietqr')}
-                    >
-                      VietQR MB Bank
-                    </button>
-                    <button
-                      type="button"
-                      className={`figma-payment-tab ${paymentMethod === 'card' ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod('card')}
-                    >
-                      Thẻ tín dụng
-                    </button>
-                    <button
-                      type="button"
-                      className={`figma-payment-tab ${paymentMethod === 'paypal' ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod('paypal')}
-                    >
-                      PayPal
-                    </button>
-                    <button
-                      type="button"
-                      className={`figma-payment-tab ${paymentMethod === 'apple' ? 'active' : ''}`}
-                      onClick={() => setPaymentMethod('apple')}
-                    >
-                      Apple Pay
-                    </button>
+                  <div className="figma-payment-tabs" aria-label="Phương thức thanh toán">
+                    <div className="figma-payment-tab active">
+                      VietQR MB Bank · SePay
+                    </div>
                   </div>
 
-                  {/* Sub-view: VietQR MB Bank */}
-                  {paymentMethod === 'vietqr' && (
-                    <div style={{ padding: '16px 0 10px 0' }}>
+                  {/* VietQR MB Bank via SePay */}
+                  <div style={{ padding: '16px 0 10px 0' }}>
                       {timeLeft <= 0 ? (
                         /* TIMEOUT EXPIRED NOTIFICATION */
                         <div style={{
@@ -875,140 +829,7 @@ export default function CheckoutFlow({
                           </button>
                         </>
                       )}
-                    </div>
-                  )}
-
-                  {/* Sub-view: Apple Pay (Figma Image 1) */}
-                  {paymentMethod === 'apple' && (
-                    <div style={{ textAlign: 'center', padding: '24px 0 10px 0' }}>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
-                        Apple Pay
-                      </div>
-                      <div style={{ fontSize: '0.88rem', color: '#64748b' }}>
-                        Sử dụng Touch ID hoặc Face ID để xác thực
-                      </div>
-
-                      {/* Security Lock Note */}
-                      <div className="figma-security-note">
-                        <Lock size={13} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '6px' }} />
-                        Bảo mật bằng mã hóa SSL 256-bit · Tuân thủ PCI DSS · Không lưu trên máy chủ của chúng tôi
-                      </div>
-
-                      {/* Apple Pay Green Action Button (Figma Image 1) */}
-                      <button 
-                        type="button" 
-                        className="figma-btn-apple-green"
-                        onClick={handleProcessPayment}
-                      >
-                        Thanh toán {formatVND(finalTotal)}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Sub-view: PayPal (Figma Image 2) */}
-                  {paymentMethod === 'paypal' && (
-                    <div style={{ padding: '12px 0 10px 0' }}>
-                      <div className="figma-input-group">
-                        <label className="figma-input-label">EMAIL PAYPAL</label>
-                        <input 
-                          type="email"
-                          className="figma-text-input"
-                          placeholder="email@cua.ban.com"
-                          value={paypalEmail}
-                          onChange={(e) => setPaypalEmail(e.target.value)}
-                        />
-                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '6px' }}>
-                          Bạn sẽ được chuyển đến PayPal để hoàn tất thanh toán
-                        </div>
-                      </div>
-
-                      {/* Security Lock Note */}
-                      <div className="figma-security-note">
-                        <Lock size={13} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '6px' }} />
-                        Bảo mật bằng mã hóa SSL 256-bit · Tuân thủ PCI DSS · Không lưu trên máy chủ của chúng tôi
-                      </div>
-
-                      {/* PayPal Action Button */}
-                      <button 
-                        type="button" 
-                        className={paypalEmail.trim() ? "figma-btn-primary" : "figma-btn-disabled"}
-                        disabled={!paypalEmail.trim()}
-                        onClick={handleProcessPayment}
-                      >
-                        Thanh toán {formatVND(finalTotal)}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Sub-view: Credit Card */}
-                  {paymentMethod === 'card' && (
-                    <div style={{ padding: '12px 0 10px 0' }}>
-                      <div className="figma-input-group">
-                        <label className="figma-input-label">SỐ THẺ TÍN DỤNG / GHI NỢ</label>
-                        <input 
-                          type="text"
-                          className="figma-text-input"
-                          placeholder="4532 •••• •••• 8921"
-                          maxLength={19}
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="figma-input-group">
-                        <label className="figma-input-label">HỌ VÀ TÊN CHỦ THẺ</label>
-                        <input 
-                          type="text"
-                          className="figma-text-input"
-                          placeholder="NGUYEN VAN A"
-                          value={cardHolder}
-                          onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                        />
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                        <div className="figma-input-group">
-                          <label className="figma-input-label">HẾT HẠN (MM/YY)</label>
-                          <input 
-                            type="text"
-                            className="figma-text-input"
-                            placeholder="12/28"
-                            maxLength={5}
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="figma-input-group">
-                          <label className="figma-input-label">MÃ CVV/CVC</label>
-                          <input 
-                            type="password"
-                            className="figma-text-input"
-                            placeholder="•••"
-                            maxLength={4}
-                            value={cardCvv}
-                            onChange={(e) => setCardCvv(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Security Lock Note */}
-                      <div className="figma-security-note">
-                        <Lock size={13} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '6px' }} />
-                        Bảo mật bằng mã hóa SSL 256-bit · Tuân thủ PCI DSS · Không lưu trên máy chủ của chúng tôi
-                      </div>
-
-                      {/* Card Action Button */}
-                      <button 
-                        type="button" 
-                        className={isPaymentValid() ? "figma-btn-primary" : "figma-btn-disabled"}
-                        disabled={!isPaymentValid()}
-                        onClick={handleProcessPayment}
-                      >
-                        Thanh toán {formatVND(finalTotal)}
-                      </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
