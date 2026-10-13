@@ -100,6 +100,7 @@ export default function ProfileView({ onBack }) {
   const [preferredDays, setPreferredDays] = useState([]);
   const [preferredTimes, setPreferredTimes] = useState([]);
   const [note, setNote] = useState('');
+  const scheduleStorageKey = `tutora_schedule_${user?.id || user?.email}`;
 
   // Notification toggles
   const [notifyUpcoming, setNotifyUpcoming] = useState(true);
@@ -166,6 +167,17 @@ export default function ProfileView({ onBack }) {
     return () => { isMounted = false; };
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(scheduleStorageKey) || '{}');
+      setPreferredDays(Array.isArray(saved.days) ? saved.days : []);
+      setPreferredTimes(Array.isArray(saved.times) ? saved.times : []);
+    } catch (error) {
+      setPreferredDays([]);
+      setPreferredTimes([]);
+    }
+  }, [scheduleStorageKey]);
+
   // Cập nhật thông tin tài khoản vào MySQL Database (Lưu thay đổi)
   const handleSave = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -225,6 +237,7 @@ export default function ProfileView({ onBack }) {
       if (tutorDegree) localStorage.setItem(`tutora_degree_${user?.id || user?.email}`, tutorDegree);
       if (tutorUniversity) localStorage.setItem(`tutora_univ_${user?.id || user?.email}`, tutorUniversity);
       if (tutorSkills) localStorage.setItem(`tutora_skills_${user?.id || user?.email}`, JSON.stringify(tutorSkills));
+      localStorage.setItem(scheduleStorageKey, JSON.stringify({ days: preferredDays, times: preferredTimes }));
 
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
@@ -242,6 +255,7 @@ export default function ProfileView({ onBack }) {
   ];
 
   const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const timeSlots = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00', '18:00', '19:00', '20:00'];
 
   const toggleSubject = (s) => {
     if (selectedSubjects.includes(s)) {
@@ -1060,6 +1074,36 @@ export default function ProfileView({ onBack }) {
                       </button>
                     );
                   })}
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.86rem', fontWeight: 700, margin: '0 0 10px' }}>
+                    Chọn các khung giờ có thể nhận lớp:
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {timeSlots.map((time) => {
+                      const isSelected = preferredTimes.includes(time);
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setPreferredTimes((current) => isSelected
+                            ? current.filter((item) => item !== time)
+                            : [...current, time])}
+                          style={{
+                            padding: '8px 13px',
+                            borderRadius: '9px',
+                            border: '1.5px solid #0f172a',
+                            background: isSelected ? '#0f172a' : '#ffffff',
+                            color: isSelected ? '#ffffff' : '#0f172a',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button

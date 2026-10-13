@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import CheckoutFlow from './CheckoutFlow';
 import { 
   Star, 
@@ -30,8 +30,9 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
 
   const [activeTab, setActiveTab] = useState('intro'); // 'intro', 'reviews', 'slots'
   const [selectedSubject, setSelectedSubject] = useState(currentTutor.subjects?.[0] || 'Toán học');
-  const [selectedDay, setSelectedDay] = useState('T2 14/09');
-  const [selectedTime, setSelectedTime] = useState('9:00 SA');
+  const scheduleStorageKey = `tutora_schedule_${currentTutor.id || currentTutor.email}`;
+  const [selectedDay, setSelectedDay] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
 
   const verificationStatus = currentTutor.verificationStatus || 'PENDING';
@@ -44,24 +45,49 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
       ? 'Chưa được duyệt'
       : 'Đang chờ duyệt';
 
-  const availableDays = [
-    'T2 14/09',
-    'T4 16/09',
-    'T6 18/09',
-    'T7 19/09',
-    'T2 21/09'
-  ];
+  const schedule = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(scheduleStorageKey) || '{}');
+    } catch (error) {
+      return {};
+    }
+  }, [scheduleStorageKey]);
 
-  const availableTimes = [
-    '9:00 SA',
-    '10:00 SA',
-    '11:00 SA',
-    '2:00 CH',
-    '3:00 CH',
-    '4:00 CH',
-    '6:00 CH',
-    '7:00 CH'
-  ];
+  const availableDays = useMemo(() => {
+    const selectedDays = Array.isArray(schedule.days) ? schedule.days : [];
+    const dayIndex = { T2: 1, T3: 2, T4: 3, T5: 4, T6: 5, T7: 6, CN: 0 };
+    const result = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let offset = 0; offset < 28 && result.length < 8; offset += 1) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + offset);
+      const dayCode = Object.keys(dayIndex).find((key) => dayIndex[key] === date.getDay());
+      if (selectedDays.includes(dayCode)) {
+        result.push({
+          value: date.toISOString().slice(0, 10),
+          label: `${dayCode} ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`
+        });
+      }
+    }
+    return result;
+  }, [schedule]);
+
+  const availableTimes = useMemo(() => {
+    const times = Array.isArray(schedule.times) ? schedule.times : [];
+    return times.map((time) => {
+      const [hour, minute = '00'] = String(time).split(':');
+      const numericHour = Number(hour);
+      const suffix = numericHour >= 12 ? 'CH' : 'SA';
+      const displayHour = numericHour > 12 ? numericHour - 12 : numericHour;
+      return `${displayHour}:${minute} ${suffix}`;
+    });
+  }, [schedule]);
+
+  useEffect(() => {
+    setSelectedDay((current) => current || availableDays[0]?.value || '');
+    setSelectedTime((current) => current || availableTimes[0] || '');
+  }, [availableDays, availableTimes]);
 
   const reviews = [
     {
@@ -106,7 +132,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
           subject: selectedSubject,
           subjectId: getSubjectId(selectedSubject),
           allSubjects: currentTutor.subjects?.join(', ') || 'Toán học, Vật lý, Tin học',
-          date: selectedDay ? selectedDay + '/2026' : '14/09/2026',
+          date: selectedDay,
           time: selectedTime,
           duration: '60 phút',
           format: 'Gọi video (Google Meet)',
@@ -420,11 +446,16 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {availableDays.map((d) => (
-                      <div key={d} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', fontSize: '0.88rem' }}>
-                        <strong style={{ color: '#0f172a' }}>{d}</strong>
-                        <span style={{ color: '#059669', fontWeight: 700 }}>9:00 - 11:00 SA & 2:00 - 7:00 CH</span>
+                      <div key={d.value} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', fontSize: '0.88rem' }}>
+                        <strong style={{ color: '#0f172a' }}>{d.label}</strong>
+                        <span style={{ color: '#059669', fontWeight: 700 }}>{availableTimes.join(' · ')}</span>
                       </div>
                     ))}
+                    {availableDays.length === 0 && (
+                      <div style={{ color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px', fontSize: '0.86rem' }}>
+                        Gia sư chưa mở ngày dạy trên hồ sơ.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -511,12 +542,12 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
               </label>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {availableDays.map((d) => {
-                  const isSel = selectedDay === d;
+                  const isSel = selectedDay === d.value;
                   return (
                     <button
-                      key={d}
+                      key={d.value}
                       type="button"
-                      onClick={() => setSelectedDay(d)}
+                      onClick={() => setSelectedDay(d.value)}
                       style={{
                         border: '1.5px solid #0f172a',
                         borderRadius: '8px',
@@ -528,7 +559,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                         cursor: 'pointer'
                       }}
                     >
-                      {d}
+                      {d.label}
                     </button>
                   );
                 })}
@@ -565,13 +596,18 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                   );
                 })}
               </div>
+              {availableTimes.length === 0 && (
+                <div style={{ color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '10px 12px', fontSize: '0.82rem', marginTop: '8px' }}>
+                  Gia sư chưa khai báo khung giờ nhận lớp.
+                </div>
+              )}
             </div>
 
             {/* Submit button */}
             <button
               type="button"
               className={selectedTime ? "figma-btn-primary" : "figma-btn-disabled"}
-              disabled={!selectedTime}
+              disabled={!selectedTime || !selectedDay}
               onClick={() => {
                 if (!user && onRequireAuth) {
                   onRequireAuth(`đặt lịch học với ${currentTutor.fullName}`);
