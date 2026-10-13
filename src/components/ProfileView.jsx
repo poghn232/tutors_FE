@@ -147,9 +147,15 @@ export default function ProfileView({ onBack }) {
           if (d.bio !== undefined && d.bio !== null) setTutorFullBio(d.bio);
           if (d.qualification !== undefined && d.qualification !== null) setTutorDisplayName(d.qualification);
           try {
-            if (d.availableDaysJson) setPreferredDays(JSON.parse(d.availableDaysJson));
-            if (d.availableTimesJson) setPreferredTimes(JSON.parse(d.availableTimesJson));
-          } catch (error) {}
+            const localSchedule = JSON.parse(localStorage.getItem(scheduleStorageKey) || '{}');
+            const remoteDays = d.availableDaysJson ? JSON.parse(d.availableDaysJson) : null;
+            const remoteTimes = d.availableTimesJson ? JSON.parse(d.availableTimesJson) : null;
+            setPreferredDays(Array.isArray(remoteDays) ? remoteDays : (Array.isArray(localSchedule.days) ? localSchedule.days : []));
+            setPreferredTimes(Array.isArray(remoteTimes) ? remoteTimes : (Array.isArray(localSchedule.times) ? localSchedule.times : []));
+          } catch (error) {
+            setPreferredDays([]);
+            setPreferredTimes([]);
+          }
 
           if (d.certificatesJson) {
             try {
@@ -170,17 +176,6 @@ export default function ProfileView({ onBack }) {
     fetchProfile();
     return () => { isMounted = false; };
   }, []);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(scheduleStorageKey) || '{}');
-      setPreferredDays(Array.isArray(saved.days) ? saved.days : []);
-      setPreferredTimes(Array.isArray(saved.times) ? saved.times : []);
-    } catch (error) {
-      setPreferredDays([]);
-      setPreferredTimes([]);
-    }
-  }, [scheduleStorageKey]);
 
   // Cập nhật thông tin tài khoản vào MySQL Database (Lưu thay đổi)
   const handleSave = async (e) => {
