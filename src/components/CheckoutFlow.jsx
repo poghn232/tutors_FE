@@ -128,6 +128,7 @@ export default function CheckoutFlow({
   const [createdClassInfo, setCreatedClassInfo] = useState(null);
   const [paymentReceipt, setPaymentReceipt] = useState(null);
   const [isCreatingClass, setIsCreatingClass] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const buildBookingPayload = () => ({
     className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
@@ -242,9 +243,31 @@ export default function CheckoutFlow({
   const handleConfirmedSepayResponse = (response) => {
     if (!response?.data?.paid) return false;
     if (!response.data.classId) {
-      // The backend may need another poll to recover a durable pending class
-      // after a restart. Do not stop polling or claim success prematurely.
-      return false;
+      // Payment confirmation is independent from class recovery. Show the
+      // receipt immediately so the parent has proof of a successful transfer.
+      setPaymentConfirmed(true);
+      setPaymentReceipt({
+        id: null,
+        orderCode: bookingOrderCode,
+        finalAmount: response.data.finalAmount || response.data.amount,
+        discountAmount: response.data.discountAmount,
+        voucherCode: response.data.voucherCode,
+        issuedVoucher: response.data.issuedVoucher,
+        transactionDate: response.data.transactionDate,
+        referenceCode: response.data.referenceCode,
+        classPendingRecovery: true
+      });
+      setCreatedClassInfo({
+        id: null,
+        className: `Lớp ${details.subject || 'Toán học'} - ${currentTutor.fullName}`,
+        subjectName: details.subject || 'Toán học',
+        tutorName: currentTutor.fullName,
+        scheduleDescription: `${details.date} lúc ${details.time}`,
+        status: 'PENDING_TUTOR_APPROVAL',
+        paymentConfirmed: true
+      });
+      setStep(3);
+      return true;
     }
     confirmBookingInDatabase({
       id: response.data.classId,
@@ -278,10 +301,6 @@ export default function CheckoutFlow({
             clearInterval(interval);
           } else {
             paidWithoutClassAttempts += 1;
-            if (paidWithoutClassAttempts >= 12) {
-              clearInterval(interval);
-              alert(res.data.message || 'Thanh toán đã được ghi nhận nhưng hệ thống chưa khôi phục được lớp học. Vui lòng thử lại trong mục Lớp học của tôi.');
-            }
           }
         }
       } catch (e) {
@@ -950,12 +969,23 @@ export default function CheckoutFlow({
               </div>
 
               <h2 className="figma-success-title" style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', marginBottom: '8px' }}>
-                Kết Nối Gia Sư Thành Công!
+                {paymentConfirmed ? 'Thanh Toán Phí Kết Nối Thành Công!' : 'Kết Nối Gia Sư Thành Công!'}
               </h2>
 
               <p className="figma-success-subtitle" style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.5, margin: '0 auto', maxWidth: '540px' }}>
-                Bạn đã thanh toán phí kết nối nền tảng <strong>{formatVND(finalTotal)}</strong>. Dưới đây là <strong>thông tin liên lạc trực tiếp của gia sư</strong> để hai bên kết nối trao đổi.
+                Bạn đã thanh toán phí kết nối nền tảng <strong>{formatVND(paymentReceipt?.finalAmount || finalTotal)}</strong>.
+                {paymentConfirmed && paymentReceipt?.classPendingRecovery
+                  ? ' Giao dịch đã được hệ thống ghi nhận. Lớp học đang được đồng bộ, bạn có thể kiểm tra lại trong mục Lớp Học Của Tôi sau ít phút.'
+                  : ' Dưới đây là thông tin liên lạc trực tiếp của gia sư để hai bên kết nối trao đổi.'}
               </p>
+              {paymentReceipt && (
+                <div style={{ margin: '14px auto 0', maxWidth: '540px', background: '#eff6ff', border: '1.5px solid #93c5fd', borderRadius: '12px', padding: '12px 14px', color: '#1e3a8a', textAlign: 'left', fontSize: '0.86rem', lineHeight: 1.6 }}>
+                  <div><strong>Trạng thái:</strong> Đã xác nhận thanh toán</div>
+                  <div><strong>Mã đơn:</strong> {paymentReceipt.orderCode || bookingOrderCode}</div>
+                  {paymentReceipt.referenceCode && <div><strong>Mã giao dịch:</strong> {paymentReceipt.referenceCode}</div>}
+                  {paymentReceipt.transactionDate && <div><strong>Thời gian:</strong> {paymentReceipt.transactionDate}</div>}
+                </div>
+              )}
               {paymentReceipt?.issuedVoucher && (
                 <div style={{ margin: '16px auto 0', maxWidth: '540px', display: 'flex', alignItems: 'flex-start', gap: '10px', textAlign: 'left', background: '#fff7ed', border: '1.5px solid #fb923c', borderRadius: '12px', padding: '12px 14px', color: '#9a3412' }}>
                   <Gift size={20} style={{ flexShrink: 0, marginTop: '2px' }} />

@@ -68,7 +68,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const loadClasses = async () => {
     try {
       setLoadingDb(true);
-      const localClasses = getLocalStorageClasses();
+      // Local fallback data is user-scoped as well. Ignore legacy or malformed
+      // records that do not belong to the currently signed-in parent.
+      const localClasses = getLocalStorageClasses().filter((item) => {
+        if (!user || user.role === 'ADMIN') return true;
+        if (user.role === 'TUTOR') return item.tutorId === user.id;
+        return item.parentId === user.id || item.studentId === user.id;
+      });
       let remoteClasses = [];
       try {
         const res = await classService.getClasses();
@@ -284,7 +290,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const upcomingCount = upcomingClasses.length;
   const completedCount = historyClasses.length;
-  const activeTutorCount = new Set(allMappedClasses.map(c => c.tutorName).filter(Boolean)).size;
+  const connectedClasses = allMappedClasses.filter(c =>
+    ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
+  );
+  const activeTutorCount = new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
 
   return (
@@ -1083,7 +1092,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             </h4>
 
             {(() => {
-              const myTutors = Array.from(new Set(allMappedClasses.map(c => c.tutorName).filter(Boolean)));
+              const myTutors = Array.from(new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)));
               if (myTutors.length === 0) {
                 return (
                   <div style={{ textAlign: 'center', padding: '12px 0', color: '#64748b', fontSize: '0.82rem' }}>
