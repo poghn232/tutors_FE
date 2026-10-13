@@ -168,6 +168,18 @@ export default function LessonList({ user }) {
     if (user?.role === 'TUTOR') {
       fetchClasses();
     }
+    if (user?.role !== 'TUTOR') return undefined;
+
+    const refresh = () => {
+      fetchLessons();
+      fetchClasses();
+    };
+    const refreshTimer = setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(refreshTimer);
+      window.removeEventListener('focus', refresh);
+    };
   }, [user]);
 
   const handleCreateLesson = async (e) => {

@@ -43,13 +43,24 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
 
   useEffect(() => {
     if (user?.role === 'TUTOR') {
-      classService.getClasses()
+      let cancelled = false;
+      const loadTutorClasses = () => classService.getClasses()
         .then(res => {
-          if (res && res.data && Array.isArray(res.data)) {
+          if (!cancelled && res && res.data && Array.isArray(res.data)) {
             setTutorClasses(res.data);
           }
         })
         .catch(() => {});
+
+      loadTutorClasses();
+      const refreshTimer = setInterval(loadTutorClasses, 15000);
+      const handleFocus = () => loadTutorClasses();
+      window.addEventListener('focus', handleFocus);
+      return () => {
+        cancelled = true;
+        clearInterval(refreshTimer);
+        window.removeEventListener('focus', handleFocus);
+      };
     }
   }, [user]);
 
@@ -815,11 +826,12 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <RefreshCw size={18} color="#ea580c" />
                           <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                            {pr.studentName || 'Học sinh'} vừa gửi yêu cầu đặt lịch môn {pr.subjectName || 'học'} ({pr.scheduleDescription})
+                            {pr.studentName || 'Học sinh'} đã booking môn {pr.subjectName || 'học'} ({pr.scheduleDescription})
+                            {pr.paidAt ? ' và đã thanh toán phí kết nối.' : ' và đang chờ bạn xác nhận.'}
                           </span>
                         </div>
                         <span style={{ fontSize: '0.78rem', color: '#ea580c', backgroundColor: '#fff1ed', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                          Chờ duyệt
+                          {pr.paidAt ? 'Đã thanh toán' : 'Chờ duyệt'}
                         </span>
                       </div>
                     ))}

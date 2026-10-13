@@ -658,7 +658,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
                     {/* Action buttons & status-specific guidance */}
                     {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
-                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <div>
+                        {item.paidAt && (
+                          <div style={{ color: '#047857', fontSize: '0.88rem', fontWeight: 800, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px' }}>
+                            Phụ huynh đã thanh toán phí kết nối. Vui lòng xác nhận lịch học để bắt đầu.
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           onClick={() => handleClassAction(classService.acceptClass, item.classId)}
@@ -674,6 +680,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                         >
                           Từ chối
                         </button>
+                        </div>
                       </div>
                     )}
 
