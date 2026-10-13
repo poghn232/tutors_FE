@@ -112,6 +112,8 @@ const normalizeTutor = (rawTutor, index) => {
     hourlyRate,
     priceNegotiable,
     verificationStatus: getText(rawTutor?.verificationStatus, 'PENDING').toUpperCase(),
+    availableDaysJson: rawTutor?.availableDaysJson || null,
+    availableTimesJson: rawTutor?.availableTimesJson || null,
     createdAt: rawTutor?.createdAt || null
   };
 };

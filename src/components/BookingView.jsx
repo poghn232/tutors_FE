@@ -47,6 +47,11 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
 
   const schedule = useMemo(() => {
     try {
+      const fromTutor = {
+        days: currentTutor.availableDaysJson ? JSON.parse(currentTutor.availableDaysJson) : [],
+        times: currentTutor.availableTimesJson ? JSON.parse(currentTutor.availableTimesJson) : []
+      };
+      if (fromTutor.days.length || fromTutor.times.length) return fromTutor;
       return JSON.parse(localStorage.getItem(scheduleStorageKey) || '{}');
     } catch (error) {
       return {};

@@ -146,6 +146,10 @@ export default function ProfileView({ onBack }) {
           if (d.emergencyContact !== undefined && d.emergencyContact !== null) setParentPhone(d.emergencyContact);
           if (d.bio !== undefined && d.bio !== null) setTutorFullBio(d.bio);
           if (d.qualification !== undefined && d.qualification !== null) setTutorDisplayName(d.qualification);
+          try {
+            if (d.availableDaysJson) setPreferredDays(JSON.parse(d.availableDaysJson));
+            if (d.availableTimesJson) setPreferredTimes(JSON.parse(d.availableTimesJson));
+          } catch (error) {}
 
           if (d.certificatesJson) {
             try {
@@ -211,7 +215,9 @@ export default function ProfileView({ onBack }) {
           phone: normalizePhone(tutorPhone),
           bio: tutorFullBio || tutorShortBio,
           qualification: tutorDisplayName,
-          certificatesJson: JSON.stringify(certificates)
+          certificatesJson: JSON.stringify(certificates),
+          availableDaysJson: JSON.stringify(preferredDays),
+          availableTimesJson: JSON.stringify(preferredTimes)
         };
       } else {
         payload = {
