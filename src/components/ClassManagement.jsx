@@ -20,13 +20,16 @@ import {
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
   const { updateUser } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const normalizedRole = String(user?.role || '').trim().toUpperCase();
+  const isTutor = normalizedRole === 'TUTOR';
+  const isAdmin = normalizedRole === 'ADMIN';
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming', 'completed', 'all'
   const [calendarDay, setCalendarDay] = useState(10);
   const [dbClasses, setDbClasses] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [classLoadError, setClassLoadError] = useState('');
 
 
   // Modal State for Adding Class / Free Schedule Slot
@@ -68,11 +71,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const loadClasses = async () => {
     try {
       setLoadingDb(true);
+      setClassLoadError('');
       // Local fallback data is user-scoped as well. Ignore legacy or malformed
       // records that do not belong to the currently signed-in parent.
       const localClasses = getLocalStorageClasses().filter((item) => {
-        if (!user || user.role === 'ADMIN') return true;
-        if (user.role === 'TUTOR') return item.tutorId === user.id;
+        if (!user || isAdmin) return true;
+        if (isTutor) return item.tutorId === user.id;
         return item.parentId === user.id || item.studentId === user.id;
       });
       let remoteClasses = [];
@@ -83,6 +87,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         }
       } catch (err) {
         console.warn('API getClasses warning, using local data fallback:', err);
+        setClassLoadError(err.response?.data?.message || 'Không tải được yêu cầu nhận lớp từ máy chủ.');
       }
 
       // Merge remote and local without duplicate IDs
@@ -94,7 +99,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       });
       setDbClasses(merged);
     } catch (err) {
-      // quiet fallback
+      setClassLoadError(err.response?.data?.message || 'Không thể đồng bộ danh sách lớp học.');
     } finally {
       setLoadingDb(false);
     }
@@ -143,7 +148,6 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     setIsSubmittingClass(true);
     setActionMessage('');
     try {
-      const isTutor = user?.role === 'TUTOR';
       const isFreeSlot = isTutor && newClassForm.isFreeSlot;
       if (!isTutor && !newClassForm.tutorId) {
         setActionMessage('Bạn cần chọn một gia sư đã kết nối trước khi thêm lớp học.');
@@ -265,7 +269,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const allMappedClasses = dbClasses.map((c) => {
     const isFreeSlot = c.isFreeSlot || (c.studentName && c.studentName.includes('Lịch rảnh'));
-    const needsTutorApproval = c.paidAt && !c.approvedAt && c.status === 'ACTIVE';
+    const needsTutorApproval = isTutor
+      && c.paidAt
+      && !c.approvedAt
+      && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status);
     const effectiveStatus = needsTutorApproval ? 'PENDING_TUTOR_APPROVAL' : c.status;
     const sDesc = c.scheduleDescription || '';
     const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
@@ -286,6 +293,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       roomUrl: /^https?:\/\//i.test(c.notes || '') ? c.notes : null,
       rawStatus: effectiveStatus,
       approvedAt: c.approvedAt,
+      needsTutorApproval,
       paidAt: c.paidAt,
       connectionFee: c.connectionFee,
       isFreeSlot: isFreeSlot,
@@ -327,14 +335,17 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   );
   const activePeopleCount = new Set(
     connectedClasses
-      .map(c => user?.role === 'TUTOR' ? c.studentName : c.tutorName)
+      .map(c => isTutor ? c.studentName : c.tutorName)
       .filter(Boolean)
   ).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
   const tutorApprovalRequests = allMappedClasses.filter(c =>
-    user?.role === 'TUTOR' && c.rawStatus === 'PENDING_TUTOR_APPROVAL'
+    isTutor && (c.needsTutorApproval || c.rawStatus === 'PENDING_TUTOR_APPROVAL')
   );
   const paidTutorApprovalRequests = tutorApprovalRequests.filter(c => c.paidAt);
+  const matchedTutorClasses = allMappedClasses.filter(c =>
+    isTutor && c.rawStatus === 'ACTIVE' && c.approvedAt
+  );
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
@@ -361,7 +372,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {isAdmin ? null : user?.role === 'TUTOR' ? (
+          {isAdmin ? null : isTutor ? (
             <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 700, maxWidth: '260px', lineHeight: 1.4, textAlign: 'right' }}>
               Lịch rảnh được chỉnh trong thẻ <strong>Lịch Dạy Của Tôi</strong>; lớp học chỉ phát sinh từ yêu cầu kết nối.
             </div>
@@ -398,7 +409,16 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         </div>
       </div>
 
-      {user?.role === 'TUTOR' && tutorApprovalRequests.length > 0 && (
+      {isTutor && classLoadError && (
+        <div style={{ background: '#fef2f2', border: '1.5px solid #ef4444', borderRadius: '14px', padding: '13px 16px', marginBottom: '18px', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.86rem', fontWeight: 700 }}>⚠ {classLoadError}</span>
+          <button type="button" onClick={loadClasses} style={{ border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', borderRadius: '8px', padding: '7px 12px', fontWeight: 800, cursor: 'pointer' }}>
+            Thử tải lại
+          </button>
+        </div>
+      )}
+
+      {isTutor && tutorApprovalRequests.length > 0 && (
         <div style={{
           background: paidTutorApprovalRequests.length > 0 ? '#ecfdf5' : '#fffbeb',
           border: `2px solid ${paidTutorApprovalRequests.length > 0 ? '#22c55e' : '#f59e0b'}`,
@@ -429,6 +449,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           >
             Xem yêu cầu bên dưới ↓
           </button>
+        </div>
+      )}
+
+      {isTutor && tutorApprovalRequests.length === 0 && matchedTutorClasses.length > 0 && (
+        <div style={{ background: '#eff6ff', border: '1.5px solid #60a5fa', borderRadius: '16px', padding: '14px 18px', marginBottom: '22px', color: '#1e40af', fontWeight: 700, fontSize: '0.88rem' }}>
+          ✅ Match thành công với {matchedTutorClasses.length} học sinh. Các lớp đã được chuyển sang trạng thái đang học và xuất hiện trong lịch dạy.
         </div>
       )}
 
@@ -467,7 +493,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         }}>
           <User size={20} color="#ea580c" style={{ marginBottom: '8px' }} />
           <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>{activePeopleCount}</div>
-      <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>{user?.role === 'TUTOR' ? 'Học sinh đang học' : 'Gia sư đang học'}</div>
+      <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>{isTutor ? 'Học sinh đang học' : 'Gia sư đang học'}</div>
         </div>
 
         {/* Card 4: Light Blue */}
@@ -567,12 +593,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                 <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 20px 0' }}>
                   {!user 
                     ? 'Đăng nhập vào hệ thống để đặt lịch học với gia sư hoặc quản lý các lớp học cá nhân của bạn!'
-                    : (user?.role === 'TUTOR' 
+                    : (isTutor
                         ? 'Bạn hiện chưa có yêu cầu kết nối hoặc lớp học nào trong mục này.' 
                     : 'Hãy chọn gia sư phù hợp và gửi yêu cầu kết nối lịch học!')}
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  {user?.role !== 'TUTOR' && (
+                  {!isTutor && (
                     <button
                       type="button"
                       onClick={onNavigateToTutors}
@@ -603,8 +629,8 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
               </div>
             ) : (
               displayLessons.map((item) => {
-                const isUserTutor = user?.role === 'TUTOR';
-                const isUserAdmin = user?.role === 'ADMIN';
+                const isUserTutor = isTutor;
+                const isUserAdmin = isAdmin;
                 const displayName = isUserTutor 
                   ? (item.studentName || 'Học sinh') 
                   : (isUserAdmin 
@@ -703,7 +729,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     </div>
 
                     {/* Action buttons & status-specific guidance */}
-                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                    {item.isFromDb && isTutor && (item.needsTutorApproval || item.rawStatus === 'PENDING_TUTOR_APPROVAL') && (
                       <div>
                         {item.paidAt && (
                           <div style={{ color: '#047857', fontSize: '0.88rem', fontWeight: 800, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px' }}>
@@ -730,7 +756,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && user?.role === 'TUTOR' && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && isTutor && !item.needsTutorApproval && item.rawStatus === 'PENDING_PAYMENT' && (
                       <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
                         ✓ Lịch học đã được chấp nhận. Đang chờ phụ huynh thanh toán phí kết nối để kích hoạt lớp.
                       </div>
@@ -834,7 +860,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                             📝 Bài tập mới: {asg.title} ({asg.subjectName})
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#c2410c', marginTop: '2px' }}>
-                            {user?.role === 'TUTOR' 
+                            {isTutor
                               ? `Đã giao cho phụ huynh ${asg.parentName}. Hạn nộp: ${asg.dueDate ? asg.dueDate.replace('T', ' ') : ''}` 
                               : `Gia sư ${asg.tutorName} đã giao bài tập. Vui lòng nộp bài trước hạn để không bị đánh dấu trễ!`}
                           </div>
@@ -855,7 +881,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                             cursor: 'pointer'
                           }}
                         >
-                          {user?.role === 'TUTOR' ? 'Xem bài tập' : 'Xem & Nộp bài'}
+                          {isTutor ? 'Xem bài tập' : 'Xem & Nộp bài'}
                         </button>
                       )}
                     </div>
@@ -1159,18 +1185,18 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             padding: '24px'
           }}>
             <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
-              {user?.role === 'TUTOR' ? 'Học sinh Của Tôi' : 'Gia sư Của Tôi'}
+              {isTutor ? 'Học sinh Của Tôi' : 'Gia sư Của Tôi'}
             </h4>
 
             {(() => {
-              const myPeople = user?.role === 'TUTOR'
+              const myPeople = isTutor
                 ? Array.from(new Set(connectedClasses.map(c => c.studentName).filter(Boolean)))
                 : Array.from(new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)));
               if (myPeople.length === 0) {
                 return (
                   <div style={{ textAlign: 'center', padding: '12px 0', color: '#64748b', fontSize: '0.82rem' }}>
-                    <div>{user?.role === 'TUTOR' ? 'Chưa có học sinh đang học.' : 'Bạn chưa kết nối với gia sư nào.'}</div>
-                    {user?.role !== 'TUTOR' && (
+                    <div>{isTutor ? 'Chưa có học sinh đang học.' : 'Bạn chưa kết nối với gia sư nào.'}</div>
+                    {!isTutor && (
                       <button
                         type="button"
                         onClick={() => onNavigateToTutors && onNavigateToTutors()}
@@ -1203,7 +1229,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                         justifyContent: 'space-between',
                         cursor: 'pointer'
                       }}
-                      onClick={() => user?.role !== 'TUTOR' && onNavigateToTutors ? onNavigateToTutors() : null}
+                      onClick={() => !isTutor && onNavigateToTutors ? onNavigateToTutors() : null}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{

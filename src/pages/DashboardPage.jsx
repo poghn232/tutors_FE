@@ -38,11 +38,12 @@ import {
 
 export default function DashboardPage({ activeTab = 'default', onNavigate, onRequireAuth }) {
   const { user } = useAuth();
-  const isTutor = user?.role === 'TUTOR';
+  const normalizedRole = String(user?.role || '').trim().toUpperCase();
+  const isTutor = normalizedRole === 'TUTOR';
   const [tutorClasses, setTutorClasses] = useState([]);
 
   useEffect(() => {
-    if (user?.role === 'TUTOR') {
+    if (isTutor) {
       let cancelled = false;
       const loadTutorClasses = () => classService.getClasses()
         .then(res => {
@@ -248,7 +249,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
       )}
 
       {/* Admin Tutor Verification Dashboard */}
-      {user?.role === 'ADMIN' && (currentTab === 'dashboard' || currentTab === 'tutors') ? (
+      {normalizedRole === 'ADMIN' && (currentTab === 'dashboard' || currentTab === 'tutors') ? (
         <AdminTutorVerificationDashboard />
       ) : isTutor && currentTab === 'dashboard' ? (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px 48px', position: 'relative' }}>

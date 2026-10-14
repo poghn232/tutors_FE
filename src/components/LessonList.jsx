@@ -440,7 +440,10 @@ export default function LessonList({ user }) {
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
             Quản lý tất cả buổi học và học sinh của bạn
           </p>
-          {user?.role === 'TUTOR' && classList.some((item) => item.paidAt && item.status === 'PENDING_TUTOR_APPROVAL') && (
+          {String(user?.role || '').toUpperCase() === 'TUTOR' && classList.some((item) =>
+            item.status === 'PENDING_TUTOR_APPROVAL'
+            || (item.paidAt && !item.approvedAt && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(item.status))
+          ) && (
             <div style={{ marginTop: '12px', background: '#ecfdf5', border: '1.5px solid #86efac', borderRadius: '12px', padding: '11px 14px', color: '#166534', fontSize: '0.86rem', fontWeight: 700 }}>
               Có booking mới đã thanh toán phí kết nối. Vào mục <strong>Lớp học & Yêu cầu</strong> để xác nhận lịch với phụ huynh.
             </div>

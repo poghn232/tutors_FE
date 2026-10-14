@@ -11,8 +11,9 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const { user, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-  const isTutor = user?.role === 'TUTOR';
-  const isAdmin = user?.role === 'ADMIN';
+  const normalizedRole = String(user?.role || '').trim().toUpperCase();
+  const isTutor = normalizedRole === 'TUTOR';
+  const isAdmin = normalizedRole === 'ADMIN';
 
   // Define tabs matching Figma screenshots
   const guestNavItems = [
@@ -52,7 +53,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const navItems = !user 
     ? guestNavItems 
-    : (user.role === 'ADMIN' 
+    : (normalizedRole === 'ADMIN'
         ? adminNavItems 
         : (isTutor ? tutorNavItems : parentNavItems));
 
