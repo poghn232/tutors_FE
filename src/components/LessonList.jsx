@@ -22,6 +22,15 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+const buildLocalAiNoteSuggestion = (rawNote) => {
+  const note = String(rawNote || '').trim();
+  return {
+    aiSummary: `Tóm tắt buổi học: ${note}`,
+    keyLearnings: 'Đã ghi nhận nội dung trọng tâm và các kỹ năng được luyện tập trong buổi học.',
+    areasForImprovement: 'Tiếp tục ôn lại nội dung vừa học và hoàn thành bài tập được giao trước buổi kế tiếp.'
+  };
+};
+
 export default function LessonList({ user }) {
   const [lessons, setLessons] = useState([]);
   const [classList, setClassList] = useState([]);
@@ -321,12 +330,22 @@ export default function LessonList({ user }) {
         setAiSummaryInput(res.data.aiSummary || '');
         setKeyLearningsInput(res.data.keyLearnings || '');
         setAreasImprovementInput(res.data.areasForImprovement || '');
-        setNoteSuccessMsg('AI đã tạo tóm tắt thông minh thành công!');
+        setNoteSuccessMsg(res.data.aiGenerated === false
+          ? 'AI chưa được cấu hình, hệ thống đã tạo gợi ý cơ bản. Bạn vẫn có thể chỉnh sửa và lưu.'
+          : 'AI đã tạo tóm tắt thông minh thành công!');
       } else {
-        alert(res.message || 'Không thể tạo bản tóm tắt AI.');
+        const fallback = buildLocalAiNoteSuggestion(rawNoteInput);
+        setAiSummaryInput(fallback.aiSummary);
+        setKeyLearningsInput(fallback.keyLearnings);
+        setAreasImprovementInput(fallback.areasForImprovement);
+        setNoteSuccessMsg('Không nhận được phản hồi AI, đã tạo gợi ý cơ bản. Bạn vẫn có thể chỉnh sửa và lưu.');
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi khi gọi API AI tóm tắt.');
+      const fallback = buildLocalAiNoteSuggestion(rawNoteInput);
+      setAiSummaryInput(fallback.aiSummary);
+      setKeyLearningsInput(fallback.keyLearnings);
+      setAreasImprovementInput(fallback.areasForImprovement);
+      setNoteSuccessMsg('Không kết nối được AI, có thể do API key chưa cấu hình. Đã tạo gợi ý cơ bản để bạn tiếp tục lưu báo cáo.');
     } finally {
       setAiGenerating(false);
     }
@@ -1320,6 +1339,9 @@ export default function LessonList({ user }) {
                   value={rawNoteInput}
                   onChange={(e) => setRawNoteInput(e.target.value)}
                 />
+                <div style={{ marginTop: '6px', color: '#64748b', fontSize: '0.8rem' }}>
+                  Bản tóm tắt AI là tùy chọn. Bạn vẫn có thể tự điền nội dung và lưu báo cáo khi AI chưa được cấu hình.
+                </div>
               </div>
 
               <div style={{ textAlign: 'right', marginBottom: '20px' }}>
@@ -1331,13 +1353,13 @@ export default function LessonList({ user }) {
                   disabled={aiGenerating}
                 >
                   <Sparkles size={16} />
-                  {aiGenerating ? 'AI đang tổng hợp...' : 'Dùng AI tóm tắt thông minh'}
+                  {aiGenerating ? 'AI đang tổng hợp...' : 'Gợi ý bằng AI (tùy chọn)'}
                 </button>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                  2. Tóm tắt của AI
+                  2. Tóm tắt buổi học (không bắt buộc)
                 </label>
                 <textarea
                   style={{

@@ -12,6 +12,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { classService } from '../services/classService';
+import { lessonService } from '../services/lessonService';
 import progressService from '../services/progressService';
 
 const formatNumber = (value) => new Intl.NumberFormat('vi-VN').format(Number(value || 0));
@@ -24,42 +25,192 @@ const metricCard = (icon, label, value, color, background) => ({
   background
 });
 
+const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
+
+const getLessonClassId = (lesson) => lesson?.classId ?? lesson?.classEntity?.id;
+
+const getLessonNote = (lesson) => lesson?.lessonNote || lesson?.note || null;
+
+const getLessonHours = (lesson) => {
+  if (!lesson?.startTime || !lesson?.endTime) return 0;
+  const start = new Date(lesson.startTime);
+  const end = new Date(lesson.endTime);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 0;
+  const minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  return minutes / 60;
+};
+
+const buildLocalProgressReport = (classes, lessons, selectedClassId) => {
+  const selectedId = selectedClassId ? String(selectedClassId) : '';
+  const scopedClasses = (classes || []).filter((item) => !selectedId || String(item.id) === selectedId);
+  const scopedLessons = (lessons || []).filter((item) => !selectedId || String(getLessonClassId(item)) === selectedId);
+  const classMap = new Map(scopedClasses.map((item) => [String(item.id), item]));
+
+  scopedLessons.forEach((lesson) => {
+    const classId = getLessonClassId(lesson);
+    if (classId !== null && classId !== undefined && !classMap.has(String(classId))) {
+      classMap.set(String(classId), {
+        id: classId,
+        className: lesson.className || `Lớp #${classId}`,
+        subjectName: lesson.subjectName || 'Môn học',
+        studentName: lesson.studentName || 'Học sinh'
+      });
+    }
+  });
+
+  const reportClasses = Array.from(classMap.values()).map((item) => {
+    const itemLessons = scopedLessons.filter((lesson) => String(getLessonClassId(lesson)) === String(item.id));
+    const completedLessons = itemLessons.filter((lesson) => normalizeStatus(lesson.status) === 'COMPLETED').length;
+    const totalHours = itemLessons.reduce((total, lesson) => total + getLessonHours(lesson), 0);
+    const recentTopics = itemLessons
+      .map((lesson) => {
+        const note = getLessonNote(lesson);
+        return note?.keyLearnings || lesson.title;
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+
+    return {
+      classId: item.id,
+      className: item.className || `Lớp #${item.id}`,
+      subjectName: item.subjectName || 'Môn học',
+      studentName: item.studentName || 'Học sinh',
+      totalLessons: itemLessons.length,
+      completedLessons,
+      upcomingLessons: itemLessons.filter((lesson) => normalizeStatus(lesson.status) === 'SCHEDULED').length,
+      completionRate: itemLessons.length ? Number(((completedLessons * 100) / itemLessons.length).toFixed(1)) : 0,
+      totalHours: Number(totalHours.toFixed(1)),
+      totalAssignments: 0,
+      gradedAssignments: 0,
+      overdueAssignments: 0,
+      averageAssignmentScore: null,
+      recentTopics
+    };
+  });
+
+  const lessonNotes = scopedLessons
+    .map((lesson) => {
+      const note = getLessonNote(lesson);
+      if (!note || (!note.aiSummary && !note.rawTutorNote && !note.keyLearnings && !note.areasForImprovement)) return null;
+      return {
+        lessonId: lesson.id,
+        classId: getLessonClassId(lesson),
+        className: lesson.className || classMap.get(String(getLessonClassId(lesson)))?.className || 'Lớp học',
+        title: lesson.title || 'Buổi học',
+        startTime: lesson.startTime,
+        status: lesson.status,
+        aiSummary: note.aiSummary || note.rawTutorNote,
+        keyLearnings: note.keyLearnings,
+        areasForImprovement: note.areasForImprovement
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => new Date(right.startTime || 0) - new Date(left.startTime || 0));
+
+  const completedLessons = scopedLessons.filter((lesson) => normalizeStatus(lesson.status) === 'COMPLETED').length;
+  const totalHours = scopedLessons.reduce((total, lesson) => total + getLessonHours(lesson), 0);
+  const learnings = lessonNotes.map((note) => note.keyLearnings).filter(Boolean).slice(0, 3);
+  const improvements = lessonNotes.map((note) => note.areasForImprovement).filter(Boolean).slice(0, 3);
+  const firstClass = reportClasses[0] || {};
+  const studentNames = reportClasses.map((item) => item.studentName).filter(Boolean);
+  const subjects = reportClasses.map((item) => item.subjectName).filter(Boolean);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    studentName: selectedId ? (firstClass.studentName || 'Học sinh') : (studentNames.length === 1 ? studentNames[0] : 'Các học sinh'),
+    subjectName: selectedId ? (firstClass.subjectName || 'Môn học') : [...new Set(subjects)].join(', ') || 'Tổng hợp',
+    scopeLabel: selectedId ? 'Báo cáo lớp học được chọn' : 'Tổng hợp dữ liệu đã lưu',
+    totalClasses: reportClasses.length,
+    totalLessons: scopedLessons.length,
+    completedLessons,
+    upcomingLessons: scopedLessons.filter((lesson) => normalizeStatus(lesson.status) === 'SCHEDULED').length,
+    completionRate: scopedLessons.length ? Number(((completedLessons * 100) / scopedLessons.length).toFixed(1)) : 0,
+    totalHours: Number(totalHours.toFixed(1)),
+    totalAssignments: 0,
+    submittedAssignments: 0,
+    gradedAssignments: 0,
+    overdueAssignments: 0,
+    averageAssignmentScore: null,
+    classes: reportClasses,
+    lessonNotes,
+    aiReport: {
+      overallSummary: lessonNotes.length
+        ? `Đã ghi nhận ${lessonNotes.length} báo cáo sau buổi học. Phụ huynh có thể theo dõi nội dung đã học và phần cần rèn luyện bên dưới.`
+        : 'Chưa có ghi chú cuối buổi nào được lưu trên hệ thống.',
+      strengths: learnings.length ? learnings.join(' ') : 'Chưa có dữ liệu về kiến thức trọng tâm.',
+      areasForImprovement: improvements.length ? improvements.join(' ') : 'Chưa có dữ liệu về phần cần cải thiện.',
+      nextSteps: 'Xem lại nhận xét của buổi gần nhất và hoàn thành bài tập gia sư giao trước buổi tiếp theo.',
+      motivation: 'Duy trì lịch học đều đặn và trao đổi sớm khi học sinh gặp khó khăn.',
+      aiGenerated: false
+    }
+  };
+};
+
 export default function ProgressReportView({ user }) {
   const [classes, setClasses] = useState([]);
+  const [lessons, setLessons] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const loadClasses = async () => {
     try {
       const response = await classService.getClasses();
       const items = response?.success && Array.isArray(response.data) ? response.data : [];
       setClasses(items);
+      return items;
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải danh sách lớp học.');
-    } finally {
-      setLoading(false);
+      return [];
+    }
+  };
+
+  const loadLessons = async () => {
+    try {
+      const response = await lessonService.getLessons();
+      const items = response?.success && Array.isArray(response.data) ? response.data : [];
+      setLessons(items);
+      return items;
+    } catch (err) {
+      console.warn('Không thể tải ghi chú buổi học để dự phòng báo cáo:', err);
+      return [];
     }
   };
 
   useEffect(() => {
-    loadClasses();
+    setLoading(true);
+    Promise.all([loadClasses(), loadLessons()]).finally(() => setLoading(false));
   }, [user]);
 
   const generateReport = async () => {
     setGenerating(true);
     setError('');
+    setNotice('');
     try {
       const response = await progressService.generateReport(selectedClassId ? Number(selectedClassId) : null);
-      if (response?.success) {
+      if (response?.success && response.data) {
         setReport(response.data);
+        if (response.data.aiReport?.aiGenerated === false) {
+          setNotice('Gemini chưa được cấu hình hoặc đang lỗi API key. Báo cáo vẫn được dựng từ dữ liệu đã lưu và nhận xét của gia sư.');
+        }
       } else {
-        setError(response?.message || 'Không thể tạo báo cáo tiến độ.');
+        if (lessons.length > 0 || classes.length > 0) {
+          setReport(buildLocalProgressReport(classes, lessons, selectedClassId));
+          setNotice('Không gọi được báo cáo AI, đã hiển thị bản tổng hợp từ dữ liệu đã lưu.');
+        } else {
+          setError(response?.message || 'Không thể tạo báo cáo tiến độ.');
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tạo báo cáo tiến độ.');
+      if (lessons.length > 0 || classes.length > 0) {
+        setReport(buildLocalProgressReport(classes, lessons, selectedClassId));
+        setNotice('Không gọi được báo cáo AI, có thể do API key. Đã hiển thị bản tổng hợp từ dữ liệu đã lưu.');
+      } else {
+        setError(err.response?.data?.message || 'Không thể tạo báo cáo tiến độ.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -108,6 +259,7 @@ export default function ProgressReportView({ user }) {
       </div>
 
       {error && <div style={{ border: '1.5px solid #fecaca', background: '#fef2f2', color: '#b91c1c', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontWeight: 700 }}>{error}</div>}
+      {notice && <div style={{ border: '1.5px solid #fcd34d', background: '#fffbeb', color: '#92400e', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontWeight: 700 }}>{notice}</div>}
 
       {!report ? (
         <div style={{ background: '#fff', border: '1.5px solid #0f172a', borderRadius: '18px', padding: '48px 24px', textAlign: 'center' }}>
@@ -131,7 +283,7 @@ export default function ProgressReportView({ user }) {
             <section style={{ background: '#fff', border: '1.5px solid #0f172a', borderRadius: '18px', padding: '22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
                 <div>
-                  <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.15rem', fontWeight: 900 }}>Phân tích từ Gemini</h2>
+                  <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.15rem', fontWeight: 900 }}>{report.aiReport?.aiGenerated === false ? 'Tổng hợp tiến độ' : 'Phân tích từ AI'}</h2>
                   <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.8rem' }}>{report.scopeLabel} · {report.generatedAt ? new Date(report.generatedAt).toLocaleString('vi-VN') : ''}</p>
                 </div>
                 <Activity size={22} color="#7c3aed" />
@@ -179,6 +331,30 @@ export default function ProgressReportView({ user }) {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section style={{ background: '#fff', border: '1.5px solid #0f172a', borderRadius: '18px', padding: '22px', marginTop: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px' }}>
+              <CheckCircle2 size={21} color="#059669" />
+              <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 900 }}>Nhận xét sau từng buổi học</h2>
+            </div>
+            {(report.lessonNotes || []).length === 0 ? (
+              <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Gia sư chưa lưu báo cáo cuối buổi nào cho phạm vi lớp học này.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {report.lessonNotes.map((note) => (
+                  <article key={note.lessonId} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      <div style={{ color: '#0f172a', fontWeight: 900 }}>{note.title || 'Buổi học'}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{note.startTime ? new Date(note.startTime).toLocaleString('vi-VN') : ''}</div>
+                    </div>
+                    <div style={{ color: '#334155', lineHeight: 1.55, fontSize: '0.9rem' }}>{note.aiSummary || 'Chưa có tóm tắt.'}</div>
+                    {note.keyLearnings && <div style={{ marginTop: '8px', color: '#047857', fontSize: '0.85rem' }}><strong>Kiến thức trọng tâm:</strong> {note.keyLearnings}</div>}
+                    {note.areasForImprovement && <div style={{ marginTop: '5px', color: '#c2410c', fontSize: '0.85rem' }}><strong>Cần cải thiện:</strong> {note.areasForImprovement}</div>}
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </>
       )}
