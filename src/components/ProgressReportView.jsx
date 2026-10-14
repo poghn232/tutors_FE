@@ -27,6 +27,114 @@ const metricCard = (icon, label, value, color, background) => ({
 
 const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
 
+const normalizeRole = (value) => normalizeStatus(value).replace(/^ROLE_/, '');
+
+const CONNECTED_CLASS_STATUSES = new Set(['ACTIVE', 'PAUSED', 'COMPLETED']);
+
+const getClassEntity = (item) => item?.classEntity || item?.tutoringClass || {};
+
+const getClassId = (item) => item?.id ?? item?.classId ?? getClassEntity(item)?.id;
+
+const getClassStatus = (item) => normalizeStatus(item?.status ?? getClassEntity(item)?.status);
+
+const hasRecordedPayment = (item) => {
+  const entity = getClassEntity(item);
+  return Boolean(item?.paidAt || entity?.paidAt)
+    || Number(item?.paidAmount ?? entity?.paidAmount ?? 0) > 0;
+};
+
+const isAvailabilitySlot = (item) => {
+  const text = [item?.className, item?.studentName, item?.subjectName]
+    .filter(Boolean)
+    .join(' ');
+  return Boolean(item?.isFreeSlot || item?.freeSlot)
+    || /lịch\s*rảnh|sẵn\s*sàng\s*nhận\s*lớp/i.test(text);
+};
+
+const isConnectedClass = (item) => {
+  if (item == null || getClassId(item) == null || isAvailabilitySlot(item)) return false;
+  return hasRecordedPayment(item) || CONNECTED_CLASS_STATUSES.has(getClassStatus(item));
+};
+
+const getResponseItems = (response) => {
+  if (Array.isArray(response)) return response;
+  return Array.isArray(response?.data) ? response.data : [];
+};
+
+const readLocalClasses = (user) => {
+  if (!user?.id || typeof window === 'undefined') return [];
+
+  try {
+    const key = `giasuhq_custom_classes_${user.id}`;
+    const parsed = JSON.parse(window.localStorage.getItem(key) || '[]');
+    if (!Array.isArray(parsed)) return [];
+
+    const role = normalizeRole(user.role);
+    const currentUserId = String(user.id);
+    return parsed.filter((item) => {
+      if (!item || getClassId(item) == null) return false;
+      if (role === 'ADMIN') return true;
+      if (role === 'TUTOR') return String(item.tutorId ?? '') === currentUserId;
+      return [item.parentId, item.studentId].some((id) => String(id ?? '') === currentUserId);
+    });
+  } catch (error) {
+    return [];
+  }
+};
+
+const getClassIdentity = (item) => {
+  const entity = getClassEntity(item);
+  const classId = getClassId(item);
+  const orderCode = item?.paymentOrderCode
+    || item?.orderCode
+    || entity?.paymentOrderCode
+    || entity?.orderCode;
+  return [
+    classId != null ? `id:${String(classId)}` : null,
+    orderCode ? `order:${String(orderCode).trim().toUpperCase()}` : null
+  ].filter(Boolean);
+};
+
+const deriveClassesFromLessons = (lessons) => {
+  const derived = new Map();
+  (lessons || []).forEach((lesson) => {
+    const classId = getLessonClassId(lesson);
+    if (classId == null) return;
+
+    const entity = getClassEntity(lesson);
+    const key = String(classId);
+    if (!derived.has(key)) {
+      derived.set(key, {
+        id: classId,
+        className: lesson.className || entity.className || `Lớp #${classId}`,
+        subjectName: lesson.subjectName || lesson.subject || entity.subjectName || entity.subject?.name || 'Môn học',
+        studentName: lesson.studentName || entity.studentName || 'Học sinh',
+        tutorId: lesson.tutorId || entity.tutorId,
+        parentId: lesson.parentId || entity.parentId,
+        status: entity.status || 'ACTIVE',
+        paidAt: entity.paidAt,
+        paidAmount: entity.paidAmount
+      });
+    }
+  });
+  return Array.from(derived.values());
+};
+
+const mergeConnectedClasses = (...sources) => {
+  const merged = [];
+  const seen = new Set();
+
+  sources.flat().forEach((item) => {
+    if (!isConnectedClass(item)) return;
+    const identities = getClassIdentity(item);
+    if (identities.length === 0 || identities.some((identity) => seen.has(identity))) return;
+    identities.forEach((identity) => seen.add(identity));
+    merged.push(item);
+  });
+
+  return merged;
+};
+
 const getLessonClassId = (lesson) => lesson?.classId ?? lesson?.classEntity?.id;
 
 const getLessonNote = (lesson) => lesson?.lessonNote || lesson?.note || null;
@@ -156,48 +264,77 @@ export default function ProgressReportView({ user }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const loadClasses = async () => {
-    try {
-      const response = await classService.getClasses();
-      const items = response?.success && Array.isArray(response.data) ? response.data : [];
-      setClasses(items);
-      return items;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tải danh sách lớp học.');
-      return [];
-    }
-  };
-
-  const loadLessons = async () => {
-    try {
-      const response = await lessonService.getLessons();
-      const items = response?.success && Array.isArray(response.data) ? response.data : [];
-      setLessons(items);
-      return items;
-    } catch (err) {
-      console.warn('Không thể tải ghi chú buổi học để dự phòng báo cáo:', err);
-      return [];
-    }
-  };
-
   useEffect(() => {
-    setLoading(true);
-    Promise.all([loadClasses(), loadLessons()]).finally(() => setLoading(false));
-  }, [user]);
+    let mounted = true;
+
+    const loadData = async () => {
+      if (!user?.id) {
+        setClasses([]);
+        setLessons([]);
+        setSelectedClassId('');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      const [classResult, lessonResult] = await Promise.allSettled([
+        classService.getClasses(),
+        lessonService.getLessons()
+      ]);
+      if (!mounted) return;
+
+      const apiClasses = classResult.status === 'fulfilled'
+        ? getResponseItems(classResult.value)
+        : [];
+      const apiLessons = lessonResult.status === 'fulfilled'
+        ? getResponseItems(lessonResult.value)
+        : [];
+      const localClasses = readLocalClasses(user);
+      const lessonClasses = deriveClassesFromLessons(apiLessons);
+      const mergedClasses = mergeConnectedClasses(apiClasses, localClasses, lessonClasses);
+
+      setClasses(mergedClasses);
+      setLessons(apiLessons);
+      setSelectedClassId((current) => (
+        current && mergedClasses.some((item) => String(getClassId(item)) === String(current))
+          ? current
+          : ''
+      ));
+
+      if (classResult.status === 'rejected' && mergedClasses.length === 0) {
+        setError(classResult.reason?.response?.data?.message || 'Không thể tải danh sách lớp học.');
+      } else if (lessonResult.status === 'rejected') {
+        console.warn('Không thể tải ghi chú buổi học để dự phòng báo cáo:', lessonResult.reason);
+      }
+
+      setLoading(false);
+    };
+
+    loadData();
+    return () => { mounted = false; };
+  }, [user?.id, user?.role]);
 
   const generateReport = async () => {
     setGenerating(true);
     setError('');
     setNotice('');
     try {
-      const response = await progressService.generateReport(selectedClassId ? Number(selectedClassId) : null);
-      if (response?.success && response.data) {
+      const numericClassId = selectedClassId && Number.isFinite(Number(selectedClassId))
+        ? Number(selectedClassId)
+        : null;
+      const response = await progressService.generateReport(numericClassId);
+      const hasFallbackData = classes.length > 0 || lessons.length > 0;
+      const backendHasClasses = Array.isArray(response?.data?.classes) && response.data.classes.length > 0;
+
+      if (response?.success && response.data && (backendHasClasses || !hasFallbackData)) {
         setReport(response.data);
         if (response.data.aiReport?.aiGenerated === false) {
           setNotice('Gemini chưa được cấu hình hoặc đang lỗi API key. Báo cáo vẫn được dựng từ dữ liệu đã lưu và nhận xét của gia sư.');
         }
       } else {
-        if (lessons.length > 0 || classes.length > 0) {
+        if (hasFallbackData) {
           setReport(buildLocalProgressReport(classes, lessons, selectedClassId));
           setNotice('Không gọi được báo cáo AI, đã hiển thị bản tổng hợp từ dữ liệu đã lưu.');
         } else {
@@ -240,15 +377,20 @@ export default function ProgressReportView({ user }) {
           <select
             value={selectedClassId}
             onChange={(event) => setSelectedClassId(event.target.value)}
+            disabled={loading || classes.length === 0}
             style={{ minWidth: '230px', border: '1.5px solid #0f172a', borderRadius: '10px', padding: '10px 12px', background: '#fff', color: '#0f172a', fontWeight: 700 }}
           >
             <option value="">Tất cả lớp học</option>
-            {classes.map((item) => <option key={item.id} value={item.id}>{item.className || `Lớp #${item.id}`}</option>)}
+            {classes.map((item) => {
+              const classId = getClassId(item);
+              const label = [item.className || `Lớp #${classId}`, item.studentName].filter(Boolean).join(' · ');
+              return <option key={classId} value={classId}>{label}</option>;
+            })}
           </select>
           <button
             type="button"
             onClick={generateReport}
-            disabled={generating || loading}
+            disabled={generating || loading || classes.length === 0}
             className="figma-btn-primary"
             style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}
           >
@@ -261,11 +403,17 @@ export default function ProgressReportView({ user }) {
       {error && <div style={{ border: '1.5px solid #fecaca', background: '#fef2f2', color: '#b91c1c', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontWeight: 700 }}>{error}</div>}
       {notice && <div style={{ border: '1.5px solid #fcd34d', background: '#fffbeb', color: '#92400e', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontWeight: 700 }}>{notice}</div>}
 
+      {!loading && classes.length === 0 && !error && (
+        <div style={{ border: '1.5px solid #fcd34d', background: '#fffbeb', color: '#92400e', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontWeight: 700 }}>
+          Chưa tìm thấy lớp đã kết nối cho tài khoản này. Lớp sẽ xuất hiện sau khi thanh toán phí kết nối hoặc khi gia sư đã tạo buổi học thuộc lớp.
+        </div>
+      )}
+
       {!report ? (
         <div style={{ background: '#fff', border: '1.5px solid #0f172a', borderRadius: '18px', padding: '48px 24px', textAlign: 'center' }}>
           <BarChart3 size={42} color="#7c3aed" style={{ margin: '0 auto 12px' }} />
-          <h2 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: '1.2rem' }}>Chưa có báo cáo trong phiên này</h2>
-          <p style={{ margin: 0, color: '#64748b' }}>Chọn một lớp hoặc toàn bộ lớp học rồi bấm “Tạo báo cáo AI”.</p>
+          <h2 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: '1.2rem' }}>{classes.length === 0 ? 'Chưa có lớp để lập báo cáo' : 'Chưa có báo cáo trong phiên này'}</h2>
+          <p style={{ margin: 0, color: '#64748b' }}>{classes.length === 0 ? 'Kiểm tra lại trạng thái kết nối hoặc tạo buổi học đầu tiên cho lớp.' : 'Chọn một lớp hoặc toàn bộ lớp học rồi bấm “Tạo báo cáo AI”.'}</p>
         </div>
       ) : (
         <>
