@@ -253,10 +253,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const allMappedClasses = dbClasses.map((c) => {
     const isFreeSlot = c.isFreeSlot || (c.studentName && c.studentName.includes('Lịch rảnh'));
+    const needsTutorApproval = c.paidAt && !c.approvedAt && c.status === 'ACTIVE';
+    const effectiveStatus = needsTutorApproval ? 'PENDING_TUTOR_APPROVAL' : c.status;
     const sDesc = c.scheduleDescription || '';
     const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
     const timePart = sDesc.includes('lúc') ? sDesc.split('lúc')[1].trim() : '10:00';
-    const statusMeta = getClassStatusMeta(c.status, isFreeSlot);
+    const statusMeta = getClassStatusMeta(effectiveStatus, isFreeSlot);
     return {
       id: 'db-' + c.id,
       classId: c.id,
@@ -270,7 +272,8 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       duration: c.duration || '60 phút',
       topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
       roomUrl: /^https?:\/\//i.test(c.notes || '') ? c.notes : null,
-      rawStatus: c.status,
+      rawStatus: effectiveStatus,
+      approvedAt: c.approvedAt,
       paidAt: c.paidAt,
       connectionFee: c.connectionFee,
       isFreeSlot: isFreeSlot,
@@ -310,7 +313,11 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         .map(c => [String(c.tutorId), { id: c.tutorId, name: c.tutorName }])
     ).values()
   );
-  const activeTutorCount = new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)).size;
+  const activePeopleCount = new Set(
+    connectedClasses
+      .map(c => user?.role === 'TUTOR' ? c.studentName : c.tutorName)
+      .filter(Boolean)
+  ).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
 
   return (
@@ -409,8 +416,8 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           padding: '20px 24px'
         }}>
           <User size={20} color="#ea580c" style={{ marginBottom: '8px' }} />
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>{activeTutorCount}</div>
-          <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>Gia sư đang học</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ea580c', lineHeight: 1.1 }}>{activePeopleCount}</div>
+      <div style={{ fontSize: '0.82rem', color: '#c2410c', marginTop: '4px', fontWeight: 600 }}>{user?.role === 'TUTOR' ? 'Học sinh đang học' : 'Gia sư đang học'}</div>
         </div>
 
         {/* Card 4: Light Blue */}
@@ -512,17 +519,19 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     ? 'Đăng nhập vào hệ thống để đặt lịch học với gia sư hoặc quản lý các lớp học cá nhân của bạn!'
                     : (user?.role === 'TUTOR' 
                         ? 'Bạn hiện chưa có yêu cầu kết nối hoặc lớp học nào trong mục này.' 
-                        : 'Hãy tìm kiếm gia sư phù hợp và gửi yêu cầu kết nối lịch học!')}
+                    : 'Hãy chọn gia sư phù hợp và gửi yêu cầu kết nối lịch học!')}
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={onNavigateToTutors}
-                    className="figma-btn-primary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 24px', width: 'auto' }}
-                  >
-                    Tìm gia sư ngay →
-                  </button>
+                  {user?.role !== 'TUTOR' && (
+                    <button
+                      type="button"
+                      onClick={onNavigateToTutors}
+                      className="figma-btn-primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 24px', width: 'auto' }}
+                    >
+                      Tìm gia sư ngay →
+                    </button>
+                  )}
                   {!user && onRequireAuth && (
                     <button
                       type="button"
@@ -1100,38 +1109,42 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
             padding: '24px'
           }}>
             <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0' }}>
-              Gia sư Của Tôi
+              {user?.role === 'TUTOR' ? 'Học sinh Của Tôi' : 'Gia sư Của Tôi'}
             </h4>
 
             {(() => {
-              const myTutors = Array.from(new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)));
-              if (myTutors.length === 0) {
+              const myPeople = user?.role === 'TUTOR'
+                ? Array.from(new Set(connectedClasses.map(c => c.studentName).filter(Boolean)))
+                : Array.from(new Set(connectedClasses.map(c => c.tutorName).filter(Boolean)));
+              if (myPeople.length === 0) {
                 return (
                   <div style={{ textAlign: 'center', padding: '12px 0', color: '#64748b', fontSize: '0.82rem' }}>
-                    <div>Bạn chưa kết nối với gia sư nào.</div>
-                    <button
-                      type="button"
-                      onClick={() => onNavigateToTutors && onNavigateToTutors()}
-                      style={{
-                        marginTop: '10px',
-                        background: '#eff6ff',
-                        border: '1px solid #bfdbfe',
-                        color: '#1d4ed8',
-                        borderRadius: '8px',
-                        padding: '6px 14px',
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Khám phá gia sư →
-                    </button>
+                    <div>{user?.role === 'TUTOR' ? 'Chưa có học sinh đang học.' : 'Bạn chưa kết nối với gia sư nào.'}</div>
+                    {user?.role !== 'TUTOR' && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToTutors && onNavigateToTutors()}
+                        style={{
+                          marginTop: '10px',
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          color: '#1d4ed8',
+                          borderRadius: '8px',
+                          padding: '6px 14px',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Khám phá gia sư →
+                      </button>
+                    )}
                   </div>
                 );
               }
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {myTutors.map((tutName, i) => (
+                  {myPeople.map((personName, i) => (
                     <div 
                       key={i}
                       style={{
@@ -1140,7 +1153,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                         justifyContent: 'space-between',
                         cursor: 'pointer'
                       }}
-                      onClick={() => onNavigateToTutors ? onNavigateToTutors() : null}
+                      onClick={() => user?.role !== 'TUTOR' && onNavigateToTutors ? onNavigateToTutors() : null}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
@@ -1155,10 +1168,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                           justifyContent: 'center',
                           fontSize: '0.88rem'
                         }}>
-                          {tutName.charAt(tutName.lastIndexOf(' ') + 1) || 'G'}
+                          {personName.charAt(personName.lastIndexOf(' ') + 1) || 'G'}
                         </div>
                         <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
-                          {tutName}
+                          {personName}
                         </span>
                       </div>
                       <ArrowRight size={14} color="#94a3b8" />

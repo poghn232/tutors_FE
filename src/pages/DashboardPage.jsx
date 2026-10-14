@@ -64,8 +64,16 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
     }
   }, [user]);
 
-  const pendingRequests = tutorClasses.filter(c => c.status === 'PENDING_TUTOR_APPROVAL');
-  const activeClasses = tutorClasses.filter(c => c.status === 'ACTIVE');
+  // A paid booking can still be waiting for the tutor decision. Older records
+  // may have been saved as ACTIVE before approval, so normalize that case in
+  // the dashboard until the backend repair is applied.
+  const pendingRequests = tutorClasses.filter(c =>
+    c.status === 'PENDING_TUTOR_APPROVAL'
+    || (c.status === 'ACTIVE' && c.paidAt && !c.approvedAt)
+  );
+  const activeClasses = tutorClasses.filter(c =>
+    c.status === 'ACTIVE' && !(c.paidAt && !c.approvedAt)
+  );
   const pendingPaymentClasses = tutorClasses.filter(c => c.status === 'PENDING_PAYMENT');
 
 
@@ -538,7 +546,9 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                     Bạn có {pendingRequests.length} yêu cầu kết nối lịch học mới đang chờ duyệt!
                   </div>
                   <p style={{ margin: '3px 0 0', color: '#b45309', fontSize: '0.88rem' }}>
-                    Hãy chấp nhận lịch học để học sinh có thể thanh toán phí kết nối và vào lớp học cùng bạn.
+                    {pendingRequests.some((request) => request.paidAt)
+                      ? 'Phụ huynh đã thanh toán phí kết nối. Hãy xác nhận lịch học để bắt đầu dạy.'
+                      : 'Hãy xác nhận lịch học để phụ huynh hoàn tất phí kết nối và bắt đầu lớp học.'}
                   </p>
                 </div>
               </div>
