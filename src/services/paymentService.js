@@ -79,10 +79,11 @@ export const paymentService = {
     }
   },
 
-  async checkSepayStatus(orderCode) {
+  async checkSepayStatus(orderCode, timeout = 30000) {
     try {
       const response = await api.get('/payments/sepay/check-status', {
-        params: { orderCode }
+        params: { orderCode },
+        timeout
       });
       return response.data;
     } catch (error) {

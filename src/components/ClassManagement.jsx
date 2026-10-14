@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
-  const { updateUser } = useAuth();
+  const { updateUser, logout } = useAuth();
   const normalizedRole = String(user?.role || '').trim().toUpperCase();
   const isTutor = normalizedRole === 'TUTOR';
   const isAdmin = normalizedRole === 'ADMIN';
@@ -30,6 +30,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const [loadingDb, setLoadingDb] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [classLoadError, setClassLoadError] = useState('');
+  const [sessionExpired, setSessionExpired] = useState(false);
 
 
   // Modal State for Adding Class / Free Schedule Slot
@@ -72,6 +73,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     try {
       setLoadingDb(true);
       setClassLoadError('');
+      setSessionExpired(false);
       // Local fallback data is user-scoped as well. Ignore legacy or malformed
       // records that do not belong to the currently signed-in parent.
       const localClasses = getLocalStorageClasses().filter((item) => {
@@ -80,6 +82,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         return item.parentId === user.id || item.studentId === user.id;
       });
       let remoteClasses = [];
+      let authenticationFailed = false;
       try {
         const res = await classService.getClasses();
         if (res && res.data && Array.isArray(res.data)) {
@@ -87,7 +90,19 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         }
       } catch (err) {
         console.warn('API getClasses warning, using local data fallback:', err);
-        setClassLoadError(err.response?.data?.message || 'Không tải được yêu cầu nhận lớp từ máy chủ.');
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          authenticationFailed = true;
+          logout();
+          setSessionExpired(true);
+          setClassLoadError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem đúng lớp học của bạn.');
+        } else {
+          setClassLoadError(err.response?.data?.message || 'Không tải được yêu cầu nhận lớp từ máy chủ.');
+        }
+      }
+
+      if (authenticationFailed) {
+        setDbClasses([]);
+        return;
       }
 
       // Merge remote and local without duplicate IDs
@@ -118,9 +133,12 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   };
 
   useEffect(() => {
+    if (!user) {
+      setDbClasses([]);
+      return undefined;
+    }
     loadClasses();
     loadAssignments();
-    if (!user) return undefined;
 
     const refresh = () => {
       loadClasses();
@@ -409,11 +427,15 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         </div>
       </div>
 
-      {isTutor && classLoadError && (
+      {classLoadError && (
         <div style={{ background: '#fef2f2', border: '1.5px solid #ef4444', borderRadius: '14px', padding: '13px 16px', marginBottom: '18px', color: '#991b1b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.86rem', fontWeight: 700 }}>⚠ {classLoadError}</span>
-          <button type="button" onClick={loadClasses} style={{ border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', borderRadius: '8px', padding: '7px 12px', fontWeight: 800, cursor: 'pointer' }}>
-            Thử tải lại
+          <button
+            type="button"
+            onClick={() => sessionExpired && onRequireAuth ? onRequireAuth('xem lớp học của bạn') : loadClasses()}
+            style={{ border: '1px solid #ef4444', background: '#fff', color: '#b91c1c', borderRadius: '8px', padding: '7px 12px', fontWeight: 800, cursor: 'pointer' }}
+          >
+            {sessionExpired ? 'Đăng nhập lại' : 'Thử tải lại'}
           </button>
         </div>
       )}

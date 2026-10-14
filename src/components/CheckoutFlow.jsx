@@ -240,8 +240,21 @@ export default function CheckoutFlow({
     }
   };
 
-  const handleConfirmedSepayResponse = (response) => {
+  const handleConfirmedSepayResponse = async (response, allowRecovery = true) => {
     if (!response?.data?.paid) return false;
+    if (!response.data.classId && allowRecovery) {
+      try {
+        const registration = await registerPendingBooking();
+        if (registration?.success) {
+          const recovered = await paymentService.checkSepayStatus(bookingOrderCode, 30000);
+          if (recovered?.data?.classId) {
+            return handleConfirmedSepayResponse(recovered, false);
+          }
+        }
+      } catch (recoveryError) {
+        console.warn('Không thể khôi phục booking đã thanh toán:', recoveryError);
+      }
+    }
     if (!response.data.classId) {
       // Payment confirmation is independent from class recovery. Show the
       // receipt immediately so the parent has proof of a successful transfer.
@@ -293,11 +306,14 @@ export default function CheckoutFlow({
     });
 
     let paidWithoutClassAttempts = 0;
+    let pollingInFlight = false;
     const interval = setInterval(async () => {
+      if (pollingInFlight) return;
+      pollingInFlight = true;
       try {
         const res = await paymentService.checkSepayStatus(bookingOrderCode);
         if (res && res.data && res.data.paid) {
-          if (handleConfirmedSepayResponse(res)) {
+          if (await handleConfirmedSepayResponse(res)) {
             clearInterval(interval);
           } else {
             paidWithoutClassAttempts += 1;
@@ -305,6 +321,8 @@ export default function CheckoutFlow({
         }
       } catch (e) {
         // silent
+      } finally {
+        pollingInFlight = false;
       }
     }, 2500);
 
@@ -361,7 +379,7 @@ export default function CheckoutFlow({
     try {
       const res = await paymentService.checkSepayStatus(bookingOrderCode);
       if (res && res.data && res.data.paid) {
-        if (!handleConfirmedSepayResponse(res)) {
+        if (!(await handleConfirmedSepayResponse(res))) {
           alert(res.data.message || 'Thanh toán đã được ghi nhận nhưng hệ thống chưa trả về lớp học. Vui lòng chờ vài giây rồi kiểm tra lại.');
         }
       } else {
