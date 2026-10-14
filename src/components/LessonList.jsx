@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { lessonService } from '../services/lessonService';
 import { classService } from '../services/classService';
+import { userService } from '../services/userService';
 import { 
   Calendar, 
   Clock, 
@@ -39,6 +40,27 @@ export default function LessonList({ user }) {
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
   const [createSubmitting, setCreateSubmitting] = useState(false);
+
+  // Recurring tutor availability is stored on the tutor profile, not as a class.
+  const [availableDays, setAvailableDays] = useState([]);
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [availabilityMessage, setAvailabilityMessage] = useState('');
+
+  const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const timeSlots = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00', '18:00', '19:00', '20:00'];
+
+  const parseAvailability = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  };
 
   // State cho Modal Ghi chú & AI Note (Gia sư)
   const [selectedLessonForNote, setSelectedLessonForNote] = useState(null);
@@ -181,6 +203,67 @@ export default function LessonList({ user }) {
       window.removeEventListener('focus', refresh);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (user?.role !== 'TUTOR') {
+      setAvailableDays([]);
+      setAvailableTimes([]);
+      return undefined;
+    }
+
+    let mounted = true;
+    const loadAvailability = async () => {
+      try {
+        const res = await userService.getProfile();
+        const profile = res?.data || res;
+        if (!mounted || !profile) return;
+        setAvailableDays(parseAvailability(profile.availableDaysJson));
+        setAvailableTimes(parseAvailability(profile.availableTimesJson));
+      } catch (err) {
+        console.warn('Không thể tải lịch rảnh của gia sư:', err);
+      }
+    };
+    loadAvailability();
+    return () => { mounted = false; };
+  }, [user]);
+
+  const openAvailabilityModal = () => {
+    setAvailabilityMessage('');
+    setShowAvailabilityModal(true);
+  };
+
+  const toggleAvailabilityValue = (value, setter) => {
+    setter((current) => current.includes(value)
+      ? current.filter((item) => item !== value)
+      : [...current, value]);
+  };
+
+  const handleSaveAvailability = async (e) => {
+    e.preventDefault();
+    if (availableDays.length === 0 || availableTimes.length === 0) {
+      setAvailabilityMessage('Vui lòng chọn ít nhất một ngày và một khung giờ.');
+      return;
+    }
+
+    try {
+      setAvailabilitySaving(true);
+      setAvailabilityMessage('');
+      const res = await userService.updateProfile({
+        availableDaysJson: JSON.stringify(availableDays),
+        availableTimesJson: JSON.stringify(availableTimes)
+      });
+      if (res?.data) {
+        setAvailableDays(parseAvailability(res.data.availableDaysJson));
+        setAvailableTimes(parseAvailability(res.data.availableTimesJson));
+      }
+      setAvailabilityMessage('Đã lưu lịch rảnh theo tuần. Phụ huynh sẽ thấy các ngày phù hợp khi đặt lịch.');
+      setShowAvailabilityModal(false);
+    } catch (err) {
+      setAvailabilityMessage(err.response?.data?.message || 'Không thể lưu lịch rảnh. Vui lòng thử lại.');
+    } finally {
+      setAvailabilitySaving(false);
+    }
+  };
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
@@ -724,8 +807,8 @@ export default function LessonList({ user }) {
                       </span>
                     )}
 
-                    {/* Action Button: Tham gia */}
-                    {!isCompleted && (
+                    {/* A real meeting URL is required before showing the join action. */}
+                    {!isCompleted && (lesson.meetingUrl || lesson.roomUrl) && (
                       <button
                         type="button"
                         style={{
@@ -741,14 +824,14 @@ export default function LessonList({ user }) {
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
-                        onClick={() => window.open('https://meet.google.com/new', '_blank')}
+                        onClick={() => window.open(lesson.meetingUrl || lesson.roomUrl, '_blank', 'noreferrer')}
                       >
                         Tham gia
                       </button>
                     )}
 
                     {/* Button AI Note if real lesson */}
-                    {lesson.classEntity && (
+                    {(lesson.classId || lesson.classEntity) && (
                       <button
                         type="button"
                         style={{
@@ -844,6 +927,7 @@ export default function LessonList({ user }) {
               </h3>
               <button
                 type="button"
+                onClick={openAvailabilityModal}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -858,26 +942,27 @@ export default function LessonList({ user }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', color: '#334155' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                <span>Thứ 2: 9-12h</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', color: '#334155' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                <span>Thứ 4: 14-18h</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', color: '#334155' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                <span>Thứ 6: 10-16h</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', color: '#334155' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                <span>Thứ 7: 9-14h</span>
-              </div>
+              {availableDays.length === 0 || availableTimes.length === 0 ? (
+                <div style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                  Chưa khai báo lịch rảnh theo tuần.
+                </div>
+              ) : availableDays.map((day) => (
+                <div key={day} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '0.88rem', color: '#334155' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10b981', marginTop: '6px', flexShrink: 0 }} />
+                  <span>{day}: {availableTimes.join(' · ')}</span>
+                </div>
+              ))}
             </div>
+
+            {availabilityMessage && (
+              <div style={{ color: availabilityMessage.startsWith('Đã') ? '#047857' : '#b45309', fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px' }}>
+                {availabilityMessage}
+              </div>
+            )}
 
             <button
               type="button"
+              onClick={openAvailabilityModal}
               style={{
                 width: '100%',
                 padding: '10px',
@@ -1122,6 +1207,43 @@ export default function LessonList({ user }) {
           </div>
         </div>
       </div>
+
+      {showAvailabilityModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', border: '2px solid #0f172a', borderRadius: '20px', maxWidth: '560px', width: '100%', padding: '26px', boxShadow: '6px 6px 0 #0f172a' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: '#0f172a' }}>Lịch rảnh nhận lớp</h3>
+              <button type="button" onClick={() => setShowAvailabilityModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={22} /></button>
+            </div>
+            <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '0.86rem', lineHeight: 1.5 }}>Chọn các ngày và giờ lặp lại hằng tuần. Đây chỉ là lịch nhận yêu cầu, không tạo lớp học hoặc link Google Meet.</p>
+            <form onSubmit={handleSaveAvailability}>
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '10px', textTransform: 'uppercase' }}>Ngày trong tuần</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  {daysOfWeek.map((day) => {
+                    const selected = availableDays.includes(day);
+                    return <button key={day} type="button" onClick={() => toggleAvailabilityValue(day, setAvailableDays)} style={{ padding: '10px 6px', borderRadius: '10px', cursor: 'pointer', fontWeight: 800, border: `1.5px solid ${selected ? '#059669' : '#cbd5e1'}`, background: selected ? '#d1fae5' : '#ffffff', color: selected ? '#047857' : '#64748b' }}>{day}</button>;
+                  })}
+                </div>
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginBottom: '10px', textTransform: 'uppercase' }}>Khung giờ</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {timeSlots.map((time) => {
+                    const selected = availableTimes.includes(time);
+                    return <button key={time} type="button" onClick={() => toggleAvailabilityValue(time, setAvailableTimes)} style={{ padding: '10px 6px', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, border: `1.5px solid ${selected ? '#7c3aed' : '#cbd5e1'}`, background: selected ? '#ede9fe' : '#ffffff', color: selected ? '#6d28d9' : '#64748b' }}>{time}</button>;
+                  })}
+                </div>
+              </div>
+              {availabilityMessage && <div style={{ color: '#b45309', fontSize: '0.82rem', fontWeight: 700, marginBottom: '14px' }}>{availabilityMessage}</div>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setShowAvailabilityModal(false)} style={{ padding: '10px 18px', borderRadius: '10px', border: '1.5px solid #0f172a', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>Hủy</button>
+                <button type="submit" className="btn-brutal-black" style={{ padding: '10px 20px' }} disabled={availabilitySaving}>{availabilitySaving ? 'Đang lưu...' : 'Lưu lịch rảnh'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Ghi chú & Note AI (Gia sư) */}
       {selectedLessonForNote && (

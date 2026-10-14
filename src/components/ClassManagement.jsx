@@ -13,7 +13,6 @@ import {
   Star, 
   ArrowRight,
   Plus,
-  PlusCircle,
   Bell,
   X,
   FileText
@@ -270,7 +269,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       time: timePart,
       duration: c.duration || '60 phút',
       topic: c.className || `Lớp ${c.subjectName} cùng ${c.tutorName}`,
-      roomUrl: 'https://meet.google.com/tutora-class-' + c.id,
+      roomUrl: /^https?:\/\//i.test(c.notes || '') ? c.notes : null,
       rawStatus: c.status,
       paidAt: c.paidAt,
       connectionFee: c.connectionFee,
@@ -340,21 +339,9 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isAdmin ? null : user?.role === 'TUTOR' ? (
-            <button 
-              type="button"
-              className="figma-btn-primary"
-              style={{ width: 'auto', padding: '12px 22px', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              onClick={() => {
-                if (!user && onRequireAuth) {
-                  onRequireAuth('thêm lịch rảnh hoặc lớp học');
-                  return;
-                }
-                setNewClassForm(prev => ({ ...prev, isFreeSlot: true }));
-                setShowAddModal(true);
-              }}
-            >
-              <PlusCircle size={18} /> Thêm Lịch Rảnh / Tạo Lớp
-            </button>
+            <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 700, maxWidth: '260px', lineHeight: 1.4, textAlign: 'right' }}>
+              Lịch rảnh được chỉnh trong thẻ <strong>Lịch Dạy Của Tôi</strong>; lớp học chỉ phát sinh từ yêu cầu kết nối.
+            </div>
           ) : (
             <>
               <button 
