@@ -72,13 +72,18 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
     c.paidAt || (c.paidAmount !== null && c.paidAmount !== undefined && Number(c.paidAmount) > 0)
   );
   const pendingRequests = tutorClasses.filter(c =>
-    c.status === 'PENDING_TUTOR_APPROVAL'
-    || (hasRecordedPayment(c) && !c.approvedAt && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status))
+    hasRecordedPayment(c)
+      && (c.status === 'PENDING_TUTOR_APPROVAL'
+        || (!c.approvedAt && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status)))
   );
   const activeClasses = tutorClasses.filter(c =>
     c.status === 'ACTIVE' && !(hasRecordedPayment(c) && !c.approvedAt)
   );
-  const pendingPaymentClasses = tutorClasses.filter(c => c.status === 'PENDING_PAYMENT' && !hasRecordedPayment(c));
+  const paidPendingRequests = tutorClasses.filter(c =>
+    hasRecordedPayment(c)
+      && !c.approvedAt
+      && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status)
+  );
 
 
   // Internal tab state if activeTab is 'default' or 'dashboard'
@@ -550,9 +555,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                     Bạn có {pendingRequests.length} yêu cầu kết nối lịch học mới đang chờ duyệt!
                   </div>
                   <p style={{ margin: '3px 0 0', color: '#b45309', fontSize: '0.88rem' }}>
-                    {pendingRequests.some((request) => hasRecordedPayment(request))
-                      ? 'Phụ huynh đã thanh toán phí kết nối. Hãy xác nhận lịch học để bắt đầu dạy.'
-                      : 'Hãy xác nhận lịch học để phụ huynh hoàn tất phí kết nối và bắt đầu lớp học.'}
+                    Phụ huynh đã thanh toán phí kết nối ban đầu. Hãy xác nhận lịch học để bắt đầu dạy.
                   </p>
                 </div>
               </div>
@@ -616,10 +619,10 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               </div>
               <div>
                 <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
-                  {pendingPaymentClasses.length}
+                  {paidPendingRequests.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
-                  Chờ học viên nộp phí kết nối
+                  Đã thanh toán, chờ xác nhận
                 </div>
               </div>
             </div>
@@ -846,26 +849,6 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                         </div>
                         <span style={{ fontSize: '0.78rem', color: '#ea580c', backgroundColor: '#fff1ed', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
                           {hasRecordedPayment(pr) ? 'Đã thanh toán' : 'Chờ duyệt'}
-                        </span>
-                      </div>
-                    ))}
-
-                    {pendingPaymentClasses.map((pp) => (
-                      <div key={'pp-' + pp.id} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px 20px',
-                        borderBottom: '1px solid #f1f5f9'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <Clock size={18} color="#2563eb" />
-                          <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                            Bạn đã duyệt lớp {pp.subjectName} của {pp.studentName}. Đang chờ nộp phí kết nối (5.000đ).
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '0.78rem', color: '#1d4ed8', backgroundColor: '#eff6ff', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                          Chờ phí
                         </span>
                       </div>
                     ))}

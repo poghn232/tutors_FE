@@ -284,7 +284,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       return { label: 'Chờ gia sư duyệt', color: '#92400e', bg: '#fef3c7' };
     }
     if (status === 'PENDING_PAYMENT') {
-      return { label: 'Chờ thanh toán phí kết nối', color: '#1d4ed8', bg: '#dbeafe' };
+      return { label: 'Đang xác nhận thanh toán ban đầu', color: '#1d4ed8', bg: '#dbeafe' };
     }
     if (status === 'DECLINED') {
       return { label: 'Gia sư đã từ chối', color: '#b91c1c', bg: '#fee2e2' };
@@ -332,6 +332,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       paidAt: c.paidAt,
       paidAmount: c.paidAmount,
       paymentRecorded,
+      paymentOrderCode: c.paymentOrderCode || c.orderCode,
       connectionFee: c.connectionFee,
       isFreeSlot: isFreeSlot,
       status: statusMeta.label,
@@ -357,7 +358,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const upcomingCount = upcomingClasses.length;
   const completedCount = historyClasses.length;
   const connectedClasses = allMappedClasses.filter(c =>
-    c.paymentRecorded || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
+    c.paymentRecorded || ['ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
   );
   const connectedTutors = Array.from(
     new Map(
@@ -365,7 +366,8 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         .filter(c =>
           c.tutorId &&
           c.tutorName &&
-          (c.paymentRecorded || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus))
+          (c.paidAt || Number(c.paidAmount || 0) > 0
+            || ['ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.status))
         )
         .map(c => [String(c.tutorId), { id: c.tutorId, name: c.tutorName }])
     ).values()
@@ -377,7 +379,9 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   ).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
   const tutorApprovalRequests = allMappedClasses.filter(c =>
-    isTutor && (c.needsTutorApproval || c.rawStatus === 'PENDING_TUTOR_APPROVAL')
+    isTutor
+      && c.paymentRecorded
+      && (c.needsTutorApproval || c.rawStatus === 'PENDING_TUTOR_APPROVAL')
   );
   const paidTutorApprovalRequests = tutorApprovalRequests.filter(c => c.paymentRecorded);
   const matchedTutorClasses = allMappedClasses.filter(c =>
@@ -770,7 +774,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     </div>
 
                     {/* Action buttons & status-specific guidance */}
-                    {item.isFromDb && isTutor && (item.needsTutorApproval || item.rawStatus === 'PENDING_TUTOR_APPROVAL') && (
+                    {item.isFromDb && isTutor && item.paymentRecorded && (item.needsTutorApproval || item.rawStatus === 'PENDING_TUTOR_APPROVAL') && (
                       <div>
                         {item.paymentRecorded && (
                           <div style={{ color: '#047857', fontSize: '0.88rem', fontWeight: 800, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px' }}>
@@ -797,27 +801,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && isTutor && !item.paymentRecorded && !item.needsTutorApproval && item.rawStatus === 'PENDING_PAYMENT' && (
-                      <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
-                        ✓ Lịch học đã được chấp nhận. Đang chờ phụ huynh thanh toán phí kết nối để kích hoạt lớp.
-                      </div>
-                    )}
-
-                    {item.isFromDb && user?.role === 'PARENT' && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
+                    {item.isFromDb && user?.role === 'PARENT' && item.paymentRecorded && item.rawStatus === 'PENDING_TUTOR_APPROVAL' && (
                       <div style={{ color: '#92400e', fontSize: '0.88rem', fontWeight: 700, background: '#fef3c7', border: '1px solid #fde68a', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
                         ⏳ Yêu cầu đã được gửi tới gia sư. Vui lòng chờ gia sư xác nhận lịch học.
                       </div>
-                    )}
-
-                    {item.isFromDb && user?.role === 'PARENT' && !item.paymentRecorded && item.rawStatus === 'PENDING_PAYMENT' && (
-                      <button
-                        type="button"
-                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId)}
-                        className="figma-btn-primary"
-                        style={{ display: 'inline-block', width: 'auto', padding: '10px 22px', fontSize: '0.9rem', cursor: 'pointer' }}
-                      >
-                        Thanh toán phí kết nối (5.000đ)
-                      </button>
                     )}
 
                     {item.isFromDb && item.rawStatus === 'DECLINED' && (
@@ -1010,7 +997,6 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       padding: '16px 20px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
                       gap: '12px',
                       flexWrap: 'wrap'
                     }}>
@@ -1018,21 +1004,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                         <CheckCircle2 size={18} color="#2563eb" />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e40af' }}>
-                            {item.tutorName} đã chấp nhận lịch học môn {item.subject}!
+                            Booking môn {item.subject} đang chờ hệ thống xác nhận giao dịch ban đầu.
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#3b82f6', marginTop: '2px' }}>
-                            Vui lòng hoàn tất phí kết nối (5.000đ) để nhận link phòng học.
+                            Không cần thanh toán lại. Sau khi xác nhận, yêu cầu sẽ được gửi tới gia sư.
                           </div>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId)}
-                        className="figma-btn-primary"
-                        style={{ width: 'auto', padding: '6px 14px', fontSize: '0.82rem' }}
-                      >
-                        Nộp phí ngay
-                      </button>
                     </div>
                   );
                 }
