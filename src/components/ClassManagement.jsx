@@ -115,7 +115,19 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   useEffect(() => {
     loadClasses();
     loadAssignments();
-  }, [user]);
+    if (!user) return undefined;
+
+    const refresh = () => {
+      loadClasses();
+      loadAssignments();
+    };
+    const refreshTimer = setInterval(refresh, 10000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(refreshTimer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [user?.id, user?.role]);
 
 
   const handleCreateCustomClass = async (e) => {
@@ -319,6 +331,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       .filter(Boolean)
   ).size;
   const currentSubjectsCount = new Set(allMappedClasses.map(c => c.subject).filter(Boolean)).size;
+  const tutorApprovalRequests = allMappedClasses.filter(c =>
+    user?.role === 'TUTOR' && c.rawStatus === 'PENDING_TUTOR_APPROVAL'
+  );
+  const paidTutorApprovalRequests = tutorApprovalRequests.filter(c => c.paidAt);
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 0 60px 0' }}>
@@ -381,6 +397,40 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
           )}
         </div>
       </div>
+
+      {user?.role === 'TUTOR' && tutorApprovalRequests.length > 0 && (
+        <div style={{
+          background: paidTutorApprovalRequests.length > 0 ? '#ecfdf5' : '#fffbeb',
+          border: `2px solid ${paidTutorApprovalRequests.length > 0 ? '#22c55e' : '#f59e0b'}`,
+          borderRadius: '18px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '14px',
+          flexWrap: 'wrap'
+        }}>
+          <div>
+            <div style={{ color: paidTutorApprovalRequests.length > 0 ? '#166534' : '#92400e', fontWeight: 900, fontSize: '1rem' }}>
+              🔔 Bạn có {tutorApprovalRequests.length} yêu cầu nhận lớp đang chờ xác nhận
+            </div>
+            <div style={{ color: paidTutorApprovalRequests.length > 0 ? '#15803d' : '#b45309', fontSize: '0.86rem', marginTop: '4px', fontWeight: 600 }}>
+              {paidTutorApprovalRequests.length > 0
+                ? `${paidTutorApprovalRequests.length} yêu cầu đã được phụ huynh thanh toán phí kết nối. Hãy kiểm tra lịch và chấp nhận hoặc từ chối ngay bên dưới.`
+                : 'Hãy kiểm tra ngày giờ phụ huynh đề xuất và chấp nhận hoặc từ chối ngay bên dưới.'}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('upcoming')}
+            className="figma-btn-primary"
+            style={{ width: 'auto', padding: '9px 18px', fontSize: '0.86rem' }}
+          >
+            Xem yêu cầu bên dưới ↓
+          </button>
+        </div>
+      )}
 
       {/* 4 Top Stat Cards (Exact Figma 15:2994) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
