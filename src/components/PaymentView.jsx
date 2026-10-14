@@ -47,7 +47,7 @@ export default function PaymentView() {
           Ví kết nối
         </h1>
         <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
-          Nạp số dư để thanh toán phí kết nối sau khi gia sư chấp nhận lịch học.
+          Phí kết nối chỉ thu một lần trong lúc phụ huynh đăng ký liên hệ với gia sư.
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default function PaymentView() {
             {formatVND(5000)}
           </div>
           <p style={{ margin: '6px 0 0', color: '#475569', fontSize: '0.86rem' }}>
-            Chỉ thu khi gia sư đã đồng ý lịch học.
+            Không thu lại nếu booking đã có trạng thái đã thanh toán.
           </p>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function PaymentView() {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <CheckCircle2 size={18} color="#059669" />
-              <span>Phụ huynh/học sinh gửi yêu cầu, gia sư chấp nhận lịch, sau đó mới thanh toán phí kết nối để kích hoạt lớp.</span>
+              <span>Phí kết nối được thanh toán một lần khi gửi booking để mở thông tin liên hệ. Sau đó gia sư xác nhận lịch; hệ thống không thu lại khoản phí này.</span>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <CheckCircle2 size={18} color="#059669" />

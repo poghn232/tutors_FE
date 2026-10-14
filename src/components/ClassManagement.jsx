@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
-  const { updateUser, logout } = useAuth();
+  const { logout } = useAuth();
   const normalizedRole = String(user?.role || '').trim().toUpperCase();
   const isTutor = normalizedRole === 'TUTOR';
   const isAdmin = normalizedRole === 'ADMIN';
@@ -105,13 +105,29 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         return;
       }
 
-      // Merge remote and local without duplicate IDs
-      const merged = [...localClasses];
-      remoteClasses.forEach(rc => {
-        if (!merged.some(mc => mc.id === rc.id || (mc.orderCode && mc.orderCode === rc.orderCode))) {
-          merged.push(rc);
+      // The backend is authoritative for payment/status fields. Older local
+      // snapshots can still say PENDING_PAYMENT after SePay already recorded
+      // the transfer, so never let a local record replace a remote one.
+      const classKeys = (item) => {
+        const keys = [];
+        if (item?.id !== null && item?.id !== undefined) {
+          keys.push(`id:${String(item.id)}`);
         }
+        const orderCode = item?.paymentOrderCode || item?.orderCode;
+        if (orderCode) {
+          keys.push(`order:${String(orderCode).trim().toUpperCase()}`);
+        }
+        return keys;
+      };
+      const remoteKeys = new Set(remoteClasses.flatMap(classKeys));
+      const localOnly = localClasses.filter((item) => {
+        const keys = classKeys(item);
+        if (keys.some((key) => remoteKeys.has(key))) return false;
+        // Temporary checkout fallbacks have no durable id. Once the API has
+        // responded, hiding those records avoids a second stale payment card.
+        return remoteClasses.length === 0 || keys.length > 0;
       });
+      const merged = [...remoteClasses, ...localOnly];
       setDbClasses(merged);
     } catch (err) {
       setClassLoadError(err.response?.data?.message || 'Không thể đồng bộ danh sách lớp học.');
@@ -249,14 +265,11 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
     }
   };
 
-  const handleClassAction = async (action, classId, isPayment = false) => {
+  const handleClassAction = async (action, classId) => {
     try {
       setActionMessage('');
       const res = await action(classId);
       setActionMessage(res?.message || 'Cập nhật lớp học thành công.');
-      if (isPayment && user && user.balance !== undefined) {
-        updateUser({ balance: Math.max(0, (user.balance || 0) - 5000) });
-      }
       await loadClasses();
     } catch (err) {
       setActionMessage(err.response?.data?.message || 'Không thể cập nhật lớp học.');
@@ -287,11 +300,15 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
   const allMappedClasses = dbClasses.map((c) => {
     const isFreeSlot = c.isFreeSlot || (c.studentName && c.studentName.includes('Lịch rảnh'));
+    const paymentRecorded = Boolean(c.paidAt || Number(c.paidAmount || 0) > 0);
+    const isTerminalStatus = ['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status);
     const needsTutorApproval = isTutor
-      && c.paidAt
+      && paymentRecorded
       && !c.approvedAt
-      && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status);
-    const effectiveStatus = needsTutorApproval ? 'PENDING_TUTOR_APPROVAL' : c.status;
+      && !isTerminalStatus;
+    const effectiveStatus = paymentRecorded && !c.approvedAt && !isTerminalStatus
+      ? 'PENDING_TUTOR_APPROVAL'
+      : (paymentRecorded && c.status === 'PENDING_PAYMENT' ? 'ACTIVE' : c.status);
     const sDesc = c.scheduleDescription || '';
     const datePart = sDesc.includes('lúc') ? sDesc.split('lúc')[0].trim() : (sDesc || 'Sắp tới');
     const timePart = sDesc.includes('lúc') ? sDesc.split('lúc')[1].trim() : '10:00';
@@ -313,6 +330,8 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       approvedAt: c.approvedAt,
       needsTutorApproval,
       paidAt: c.paidAt,
+      paidAmount: c.paidAmount,
+      paymentRecorded,
       connectionFee: c.connectionFee,
       isFreeSlot: isFreeSlot,
       status: statusMeta.label,
@@ -338,7 +357,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const upcomingCount = upcomingClasses.length;
   const completedCount = historyClasses.length;
   const connectedClasses = allMappedClasses.filter(c =>
-    c.paidAt || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
+    c.paymentRecorded || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus)
   );
   const connectedTutors = Array.from(
     new Map(
@@ -346,7 +365,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
         .filter(c =>
           c.tutorId &&
           c.tutorName &&
-          (c.paidAt || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.status))
+          (c.paymentRecorded || ['PENDING_PAYMENT', 'ACTIVE', 'COMPLETED', 'PAUSED'].includes(c.rawStatus))
         )
         .map(c => [String(c.tutorId), { id: c.tutorId, name: c.tutorName }])
     ).values()
@@ -360,7 +379,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
   const tutorApprovalRequests = allMappedClasses.filter(c =>
     isTutor && (c.needsTutorApproval || c.rawStatus === 'PENDING_TUTOR_APPROVAL')
   );
-  const paidTutorApprovalRequests = tutorApprovalRequests.filter(c => c.paidAt);
+  const paidTutorApprovalRequests = tutorApprovalRequests.filter(c => c.paymentRecorded);
   const matchedTutorClasses = allMappedClasses.filter(c =>
     isTutor && c.rawStatus === 'ACTIVE' && c.approvedAt
   );
@@ -753,7 +772,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     {/* Action buttons & status-specific guidance */}
                     {item.isFromDb && isTutor && (item.needsTutorApproval || item.rawStatus === 'PENDING_TUTOR_APPROVAL') && (
                       <div>
-                        {item.paidAt && (
+                        {item.paymentRecorded && (
                           <div style={{ color: '#047857', fontSize: '0.88rem', fontWeight: 800, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', marginBottom: '10px' }}>
                             Phụ huynh đã thanh toán phí kết nối. Vui lòng xác nhận lịch học để bắt đầu.
                           </div>
@@ -778,7 +797,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && isTutor && !item.needsTutorApproval && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && isTutor && !item.paymentRecorded && !item.needsTutorApproval && item.rawStatus === 'PENDING_PAYMENT' && (
                       <div style={{ color: '#1d4ed8', fontSize: '0.88rem', fontWeight: 700, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px 14px', borderRadius: '10px', display: 'inline-block' }}>
                         ✓ Lịch học đã được chấp nhận. Đang chờ phụ huynh thanh toán phí kết nối để kích hoạt lớp.
                       </div>
@@ -790,10 +809,10 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                       </div>
                     )}
 
-                    {item.isFromDb && user?.role === 'PARENT' && item.rawStatus === 'PENDING_PAYMENT' && (
+                    {item.isFromDb && user?.role === 'PARENT' && !item.paymentRecorded && item.rawStatus === 'PENDING_PAYMENT' && (
                       <button
                         type="button"
-                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}
+                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId)}
                         className="figma-btn-primary"
                         style={{ display: 'inline-block', width: 'auto', padding: '10px 22px', fontSize: '0.9rem', cursor: 'pointer' }}
                       >
@@ -982,7 +1001,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     </div>
                   );
                 }
-                if (item.rawStatus === 'PENDING_PAYMENT') {
+                if (item.rawStatus === 'PENDING_PAYMENT' && !item.paymentRecorded) {
                   return (
                     <div key={item.id || idx} style={{
                       background: '#eff6ff',
@@ -1002,13 +1021,13 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                             {item.tutorName} đã chấp nhận lịch học môn {item.subject}!
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#3b82f6', marginTop: '2px' }}>
-                            Vui lòng thanh toán phí kết nối (5.000đ) để nhận link phòng học.
+                            Vui lòng hoàn tất phí kết nối (5.000đ) để nhận link phòng học.
                           </div>
                         </div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId, true)}
+                        onClick={() => handleClassAction(classService.payConnectionFee, item.classId)}
                         className="figma-btn-primary"
                         style={{ width: 'auto', padding: '6px 14px', fontSize: '0.82rem' }}
                       >

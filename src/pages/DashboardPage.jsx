@@ -68,14 +68,17 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
   // A paid booking can still be waiting for the tutor decision. Older records
   // may have been saved as ACTIVE before approval, so normalize that case in
   // the dashboard until the backend repair is applied.
+  const hasRecordedPayment = (c) => Boolean(
+    c.paidAt || (c.paidAmount !== null && c.paidAmount !== undefined && Number(c.paidAmount) > 0)
+  );
   const pendingRequests = tutorClasses.filter(c =>
     c.status === 'PENDING_TUTOR_APPROVAL'
-    || (c.status === 'ACTIVE' && c.paidAt && !c.approvedAt)
+    || (hasRecordedPayment(c) && !c.approvedAt && !['DECLINED', 'CANCELLED', 'COMPLETED'].includes(c.status))
   );
   const activeClasses = tutorClasses.filter(c =>
-    c.status === 'ACTIVE' && !(c.paidAt && !c.approvedAt)
+    c.status === 'ACTIVE' && !(hasRecordedPayment(c) && !c.approvedAt)
   );
-  const pendingPaymentClasses = tutorClasses.filter(c => c.status === 'PENDING_PAYMENT');
+  const pendingPaymentClasses = tutorClasses.filter(c => c.status === 'PENDING_PAYMENT' && !hasRecordedPayment(c));
 
 
   // Internal tab state if activeTab is 'default' or 'dashboard'
@@ -547,7 +550,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                     Bạn có {pendingRequests.length} yêu cầu kết nối lịch học mới đang chờ duyệt!
                   </div>
                   <p style={{ margin: '3px 0 0', color: '#b45309', fontSize: '0.88rem' }}>
-                    {pendingRequests.some((request) => request.paidAt)
+                    {pendingRequests.some((request) => hasRecordedPayment(request))
                       ? 'Phụ huynh đã thanh toán phí kết nối. Hãy xác nhận lịch học để bắt đầu dạy.'
                       : 'Hãy xác nhận lịch học để phụ huynh hoàn tất phí kết nối và bắt đầu lớp học.'}
                   </p>
@@ -838,11 +841,11 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                           <RefreshCw size={18} color="#ea580c" />
                           <span style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
                             {pr.studentName || 'Học sinh'} đã booking môn {pr.subjectName || 'học'} ({pr.scheduleDescription})
-                            {pr.paidAt ? ' và đã thanh toán phí kết nối.' : ' và đang chờ bạn xác nhận.'}
+                            {hasRecordedPayment(pr) ? ' và đã thanh toán phí kết nối.' : ' và đang chờ bạn xác nhận.'}
                           </span>
                         </div>
                         <span style={{ fontSize: '0.78rem', color: '#ea580c', backgroundColor: '#fff1ed', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>
-                          {pr.paidAt ? 'Đã thanh toán' : 'Chờ duyệt'}
+                          {hasRecordedPayment(pr) ? 'Đã thanh toán' : 'Chờ duyệt'}
                         </span>
                       </div>
                     ))}
