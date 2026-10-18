@@ -36,6 +36,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
   const tutorNavItems = [
     { id: 'dashboard', label: 'Tổng Quan' },
     { id: 'classes', label: 'Lớp Dạy & Yêu Cầu' },
+    { id: 'lessons', label: 'Lịch Dạy & AI Note' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'assignments', label: 'Bài Tập' },
     { id: 'progress', label: 'Tiến Độ AI' },

@@ -1126,6 +1126,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               onNavigateToTutors={() => handleTabChange('tutors')} 
               onNavigateToVip={() => handleTabChange('vip')}
               onNavigateToAssignments={() => handleTabChange('assignments')}
+              onNavigateToLessons={() => handleTabChange('lessons')}
               onRequireAuth={onRequireAuth}
             />
           )}

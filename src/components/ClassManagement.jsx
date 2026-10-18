@@ -15,10 +15,11 @@ import {
   Plus,
   Bell,
   X,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
-export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onRequireAuth }) {
+export default function ClassManagement({ user, onNavigateToTutors, onNavigateToVip, onNavigateToAssignments, onNavigateToLessons, onRequireAuth }) {
   const { logout } = useAuth();
   const normalizedRole = String(user?.role || '').trim().toUpperCase();
   const isTutor = normalizedRole === 'TUTOR';
@@ -414,9 +415,21 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isAdmin ? null : isTutor ? (
-            <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 700, maxWidth: '260px', lineHeight: 1.4, textAlign: 'right' }}>
-              Lịch rảnh được chỉnh trong thẻ <strong>Lịch Dạy Của Tôi</strong>; lớp học chỉ phát sinh từ yêu cầu kết nối.
-            </div>
+            <button
+              type="button"
+              className="figma-btn-primary"
+              style={{
+                width: 'auto',
+                padding: '10px 20px',
+                fontSize: '0.9rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onClick={() => onNavigateToLessons && onNavigateToLessons()}
+            >
+              <Sparkles size={18} /> Quản lý Lịch dạy & AI Note →
+            </button>
           ) : (
             <>
               <button 
@@ -814,26 +827,49 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
                     )}
 
                     {item.roomUrl && user?.role !== 'ADMIN' && (!item.isFromDb || item.rawStatus === 'ACTIVE') && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!user && onRequireAuth) {
-                            onRequireAuth('tham gia phòng học trực tuyến');
-                            return;
-                          }
-                          window.open(item.roomUrl, '_blank', 'noreferrer');
-                        }}
-                        className="figma-btn-primary"
-                        style={{
-                          display: 'inline-block',
-                          width: 'auto',
-                          padding: '10px 22px',
-                          fontSize: '0.9rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Tham gia buổi học
-                      </button>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!user && onRequireAuth) {
+                              onRequireAuth('tham gia phòng học trực tuyến');
+                              return;
+                            }
+                            window.open(item.roomUrl, '_blank', 'noreferrer');
+                          }}
+                          className="figma-btn-primary"
+                          style={{
+                            display: 'inline-block',
+                            width: 'auto',
+                            padding: '10px 22px',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Tham gia buổi học
+                        </button>
+                        {isTutor && onNavigateToLessons && (
+                          <button
+                            type="button"
+                            onClick={() => onNavigateToLessons()}
+                            className="figma-btn-outline"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              width: 'auto',
+                              padding: '10px 18px',
+                              fontSize: '0.88rem',
+                              cursor: 'pointer',
+                              background: '#eff6ff',
+                              borderColor: '#bfdbfe',
+                              color: '#1d4ed8'
+                            }}
+                          >
+                            <Sparkles size={16} /> Ghi chú & AI Note
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
