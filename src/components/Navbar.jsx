@@ -57,6 +57,15 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
         ? adminNavItems 
         : (isTutor ? tutorNavItems : parentNavItems));
 
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'ADMIN': return 'Admin';
+      case 'TUTOR': return 'Gia sư';
+      case 'PARENT': return 'Phụ huynh';
+      default: return role || '';
+    }
+  };
+
   const getRoleBadge = (role) => {
     switch (role) {
       case 'ADMIN':
@@ -162,7 +171,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
                   background: 'linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%)',
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)'
                 }}
-                title={`${user.fullName} (${getRoleBadge(user.role)})`}
+                title={`${user.fullName} (${getRoleLabel(user.role)})`}
               >
                 {/* User avatar or photo representation */}
                 <div style={{

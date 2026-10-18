@@ -1345,7 +1345,7 @@ export default function ProfileView({ onBack }) {
                   {/* Tên hiển thị */}
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      TÊN HIỂN THỊ
+                      HỌC VỊ / TRÌNH ĐỘ CHUYÊN MÔN
                     </label>
                     <input
                       type="text"
@@ -1361,7 +1361,7 @@ export default function ProfileView({ onBack }) {
                       onChange={(e) => setTutorDisplayName(e.target.value)}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                      Tên học sinh nhìn thấy trên hồ sơ
+                      Học vị hoặc trình độ học vấn của bạn (ví dụ: Thạc sĩ Toán học - ĐHQGHN)
                     </div>
                   </div>
 

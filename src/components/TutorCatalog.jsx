@@ -9,12 +9,10 @@ const DEFAULT_SUBJECTS = [
   'Hóa học',
   'Sinh học',
   'Tiếng Anh',
+  'Ngữ văn',
   'Lịch sử',
   'Tin học',
-  'Âm nhạc',
-  'Mỹ thuật',
-  'Tiếng Tây Ban Nha',
-  'Tiếng Pháp',
+  'Địa lý',
   'Luyện thi THPT'
 ];
 
@@ -71,19 +69,29 @@ const getDegree = (qualification) => {
 };
 
 const normalizeTutor = (rawTutor, index) => {
-  const subject = getText(rawTutor?.subject);
-  const qualification = getText(rawTutor?.qualification) || subject;
-  const subjects = toList(rawTutor?.subjects);
-
-  if (!subjects.length && subject && subject.toLowerCase() !== 'chưa cập nhật') {
-    subjects.push(...toList(subject));
-  }
-
-  if (!subjects.length) {
-    subjects.push('Chưa cập nhật môn dạy');
-  }
-
+  const qualification = getText(rawTutor?.qualification) || getText(rawTutor?.subject);
   const fullName = getText(rawTutor?.fullName, 'Gia sư chưa cập nhật tên');
+
+  // Real subjects from API
+  let subjects = toList(rawTutor?.subjects);
+
+  // Clean out any qualifications, schools, or non-subject strings from subjects list
+  subjects = subjects.filter((s) => {
+    if (!s || s === 'Chưa cập nhật môn dạy') return false;
+    if (/(Thạc sĩ|Tiến sĩ|Cử nhân|Bác sĩ|ĐH |Đại học)/i.test(s)) return false;
+    return true;
+  });
+
+  // If subjects is empty, check if qualification or bio specifically mentions known subjects
+  if (!subjects.length) {
+    const textToCheck = `${qualification} ${rawTutor?.bio || ''}`;
+    const detected = DEFAULT_SUBJECTS.filter((sub) => {
+      const regex = new RegExp(`\\b${sub}\\b`, 'i');
+      return regex.test(textToCheck);
+    });
+    subjects = detected.length ? detected : ['Chưa cập nhật môn dạy'];
+  }
+
   const hourlyRate = getOptionalRate(rawTutor?.hourlyRate);
   const priceNegotiable = rawTutor?.priceNegotiable === true
     || rawTutor?.priceNegotiable === 'true'
@@ -176,7 +184,7 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
     'Tất cả môn học',
     ...Array.from(new Set([
       ...DEFAULT_SUBJECTS,
-      ...tutorsList.flatMap((tutor) => tutor.subjects)
+      ...tutorsList.flatMap((tutor) => tutor.subjects).filter((s) => s && s !== 'Chưa cập nhật môn dạy' && !/(Thạc sĩ|Tiến sĩ|Cử nhân|Bác sĩ|ĐH |Đại học)/i.test(s))
     ]))
   ];
 
@@ -191,7 +199,11 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       t.subjects.some(s => s.toLowerCase().includes(term))
     );
 
-    const matchSubject = selectedSubject === 'all' || selectedSubject === 'Tất cả môn học' || t.subjects.includes(selectedSubject);
+    const matchSubject = selectedSubject === 'all' || selectedSubject === 'Tất cả môn học' || t.subjects.some((sub) => {
+      const s1 = sub.toLowerCase().trim();
+      const s2 = selectedSubject.toLowerCase().trim();
+      return s1 === s2 || s1.includes(s2) || s2.includes(s1);
+    });
     const matchGender = selectedGender === 'all' || t.gender === selectedGender;
     const matchEducation = selectedEducation === 'all' || t.degree === selectedEducation;
     const matchRating = minRating === 'all' || t.rating >= parseFloat(minRating);
@@ -287,7 +299,7 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                 outline: 'none'
               }}
             >
-              <option value="rating_desc">Đánh giá cao nhất ⌄</option>
+              <option value="rating_desc">Đánh giá cao nhất</option>
               <option value="exp_desc">Kinh nghiệm nhiều nhất</option>
             </select>
           </div>
@@ -651,7 +663,7 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                       )}
                       <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#7c3aed' }}>
-                          {tutor.priceNegotiable ? 'Trao đổi thêm' : formatVND(tutor.hourlyRate)}
+                          {tutor.priceNegotiable ? 'Thỏa thuận' : formatVND(tutor.hourlyRate)}
                         </div>
                         <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
                           {tutor.priceNegotiable ? 'Học phí' : '/buổi'}
@@ -704,9 +716,8 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
                   borderTop: '1px solid #f1f5f9'
                 }}>
                   <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    {tutor.experienceYears > 0 ? `${tutor.experienceYears} năm kinh nghiệm` : 'Chưa cập nhật kinh nghiệm'}
-                    {' · '}
-                    {tutor.studentsCount > 0 ? `${tutor.studentsCount} học sinh` : 'Chưa có học sinh'}
+                    {tutor.experienceYears > 0 ? `${tutor.experienceYears} năm kinh nghiệm` : 'Gia sư chuyên môn'}
+                    {tutor.studentsCount > 0 ? ` · ${tutor.studentsCount} học sinh` : ''}
                   </div>
 
                   <button

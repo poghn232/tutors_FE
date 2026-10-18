@@ -976,44 +976,43 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 </h4>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#fff1ed', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <BookOpen size={16} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>Toán</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>0 buổi</div>
-                      </div>
+                  {activeClasses.length === 0 ? (
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', padding: '12px 0' }}>
+                      Chưa có lớp học nào đang hoạt động
                     </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ea580c' }}>0%</span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#f4f0ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <BookOpen size={16} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>Vật lý</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>2 buổi</div>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#7c3aed' }}>40%</span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <BookOpen size={16} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>Tin học</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>1 buổi</div>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0284c7' }}>20%</span>
-                  </div>
+                  ) : (
+                    (() => {
+                      const stats = {};
+                      activeClasses.forEach(c => {
+                        const name = c.subjectName || 'Môn học';
+                        stats[name] = (stats[name] || 0) + 1;
+                      });
+                      const palette = [
+                        { color: '#ea580c', bg: '#fff1ed' },
+                        { color: '#7c3aed', bg: '#f4f0ff' },
+                        { color: '#0284c7', bg: '#e0f2fe' },
+                        { color: '#059669', bg: '#eefaf6' }
+                      ];
+                      return Object.entries(stats).map(([name, count], i) => {
+                        const style = palette[i % palette.length];
+                        const percent = Math.round((count / activeClasses.length) * 100);
+                        return (
+                          <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: style.bg, color: style.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <BookOpen size={16} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>{name}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{count} lớp</div>
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: style.color }}>{percent}%</span>
+                          </div>
+                        );
+                      });
+                    })()
+                  )}
                 </div>
               </div>
 
@@ -1078,7 +1077,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
 
                   <button
                     type="button"
-                    onClick={() => alert('Chức năng nhắn tin đang hoạt động.')}
+                    onClick={() => alert('Tính năng nhắn tin trực tiếp với học sinh đang được hoàn thiện.')}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
