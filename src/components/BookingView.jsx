@@ -1,12 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import CheckoutFlow from './CheckoutFlow';
+import { tutorService } from '../services/tutorService';
 import { 
   Star, 
   ArrowLeft, 
   Globe, 
   Laptop, 
   Zap, 
-  ShieldCheck 
+  ShieldCheck,
+  MessageSquare,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Plus,
+  X,
+  RefreshCw
 } from 'lucide-react';
 
 export default function BookingView({ tutor, onBack, onNavigate, user, onRequireAuth }) {
@@ -15,8 +23,8 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
     fullName: 'Hoàng Thiên Ứng',
     school: 'Đại học Bách Khoa',
     experienceYears: 8,
-    rating: 4.9,
-    reviewsCount: 127,
+    rating: 0,
+    reviewsCount: 0,
     studentsCount: 243,
     hourlyRate: 250000,
     priceNegotiable: false,
@@ -94,22 +102,101 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
     setSelectedTime((current) => current || availableTimes[0] || '');
   }, [availableDays, availableTimes]);
 
-  const reviews = [
-    {
-      id: 1,
-      name: 'Trần Văn Minh (Lớp 12)',
-      rating: 5,
-      date: '10/09/2026',
-      content: 'Thầy dạy cực kỳ có tâm! Các bài toán tích phân và lượng giác khó thầy hướng dẫn phương pháp giải rất ngắn gọn và dễ hiểu.'
-    },
-    {
-      id: 2,
-      name: 'Nguyễn Phương Thảo (Lớp 11)',
-      rating: 5,
-      date: '04/09/2026',
-      content: 'Em từ mất gốc môn Vật lý mà sau 2 tháng học cùng thầy đã đạt 8.5 điểm kiểm tra 1 tiết. Cảm ơn thầy rất nhiều ạ!'
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [dynamicRating, setDynamicRating] = useState(
+    Number(currentTutor.rating) > 0 ? Number(currentTutor.rating) : 0
+  );
+  const [dynamicReviewsCount, setDynamicReviewsCount] = useState(
+    Number(currentTutor.reviewsCount) || 0
+  );
+
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [newComment, setNewComment] = useState('');
+  const [newAuthorName, setNewAuthorName] = useState(user?.fullName || '');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState({ type: '', text: '' });
+
+  const loadReviews = async () => {
+    if (!currentTutor?.id) return;
+    try {
+      setReviewsLoading(true);
+      const res = await tutorService.getTutorReviews(currentTutor.id);
+      if (res && res.data) {
+        const data = res.data;
+        setReviews(data.reviews || []);
+        if (data.averageRating !== undefined && data.averageRating !== null) {
+          setDynamicRating(Number(data.averageRating));
+        }
+        if (data.reviewsCount !== undefined && data.reviewsCount !== null) {
+          setDynamicReviewsCount(Number(data.reviewsCount));
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi tải đánh giá gia sư:', err);
+    } finally {
+      setReviewsLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, [currentTutor?.id]);
+
+  useEffect(() => {
+    if (user?.fullName && !newAuthorName) {
+      setNewAuthorName(user.fullName);
+    }
+  }, [user]);
+
+  const handleSubmitReview = async (e) => {
+    if (e) e.preventDefault();
+    if (!newComment.trim()) {
+      setReviewMsg({ type: 'error', text: 'Vui lòng nhập nội dung đánh giá của bạn.' });
+      return;
+    }
+    setSubmittingReview(true);
+    setReviewMsg({ type: '', text: '' });
+    try {
+      const author = newAuthorName.trim() || user?.fullName || 'Phụ huynh học sinh';
+      await tutorService.createTutorReview(currentTutor.id, {
+        rating: newRating,
+        comment: newComment.trim(),
+        authorName: author
+      });
+      setReviewMsg({ type: 'success', text: 'Cảm ơn bạn! Đánh giá đã được ghi nhận thành công.' });
+      setNewComment('');
+      await loadReviews();
+      setTimeout(() => {
+        setShowReviewForm(false);
+        setReviewMsg({ type: '', text: '' });
+      }, 1500);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại!';
+      setReviewMsg({ type: 'error', text: msg });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const renderStars = (ratingVal, size = 16) => {
+    const rounded = Math.round(ratingVal);
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            size={size}
+            fill={star <= rounded ? '#f59e0b' : 'none'}
+            color={star <= rounded ? '#f59e0b' : '#cbd5e1'}
+            strokeWidth={1.5}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const formatVND = (val) => {
     return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
@@ -131,7 +218,11 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
   if (showCheckout) {
     return (
       <CheckoutFlow 
-        tutor={currentTutor}
+        tutor={{
+          ...currentTutor,
+          rating: dynamicRating > 0 ? dynamicRating : 0,
+          reviewsCount: dynamicReviewsCount
+        }}
         user={user}
         bookingDetails={{
           subject: selectedSubject,
@@ -232,11 +323,13 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', marginBottom: '12px' }}>
-                    <span style={{ color: '#f59e0b' }}>★★★★★</span>
-                    <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentTutor.rating}</span>
-                    <span style={{ color: '#64748b' }}>({currentTutor.reviewsCount} đánh giá)</span>
+                    {renderStars(dynamicRating, 16)}
+                    <span style={{ fontWeight: 800, color: '#0f172a' }}>
+                      {dynamicRating > 0 ? dynamicRating.toFixed(1) : 'Chưa có'}
+                    </span>
+                    <span style={{ color: '#64748b' }}>({dynamicReviewsCount} đánh giá)</span>
                     <span style={{ color: '#cbd5e1' }}>·</span>
-                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{currentTutor.studentsCount} học sinh đã dạy</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{currentTutor.studentsCount || 0} học sinh đã dạy</span>
                   </div>
 
                   {/* Subject Pills */}
@@ -316,7 +409,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                   textAlign: 'center'
                 }}
               >
-                Đánh giá ({reviews.length})
+                Đánh giá ({dynamicReviewsCount})
               </button>
               <button
                 type="button"
@@ -402,7 +495,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                       textAlign: 'center'
                     }}>
                       <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', fontFamily: "'Playfair Display', Georgia, serif" }}>
-                        {currentTutor.reviewsCount}
+                        {dynamicReviewsCount}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
                         Đánh giá
@@ -428,19 +521,348 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
               )}
 
               {activeTab === 'reviews' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {reviews.map((rev) => (
-                    <div key={rev.id} style={{ padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>{rev.name}</span>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{rev.date}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Reviews Summary Banner */}
+                  <div style={{
+                    background: '#fffdf5',
+                    border: '1.5px solid #0f172a',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    boxShadow: '3px 3px 0px #0f172a',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{
+                        width: '64px',
+                        height: '64px',
+                        background: '#fef3c7',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '2px 2px 0px #0f172a'
+                      }}>
+                        <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#b45309', lineHeight: 1 }}>
+                          {dynamicRating > 0 ? dynamicRating.toFixed(1) : '—'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#78350f' }}>/ 5.0</span>
                       </div>
-                      <div style={{ color: '#f59e0b', fontSize: '0.85rem', marginBottom: '6px' }}>★★★★★</div>
-                      <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
-                        {rev.content}
-                      </p>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          {renderStars(dynamicRating, 18)}
+                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>
+                            {dynamicRating >= 4.8 ? 'Rất xuất sắc' : dynamicRating >= 4.0 ? 'Rất tốt' : dynamicRating > 0 ? 'Tốt' : 'Chưa có xếp hạng'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                          Dựa trên <strong>{dynamicReviewsCount}</strong> đánh giá chân thực từ phụ huynh & học sinh
+                        </div>
+                      </div>
                     </div>
-                  ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewForm(!showReviewForm)}
+                      style={{
+                        background: showReviewForm ? '#f1f5f9' : '#0f172a',
+                        color: showReviewForm ? '#0f172a' : '#ffffff',
+                        border: '1.5px solid #0f172a',
+                        borderRadius: '10px',
+                        padding: '10px 18px',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '2px 2px 0px #0f172a',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {showReviewForm ? <X size={16} /> : <Plus size={16} />}
+                      <span>{showReviewForm ? 'Đóng biểu mẫu' : 'Viết đánh giá'}</span>
+                    </button>
+                  </div>
+
+                  {/* Review Submission Form Modal / Box */}
+                  {showReviewForm && (
+                    <div style={{
+                      background: '#ffffff',
+                      border: '2px solid #0f172a',
+                      borderRadius: '16px',
+                      padding: '22px',
+                      boxShadow: '4px 4px 0px #0f172a'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <MessageSquare size={20} color="#7c3aed" />
+                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>
+                            Đánh giá trải nghiệm học cùng {currentTutor.fullName}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {reviewMsg.text && (
+                        <div style={{
+                          marginBottom: '16px',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: reviewMsg.type === 'error' ? '1px solid #f87171' : '1px solid #34d399',
+                          background: reviewMsg.type === 'error' ? '#fef2f2' : '#ecfdf5',
+                          color: reviewMsg.type === 'error' ? '#991b1b' : '#065f46',
+                          fontSize: '0.86rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          {reviewMsg.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+                          <span>{reviewMsg.text}</span>
+                        </div>
+                      )}
+
+                      <form onSubmit={handleSubmitReview}>
+                        {/* Star Rating Picker */}
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '8px' }}>
+                            CHỌN SỐ SAO ĐÁNH GIÁ *
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {[1, 2, 3, 4, 5].map((s) => {
+                              const activeStar = (hoverRating || newRating) >= s;
+                              return (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onMouseEnter={() => setHoverRating(s)}
+                                  onMouseLeave={() => setHoverRating(0)}
+                                  onClick={() => setNewRating(s)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    transition: 'transform 0.15s ease'
+                                  }}
+                                >
+                                  <Star
+                                    size={28}
+                                    fill={activeStar ? '#f59e0b' : 'none'}
+                                    color={activeStar ? '#f59e0b' : '#cbd5e1'}
+                                    strokeWidth={2}
+                                  />
+                                </button>
+                              );
+                            })}
+                            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b45309', marginLeft: '6px' }}>
+                              {newRating === 5 ? '5/5 - Cực kỳ hài lòng' : newRating === 4 ? '4/5 - Hài lòng' : newRating === 3 ? '3/5 - Bình thường' : newRating === 2 ? '2/5 - Chưa tốt' : '1/5 - Kém'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Author Name */}
+                        <div style={{ marginBottom: '14px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '6px' }}>
+                            TÊN PHỤ HUYNH / HỌC SINH
+                          </label>
+                          <input
+                            type="text"
+                            value={newAuthorName}
+                            onChange={(e) => setNewAuthorName(e.target.value)}
+                            placeholder="Ví dụ: Phụ huynh em Tuấn (Lớp 11)"
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #0f172a',
+                              fontSize: '0.88rem',
+                              fontFamily: 'inherit',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Comment Textarea */}
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#475569', marginBottom: '6px' }}>
+                            NỘI DUNG NHẬN XÉT *
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Chia sẻ về phương pháp giảng dạy, sự tận tâm, tiến bộ của học sinh..."
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #0f172a',
+                              fontSize: '0.88rem',
+                              fontFamily: 'inherit',
+                              resize: 'vertical',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowReviewForm(false)}
+                            style={{
+                              background: '#f8fafc',
+                              border: '1.5px solid #cbd5e1',
+                              borderRadius: '10px',
+                              padding: '9px 18px',
+                              fontSize: '0.86rem',
+                              fontWeight: 700,
+                              color: '#64748b',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Hủy bỏ
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submittingReview}
+                            style={{
+                              background: '#0f172a',
+                              color: '#ffffff',
+                              border: '1.5px solid #0f172a',
+                              borderRadius: '10px',
+                              padding: '9px 22px',
+                              fontSize: '0.86rem',
+                              fontWeight: 800,
+                              cursor: submittingReview ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '2px 2px 0px #0f172a'
+                            }}
+                          >
+                            <Send size={15} />
+                            <span>{submittingReview ? 'Đang gửi...' : 'Đăng đánh giá'}</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Reviews List */}
+                  {reviewsLoading ? (
+                    <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                      <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px' }} />
+                      <div style={{ fontSize: '0.88rem' }}>Đang tải danh sách đánh giá...</div>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div style={{
+                      padding: '36px 20px',
+                      textAlign: 'center',
+                      background: '#f8fafc',
+                      borderRadius: '16px',
+                      border: '1.5px dashed #cbd5e1'
+                    }}>
+                      <div style={{ color: '#94a3b8', marginBottom: '8px' }}>
+                        <Star size={32} style={{ margin: '0 auto', opacity: 0.5 }} />
+                      </div>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                        Chưa có đánh giá nào cho gia sư này
+                      </h4>
+                      <p style={{ margin: '0 0 16px 0', fontSize: '0.84rem', color: '#64748b' }}>
+                        Bạn đã từng học cùng {currentTutor.fullName}? Hãy là người đầu tiên để lại cảm nhận giúp các phụ huynh khác!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowReviewForm(true)}
+                        style={{
+                          background: '#0f172a',
+                          color: '#ffffff',
+                          border: '1.5px solid #0f172a',
+                          borderRadius: '10px',
+                          padding: '8px 18px',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '2px 2px 0px #0f172a'
+                        }}
+                      >
+                        <Plus size={15} />
+                        <span>Viết đánh giá đầu tiên</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {reviews.map((rev) => (
+                        <div
+                          key={rev.id}
+                          style={{
+                            background: '#ffffff',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '14px',
+                            padding: '16px 18px',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                background: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '0.85rem',
+                                color: '#475569'
+                              }}>
+                                {(rev.authorName || 'P').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                                    {rev.authorName}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    background: '#ecfdf5',
+                                    color: '#059669',
+                                    padding: '1px 6px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #a7f3d0'
+                                  }}>
+                                    Đã xác thực
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+                                  {rev.dateFormatted || (rev.createdAt ? rev.createdAt.substring(0, 10) : '')}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {renderStars(rev.rating, 14)}
+                            </div>
+                          </div>
+
+                          <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: '1.55', margin: 0 }}>
+                            {rev.comment}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -489,9 +911,11 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.88rem' }}>
-                <span style={{ color: '#f59e0b' }}>★★★★★</span>
-                <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentTutor.rating}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem' }}>
+                {renderStars(dynamicRating, 14)}
+                <span style={{ fontWeight: 800, color: '#0f172a' }}>
+                  {dynamicRating > 0 ? dynamicRating.toFixed(1) : 'Chưa có'}
+                </span>
               </div>
             </div>
 

@@ -41,8 +41,8 @@ export default function CheckoutFlow({
     fullName: 'Hoàng Thiên Ứng',
     school: 'Đại học bách khoa',
     title: 'TS. Nguyễn Thị Hoa', // for step 3 confirmation
-    rating: 4.9,
-    reviewsCount: 127,
+    rating: 0,
+    reviewsCount: 0,
     hourlyRate: 250000,
     subjects: ['Toán học', 'Vật lý', 'Tin học'],
     avatarUrl: null,
@@ -496,7 +496,7 @@ export default function CheckoutFlow({
                       <div className="figma-tutor-sub">{currentTutor.school}</div>
                       <div className="figma-tutor-rating">
                         <Star size={14} fill="#f59e0b" color="#f59e0b" />
-                        <span><strong>{currentTutor.rating}</strong> ({currentTutor.reviewsCount} đánh giá)</span>
+                        <span><strong>{Number(currentTutor.rating) > 0 ? Number(currentTutor.rating).toFixed(1) : 'Chưa có'}</strong> ({currentTutor.reviewsCount || 0} đánh giá)</span>
                       </div>
                     </div>
                   </div>

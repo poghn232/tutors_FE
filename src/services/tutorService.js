@@ -23,5 +23,17 @@ export const tutorService = {
   async updateTutorVerification(id, status, reason = '') {
     const response = await api.put(`/tutors/${id}/verification`, { status, reason });
     return response.data;
+  },
+
+  // Lấy danh sách đánh giá của 1 gia sư
+  async getTutorReviews(tutorId) {
+    const response = await api.get(`/tutors/${tutorId}/reviews`);
+    return response.data;
+  },
+
+  // Gửi đánh giá cho gia sư
+  async createTutorReview(tutorId, reviewData) {
+    const response = await api.post(`/tutors/${tutorId}/reviews`, reviewData);
+    return response.data;
   }
 };
