@@ -11,5 +11,13 @@ export const userService = {
   async updateProfile(profileData) {
     const response = await api.put('/users/profile', profileData);
     return response.data;
+  },
+
+  // Lấy tất cả người dùng cho Admin
+  async getAllUsersForAdmin() {
+    const response = await api.get('/users/admin/all');
+    return response.data;
   }
 };
+
+export default userService;

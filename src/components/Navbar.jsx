@@ -46,10 +46,11 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const adminNavItems = [
     { id: 'dashboard', label: 'Tổng Quan' },
-    { id: 'classes', label: 'Tất Cả Lớp Học' },
-    { id: 'tutors', label: 'Danh Sách Gia Sư' },
+    { id: 'tutors', label: 'Duyệt Gia Sư' },
+    { id: 'classes', label: 'Quản Lý Lớp Học' },
+    { id: 'users', label: 'Người Dùng' },
+    { id: 'promotions', label: 'Quản Lý Khuyến Mãi' },
     { id: 'materials', label: 'Tài Liệu' },
-    { id: 'promotions', label: 'Ưu Đãi' },
   ];
 
   const navItems = !user 

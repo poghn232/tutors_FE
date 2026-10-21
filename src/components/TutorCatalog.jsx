@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Search } from 'lucide-react';
+import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import BookingView from './BookingView';
 import { tutorService } from '../services/tutorService';
 
@@ -139,6 +139,8 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
+  const TUTORS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,6 +224,41 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
 
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
+
+  // Reset to first page whenever search query or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedSubject, selectedGender, selectedEducation, minRating, selectedHobby, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTutors.length / TUTORS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * TUTORS_PER_PAGE;
+  const endIndex = Math.min(startIndex + TUTORS_PER_PAGE, filteredTutors.length);
+  const paginatedTutors = filteredTutors.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === safeCurrentPage) return;
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (safeCurrentPage > 3) pages.push('...');
+      const start = Math.max(2, safeCurrentPage - 1);
+      const end = Math.min(totalPages - 1, safeCurrentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+      if (safeCurrentPage < totalPages - 2) pages.push('...');
+      if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+    return pages;
+  };
 
   if (activeBookingTutor) {
     return (
@@ -503,8 +540,24 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
 
         {/* RIGHT CONTENT: 2-COLUMN TUTOR CARDS GRID (Exact Figma 15:2008) */}
         <div>
-          <div style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '16px' }}>
-            {loading ? 'Đang tải danh sách gia sư...' : `${filteredTutors.length} gia sư được tìm thấy`}
+          <div style={{
+            fontSize: '0.88rem',
+            color: '#64748b',
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}>
+            <span>
+              {loading ? 'Đang tải danh sách gia sư...' : `${filteredTutors.length} gia sư được tìm thấy`}
+            </span>
+            {!loading && filteredTutors.length > 0 && (
+              <span style={{ fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', padding: '3px 10px', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
+                Trang {safeCurrentPage} / {totalPages} (8 gia sư/trang)
+              </span>
+            )}
           </div>
 
           {loading && (
@@ -581,8 +634,9 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
           )}
 
           {!loading && !loadError && filteredTutors.length > 0 && (
+            <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
-            {filteredTutors.map((tutor) => (
+            {paginatedTutors.map((tutor) => (
               <div
                 key={tutor.id}
                 style={{
@@ -742,6 +796,111 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
               </div>
             ))}
             </div>
+
+            {/* Pagination Controls (Strictly 8 tutors per page) */}
+            {totalPages > 1 && (
+              <div style={{
+                marginTop: '32px',
+                paddingTop: '20px',
+                borderTop: '1.5px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}>
+                <div style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                  Hiển thị <b style={{ color: '#0f172a' }}>{startIndex + 1} - {endIndex}</b> trong số <b style={{ color: '#0f172a' }}>{filteredTutors.length}</b> gia sư (8 gia sư/trang)
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(safeCurrentPage - 1)}
+                    disabled={safeCurrentPage === 1}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #0f172a',
+                      background: safeCurrentPage === 1 ? '#f8fafc' : '#ffffff',
+                      color: safeCurrentPage === 1 ? '#94a3b8' : '#0f172a',
+                      boxShadow: safeCurrentPage === 1 ? 'none' : '2px 2px 0px #0f172a',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: safeCurrentPage === 1 ? 0.6 : 1,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <ChevronLeft size={16} /> Trang trước
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {getPageNumbers().map((p, idx) => {
+                      if (p === '...') {
+                        return (
+                          <span key={`ellipsis-${idx}`} style={{ padding: '0 6px', color: '#94a3b8', fontWeight: 800 }}>
+                            ...
+                          </span>
+                        );
+                      }
+                      const isCurrent = p === safeCurrentPage;
+                      return (
+                        <button
+                          key={`page-${p}`}
+                          type="button"
+                          onClick={() => handlePageChange(p)}
+                          style={{
+                            minWidth: '38px',
+                            height: '38px',
+                            padding: '0 8px',
+                            borderRadius: '10px',
+                            border: '1.5px solid #0f172a',
+                            background: isCurrent ? '#7c3aed' : '#ffffff',
+                            color: isCurrent ? '#ffffff' : '#0f172a',
+                            boxShadow: isCurrent ? '2px 2px 0px #0f172a' : 'none',
+                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(safeCurrentPage + 1)}
+                    disabled={safeCurrentPage === totalPages}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #0f172a',
+                      background: safeCurrentPage === totalPages ? '#f8fafc' : '#ffffff',
+                      color: safeCurrentPage === totalPages ? '#94a3b8' : '#0f172a',
+                      boxShadow: safeCurrentPage === totalPages ? 'none' : '2px 2px 0px #0f172a',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer',
+                      opacity: safeCurrentPage === totalPages ? 0.6 : 1,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Trang sau <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>

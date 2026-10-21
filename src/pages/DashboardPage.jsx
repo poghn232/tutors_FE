@@ -12,6 +12,10 @@ import CheckoutFlow from '../components/CheckoutFlow';
 import VipPricingView from '../components/VipPricingView';
 import PaymentResultView from '../components/PaymentResultView';
 import AdminTutorVerificationDashboard from '../components/AdminTutorVerificationDashboard';
+import AdminDashboardOverview from '../components/AdminDashboardOverview';
+import AdminClassManagement from '../components/AdminClassManagement';
+import AdminUserManagement from '../components/AdminUserManagement';
+import AdminPromotionsManagement from '../components/AdminPromotionsManagement';
 import ProgressReportView from '../components/ProgressReportView';
 import PromotionView from '../components/PromotionView';
 import { 
@@ -87,7 +91,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
 
 
   // Internal tab state if activeTab is 'default' or 'dashboard'
-  const [internalTab, setInternalTab] = useState(user ? (isTutor ? 'dashboard' : 'classes') : 'tutors');
+  const [internalTab, setInternalTab] = useState(user ? (isTutor || normalizedRole === 'ADMIN' ? 'dashboard' : 'classes') : 'tutors');
 
   // Determine which tab to actually display
   const currentTab = (activeTab && activeTab !== 'default' && activeTab !== 'home') 
@@ -256,9 +260,17 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
         </div>
       )}
 
-      {/* Admin Tutor Verification Dashboard */}
-      {normalizedRole === 'ADMIN' && (currentTab === 'dashboard' || currentTab === 'tutors') ? (
+      {/* Admin Dedicated Views */}
+      {normalizedRole === 'ADMIN' && currentTab === 'dashboard' ? (
+        <AdminDashboardOverview onNavigate={handleTabChange} />
+      ) : normalizedRole === 'ADMIN' && currentTab === 'tutors' ? (
         <AdminTutorVerificationDashboard />
+      ) : normalizedRole === 'ADMIN' && currentTab === 'classes' ? (
+        <AdminClassManagement />
+      ) : normalizedRole === 'ADMIN' && currentTab === 'users' ? (
+        <AdminUserManagement />
+      ) : normalizedRole === 'ADMIN' && currentTab === 'promotions' ? (
+        <AdminPromotionsManagement />
       ) : isTutor && currentTab === 'dashboard' ? (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px 48px', position: 'relative' }}>
           
@@ -1120,7 +1132,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
       ) : (
         /* Render Target Component based on currentTab */
         <div>
-          {(currentTab === 'classes' || (!isTutor && currentTab === 'dashboard')) && (
+          {((currentTab === 'classes' || (!isTutor && currentTab === 'dashboard')) && normalizedRole !== 'ADMIN') && (
             <ClassManagement 
               user={user} 
               onNavigateToTutors={() => handleTabChange('tutors')} 
@@ -1177,7 +1189,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
             <ProgressReportView user={user} />
           )}
 
-          {currentTab === 'promotions' && (
+          {currentTab === 'promotions' && normalizedRole !== 'ADMIN' && (
             <PromotionView />
           )}
 
