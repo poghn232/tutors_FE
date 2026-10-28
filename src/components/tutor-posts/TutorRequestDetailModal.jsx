@@ -13,11 +13,12 @@ import {
   GraduationCap,
   Info,
   Clock,
-  Sparkles,
-  Phone,
-  Mail
+  Sparkles
 } from 'lucide-react';
 import { tutorPostService } from '../../services/tutorPostService';
+
+const formatVND = (value) => 
+  new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
 
 export default function TutorRequestDetailModal({ isOpen, post, onClose, user, onRequireAuth, onApplicationSuccess }) {
   const [coverLetter, setCoverLetter] = useState('');
@@ -87,30 +88,32 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
   return (
     <div style={{
       position: 'fixed',
-      inset: 0,
+      top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(15, 23, 42, 0.65)',
-      backdropFilter: 'blur(4px)',
+      backdropFilter: 'blur(5px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999,
-      padding: '20px'
+      zIndex: 10000,
+      padding: '16px'
     }}>
       <div style={{
         backgroundColor: '#ffffff',
-        borderRadius: '16px',
+        border: '2.5px solid #0f172a',
+        borderRadius: '24px',
         width: '100%',
-        maxWidth: '780px',
+        maxWidth: '720px',
         maxHeight: '90vh',
         overflowY: 'auto',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        boxShadow: '8px 8px 0px #0f172a',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        position: 'relative'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '2px solid #0f172a',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -119,48 +122,56 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
           background: '#ffffff',
           zIndex: 10
         }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
+              borderRadius: '8px',
               backgroundColor: '#eff6ff',
-              color: '#2563eb',
-              fontSize: '12px',
-              fontWeight: 700
+              color: '#1d4ed8',
+              border: '1.5px solid #2563eb',
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.subjectName}
             </span>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
-              backgroundColor: '#f1f5f9',
-              color: '#334155',
-              fontSize: '12px',
-              fontWeight: 600
+              borderRadius: '8px',
+              backgroundColor: '#f8fafc',
+              color: '#0f172a',
+              border: '1.5px solid #0f172a',
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.gradeLevel}
             </span>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
-              backgroundColor: post.teachingMode === 'ONLINE' ? '#f3e8ff' : '#fef3c7',
-              color: post.teachingMode === 'ONLINE' ? '#7e22ce' : '#b45309',
-              fontSize: '12px',
-              fontWeight: 600
+              borderRadius: '8px',
+              backgroundColor: post.teachingMode === 'ONLINE' ? '#faf5ff' : '#fef3c7',
+              color: post.teachingMode === 'ONLINE' ? '#6d28d9' : '#b45309',
+              border: `1.5px solid ${post.teachingMode === 'ONLINE' ? '#7c3aed' : '#d97706'}`,
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.teachingMode === 'ONLINE' ? 'Online' : (post.teachingMode === 'OFFLINE' ? 'Tại nhà' : 'Hybrid')}
             </span>
           </div>
 
           <button 
+            type="button"
             onClick={onClose}
             style={{
-              border: 'none',
-              background: '#f1f5f9',
-              borderRadius: '8px',
-              padding: '6px',
+              background: '#f8fafc',
+              border: '1.5px solid #0f172a',
+              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
               cursor: 'pointer',
-              color: '#64748b'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#0f172a'
             }}
           >
             <X size={20} />
@@ -171,52 +182,81 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Title */}
           <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px', lineHeight: 1.4 }}>
+            <h2 style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: '1.65rem',
+              fontWeight: 800,
+              color: '#0f172a',
+              margin: '0 0 8px',
+              lineHeight: 1.35
+            }}>
               {post.title}
             </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
-              <span>Đăng bởi: <strong>{post.creatorName || 'Phụ huynh'}</strong></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.86rem', color: '#64748b' }}>
+              <span>Đăng bởi: <strong style={{ color: '#0f172a' }}>{post.creatorName || 'Phụ huynh'}</strong></span>
               <span>•</span>
-              <span>{post.applicationsCount || 0} gia sư đã nộp hồ sơ</span>
+              <span style={{ fontWeight: 700, color: '#0369a1' }}>{post.applicationsCount || 0} gia sư đã nộp đơn</span>
             </div>
           </div>
 
           {/* Key Parameters Cards */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-            backgroundColor: '#f8fafc',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+            gap: '12px'
           }}>
-            <div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>Học phí dự kiến</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>
-                {post.budgetAmount ? `${Number(post.budgetAmount).toLocaleString('vi-VN')} đ` : 'Thỏa thuận'}
-                <span style={{ fontSize: '12px', fontWeight: 400, color: '#64748b' }}> /buổi</span>
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              boxShadow: '2px 2px 0px #0f172a'
+            }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>
+                Học phí dự kiến
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a' }}>
+                {post.budgetAmount ? formatVND(post.budgetAmount) : 'Thỏa thuận'}
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>
+                  {post.budgetType === 'PER_MONTH' ? ' / tháng' : ' / buổi'}
+                </span>
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>Thời lượng & Lịch học</div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
-                {post.sessionsPerWeek} buổi/tuần
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              boxShadow: '2px 2px 0px #0f172a'
+            }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>
+                Thời lượng & Lịch học
               </div>
-              <div style={{ fontSize: '12px', color: '#475569' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                {post.sessionsPerWeek} buổi / tuần
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
                 {post.preferredSchedule || 'Linh hoạt theo thỏa thuận'}
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>Khu vực</div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
-                {post.district ? `${post.district}, ` : ''}{post.city || 'Toàn quốc'}
+            <div style={{
+              background: '#ffffff',
+              border: '1.5px solid #0f172a',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              boxShadow: '2px 2px 0px #0f172a'
+            }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>
+                Địa điểm tại Hà Nội
               </div>
-              <div style={{ fontSize: '11px', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                {post.district ? `${post.district}, ` : ''}Hà Nội
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#059669', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontWeight: 600 }}>
                 <ShieldCheck size={13} />
-                <span>Số nhà & SĐT bảo mật</span>
+                <span>Bảo mật địa chỉ chi tiết</span>
               </div>
             </div>
           </div>
@@ -224,40 +264,36 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
           {/* Student Status & Requirements */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {post.studentNotes && (
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#334155', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Info size={16} color="#2563eb" />
+              <div style={{
+                background: '#ffffff',
+                border: '1.5px solid #0f172a',
+                borderRadius: '14px',
+                padding: '14px 16px',
+                boxShadow: '2px 2px 0px #0f172a'
+              }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Info size={15} color="#2563eb" />
                   <span>Tình trạng học lực của học sinh</span>
-                </h4>
-                <div style={{
-                  padding: '12px 16px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '13px',
-                  color: '#475569',
-                  lineHeight: 1.6
-                }}>
+                </div>
+                <div style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6 }}>
                   {post.studentNotes}
                 </div>
               </div>
             )}
 
             {post.requirements && (
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#334155', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <GraduationCap size={16} color="#2563eb" />
+              <div style={{
+                background: '#ffffff',
+                border: '1.5px solid #0f172a',
+                borderRadius: '14px',
+                padding: '14px 16px',
+                boxShadow: '2px 2px 0px #0f172a'
+              }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <GraduationCap size={15} color="#2563eb" />
                   <span>Yêu cầu đối với gia sư</span>
-                </h4>
-                <div style={{
-                  padding: '12px 16px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '13px',
-                  color: '#475569',
-                  lineHeight: 1.6
-                }}>
+                </div>
+                <div style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6 }}>
                   {post.requirements}
                 </div>
               </div>
@@ -269,15 +305,16 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
             <div style={{
               padding: '12px 16px',
               backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '8px',
+              border: '1.5px solid #fca5a5',
+              borderRadius: '12px',
               color: '#b91c1c',
-              fontSize: '13px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <AlertCircle size={16} />
+              <AlertCircle size={18} />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -286,15 +323,16 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
             <div style={{
               padding: '12px 16px',
               backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              borderRadius: '8px',
+              border: '1.5px solid #a7f3d0',
+              borderRadius: '12px',
               color: '#047857',
-              fontSize: '13px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <CheckCircle size={16} />
+              <CheckCircle size={18} />
               <span>{successMessage}</span>
             </div>
           )}
@@ -302,15 +340,18 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
           {/* Apply Section for Tutor */}
           {hasApplied ? (
             <div style={{
-              padding: '16px',
+              padding: '16px 20px',
               backgroundColor: '#f0fdf4',
-              borderRadius: '10px',
-              border: '1px solid #bbf7d0',
+              borderRadius: '14px',
+              border: '1.5px solid #16a34a',
+              boxShadow: '2px 2px 0px #16a34a',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#166534', fontSize: '14px', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#166534', fontSize: '0.9rem', fontWeight: 800 }}>
                 <CheckCircle size={20} color="#16a34a" />
                 <span>Bạn đã gửi đơn ứng tuyển cho bài đăng này.</span>
               </div>
@@ -320,13 +361,13 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
                   onClick={handleWithdraw}
                   disabled={submitting}
                   style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #0f172a',
                     backgroundColor: '#ffffff',
-                    color: '#64748b',
-                    fontSize: '12px',
-                    fontWeight: 600,
+                    color: '#0f172a',
+                    fontSize: '0.84rem',
+                    fontWeight: 800,
                     cursor: 'pointer'
                   }}
                 >
@@ -336,13 +377,14 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
             </div>
           ) : !user ? (
             <div style={{
-              padding: '18px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              padding: '20px',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #0f172a',
+              boxShadow: '3px 3px 0px #0f172a',
               textAlign: 'center'
             }}>
-              <p style={{ fontSize: '14px', color: '#475569', margin: '0 0 12px' }}>
+              <p style={{ fontSize: '0.92rem', color: '#475569', margin: '0 0 14px', fontWeight: 600 }}>
                 Đăng nhập tài khoản Gia sư để nộp hồ sơ ứng tuyển và kết nối với học viên này.
               </p>
               <button
@@ -352,13 +394,14 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
                   if (onRequireAuth) onRequireAuth('ứng tuyển nhận lớp');
                 }}
                 style={{
-                  padding: '10px 24px',
-                  backgroundColor: '#2563eb',
+                  padding: '12px 24px',
+                  backgroundColor: '#0f172a',
                   color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: 700,
+                  border: '2px solid #0f172a',
+                  boxShadow: '3px 3px 0px #0f172a',
+                  borderRadius: '12px',
+                  fontSize: '0.92rem',
+                  fontWeight: 800,
                   cursor: 'pointer'
                 }}
               >
@@ -368,20 +411,21 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
           ) : isTutor ? (
             <form onSubmit={handleApply} style={{
               padding: '20px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '12px',
-              border: '1px solid #bae6fd',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #0f172a',
+              boxShadow: '3px 3px 0px #0f172a',
               display: 'flex',
               flexDirection: 'column',
               gap: '14px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontWeight: 700, fontSize: '15px' }}>
-                <Send size={18} />
-                <span>Nộp đơn ứng tuyển lớp này</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', fontWeight: 800, fontSize: '1rem' }}>
+                <Send size={18} color="#2563eb" />
+                <span>Nộp đơn ứng tuyển nhận lớp</span>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
                   Học phí đề xuất của bạn (VNĐ/buổi)
                 </label>
                 <input
@@ -393,33 +437,38 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
                   placeholder="VD: 250000"
                   style={{
                     width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #93c5fd',
-                    fontSize: '14px',
-                    backgroundColor: '#ffffff'
+                    height: '42px',
+                    padding: '0 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #0f172a',
+                    fontSize: '0.9rem',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    outline: 'none'
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
                   Thư giới thiệu & Năng lực giảng dạy <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <textarea
                   rows={4}
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
-                  placeholder="Chào quý phụ huynh, tôi tốt nghiệp Sư phạm với 4 năm kinh nghiệm dạy môn này. Tôi có phương pháp trực quan giúp học sinh nắm vững kiến thức..."
+                  placeholder="Chào quý phụ huynh, tôi tốt nghiệp Sư phạm và có kinh nghiệm giảng dạy môn này tại khu vực Hà Nội. Tôi có phương pháp trực quan giúp học sinh nắm vững kiến thức..."
                   required
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '10px 12px',
                     borderRadius: '8px',
-                    border: '1px solid #93c5fd',
-                    fontSize: '13px',
+                    border: '1.5px solid #0f172a',
+                    fontSize: '0.88rem',
                     backgroundColor: '#ffffff',
-                    resize: 'vertical'
+                    color: '#0f172a',
+                    resize: 'vertical',
+                    outline: 'none'
                   }}
                 />
               </div>
@@ -429,23 +478,23 @@ export default function TutorRequestDetailModal({ isOpen, post, onClose, user, o
                   type="submit"
                   disabled={submitting}
                   style={{
-                    padding: '10px 24px',
-                    backgroundColor: '#2563eb',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    fontSize: '14px',
+                    padding: '12px 26px',
+                    backgroundColor: '#00e599',
+                    color: '#000000',
+                    border: '2px solid #000000',
+                    boxShadow: '3px 3px 0px #000000',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
                     cursor: submitting ? 'not-allowed' : 'pointer',
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                    gap: '8px'
                   }}
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="spin" />
+                      <Loader2 size={16} className="animate-spin" />
                       <span>Đang gửi đơn...</span>
                     </>
                   ) : (

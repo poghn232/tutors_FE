@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { tutorPostService } from '../../services/tutorPostService';
 
+const formatVND = (value) => 
+  new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
+
 export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpdated }) {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -93,30 +96,32 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
   return (
     <div style={{
       position: 'fixed',
-      inset: 0,
+      top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(15, 23, 42, 0.65)',
-      backdropFilter: 'blur(4px)',
+      backdropFilter: 'blur(5px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 9999,
-      padding: '20px'
+      zIndex: 10000,
+      padding: '16px'
     }}>
       <div style={{
         backgroundColor: '#ffffff',
-        borderRadius: '16px',
+        border: '2.5px solid #0f172a',
+        borderRadius: '24px',
         width: '100%',
-        maxWidth: '820px',
-        maxHeight: '88vh',
+        maxWidth: '780px',
+        maxHeight: '90vh',
         overflowY: 'auto',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        boxShadow: '8px 8px 0px #0f172a',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        position: 'relative'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '2px solid #0f172a',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -126,22 +131,33 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
           zIndex: 10
         }}>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-              Danh sách gia sư ứng tuyển
+            <h2 style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: '1.65rem',
+              fontWeight: 800,
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Danh Sách Gia Sư Ứng Tuyển
             </h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 0' }}>
-              Bài đăng: <strong>{post.title}</strong>
+            <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '4px 0 0' }}>
+              Bài đăng: <strong style={{ color: '#0f172a' }}>{post.title}</strong>
             </p>
           </div>
           <button 
+            type="button"
             onClick={onClose}
             style={{
-              border: 'none',
-              background: '#f1f5f9',
-              borderRadius: '8px',
-              padding: '6px',
+              background: '#f8fafc',
+              border: '1.5px solid #0f172a',
+              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
               cursor: 'pointer',
-              color: '#64748b'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#0f172a'
             }}
           >
             <X size={20} />
@@ -154,15 +170,16 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
             <div style={{
               padding: '12px 16px',
               backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '8px',
+              border: '1.5px solid #fca5a5',
+              borderRadius: '12px',
               color: '#b91c1c',
-              fontSize: '13px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <AlertCircle size={16} />
+              <AlertCircle size={18} />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -171,38 +188,46 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
             <div style={{
               padding: '12px 16px',
               backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              borderRadius: '8px',
+              border: '1.5px solid #a7f3d0',
+              borderRadius: '12px',
               color: '#047857',
-              fontSize: '13px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <CheckCircle size={16} />
+              <CheckCircle size={18} />
               <span>{successMessage}</span>
             </div>
           )}
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px 0', color: '#64748b', gap: '10px' }}>
-              <Loader2 size={24} className="spin" />
-              <span>Đang tải danh sách ứng viên...</span>
+            <div style={{
+              minHeight: '180px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              color: '#64748b',
+              gap: '10px'
+            }}>
+              <Loader2 size={22} className="animate-spin" />
+              <span>Đang tải danh sách hồ sơ ứng viên...</span>
             </div>
           ) : applications.length === 0 ? (
             <div style={{
               textAlign: 'center',
               padding: '48px 20px',
               backgroundColor: '#f8fafc',
-              borderRadius: '12px',
-              border: '1px dashed #cbd5e1'
+              borderRadius: '16px',
+              border: '1.5px dashed #cbd5e1'
             }}>
               <User size={40} color="#94a3b8" style={{ marginBottom: '12px' }} />
-              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: '0 0 6px' }}>
-                Chưa có gia sư nào ứng tuyển
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+                Chưa có gia sư nào nộp đơn
               </h3>
-              <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '420px', margin: '0 auto' }}>
-                Bài đăng của bạn đang được hiển thị trên bảng tin công khai. Các gia sư phù hợp sẽ xem và nộp hồ sơ sớm.
+              <p style={{ fontSize: '0.88rem', color: '#64748b', maxWidth: '420px', margin: '0 auto' }}>
+                Bài đăng của bạn đang hiển thị công khai trên Bảng Tin tại Hà Nội. Các gia sư phù hợp sẽ nộp hồ sơ sớm.
               </p>
             </div>
           ) : (
@@ -217,11 +242,11 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                   <div 
                     key={app.id}
                     style={{
-                      padding: '20px',
-                      borderRadius: '12px',
-                      border: isAccepted ? '2px solid #10b981' : '1px solid #e2e8f0',
+                      padding: '20px 22px',
+                      borderRadius: '16px',
+                      border: isAccepted ? '2px solid #16a34a' : '1.5px solid #0f172a',
                       backgroundColor: isAccepted ? '#f0fdf4' : '#ffffff',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                      boxShadow: '3px 3px 0px #0f172a',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '14px'
@@ -233,16 +258,17 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                         <div style={{
                           width: '52px',
                           height: '52px',
-                          borderRadius: '50%',
-                          backgroundColor: '#e0e7ff',
-                          color: '#4338ca',
+                          borderRadius: '12px',
+                          backgroundColor: '#0f172a',
+                          color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontWeight: 700,
-                          fontSize: '18px',
+                          fontWeight: 800,
+                          fontSize: '1.15rem',
                           overflow: 'hidden',
-                          flexShrink: 0
+                          flexShrink: 0,
+                          border: '1.5px solid #0f172a'
                         }}>
                           {app.tutorAvatar ? (
                             <img src={app.tutorAvatar} alt={app.tutorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -252,24 +278,24 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                         </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                               {app.tutorName}
                             </h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 700 }}>
                               <Star size={14} fill="#f59e0b" />
                               <span>{app.tutorRating || 5.0}</span>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', fontSize: '12px', color: '#64748b' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', fontSize: '0.82rem', color: '#64748b' }}>
                             {app.tutorQualification && (
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Award size={13} />
+                                <Award size={13} color="#2563eb" />
                                 {app.tutorQualification}
                               </span>
                             )}
                             {app.tutorExperienceYears && (
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Clock size={13} />
+                                <Clock size={13} color="#2563eb" />
                                 {app.tutorExperienceYears} năm kinh nghiệm
                               </span>
                             )}
@@ -279,23 +305,23 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
 
                       {/* Status Badge & Proposed Rate */}
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 700, color: '#2563eb' }}>
-                          {app.proposedRate ? `${Number(app.proposedRate).toLocaleString('vi-VN')} đ` : 'Theo thỏa thuận'}
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}> /buổi</span>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                          {app.proposedRate ? formatVND(app.proposedRate) : 'Theo thỏa thuận'}
+                          <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}> /buổi</span>
                         </div>
                         <div style={{ marginTop: '4px' }}>
                           {isAccepted && (
-                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, backgroundColor: '#dcfce7', color: '#15803d' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 800, backgroundColor: '#dcfce7', color: '#15803d', border: '1.5px solid #16a34a' }}>
                               ✓ ĐÃ CHỌN GIA SƯ
                             </span>
                           )}
                           {isRejected && (
-                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 800, backgroundColor: '#fee2e2', color: '#b91c1c', border: '1.5px solid #ef4444' }}>
                               Đã từ chối
                             </span>
                           )}
                           {isPending && (
-                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, backgroundColor: '#fef3c7', color: '#b45309' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 800, backgroundColor: '#fef3c7', color: '#b45309', border: '1.5px solid #d97706' }}>
                               Chờ phản hồi
                             </span>
                           )}
@@ -307,15 +333,15 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                     {app.coverLetter && (
                       <div style={{
                         padding: '12px 14px',
-                        backgroundColor: isAccepted ? '#ffffff' : '#f8fafc',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '13px',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '10px',
+                        border: '1.5px solid #e2e8f0',
+                        fontSize: '0.86rem',
                         color: '#334155',
-                        lineHeight: 1.5
+                        lineHeight: 1.55
                       }}>
-                        <div style={{ fontWeight: 600, color: '#475569', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <MessageSquare size={13} />
+                        <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                          <MessageSquare size={13} color="#2563eb" />
                           <span>Lời chào & Năng lực giảng dạy:</span>
                         </div>
                         {app.coverLetter}
@@ -325,14 +351,14 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                     {/* Unlocked Contact Info for Accepted Tutor */}
                     {isAccepted && (
                       <div style={{
-                        padding: '12px',
-                        backgroundColor: '#d1fae5',
-                        borderRadius: '8px',
-                        border: '1px solid #86efac',
+                        padding: '12px 16px',
+                        backgroundColor: '#ecfdf5',
+                        borderRadius: '10px',
+                        border: '1.5px solid #86efac',
                         display: 'flex',
                         flexWrap: 'wrap',
                         gap: '16px',
-                        fontSize: '13px',
+                        fontSize: '0.88rem',
                         color: '#065f46'
                       }}>
                         {app.tutorPhone && (
@@ -352,21 +378,21 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
 
                     {/* Actions if pending */}
                     {isPending && isPostOpen && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '4px' }}>
                         <button
                           type="button"
                           onClick={() => handleReject(app.id)}
                           disabled={isActioning}
                           style={{
                             padding: '8px 16px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
+                            borderRadius: '10px',
+                            border: '1.5px solid #ef4444',
                             backgroundColor: '#ffffff',
-                            color: '#64748b',
-                            fontSize: '13px',
-                            fontWeight: 600,
+                            color: '#ef4444',
+                            fontSize: '0.84rem',
+                            fontWeight: 800,
                             cursor: isActioning ? 'not-allowed' : 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '6px'
                           }}
@@ -380,21 +406,21 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
                           disabled={isActioning}
                           style={{
                             padding: '8px 20px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            backgroundColor: '#10b981',
-                            color: '#ffffff',
-                            fontSize: '13px',
-                            fontWeight: 700,
+                            borderRadius: '10px',
+                            border: '2px solid #000000',
+                            backgroundColor: '#00e599',
+                            color: '#000000',
+                            boxShadow: '2px 2px 0px #000000',
+                            fontSize: '0.86rem',
+                            fontWeight: 800,
                             cursor: isActioning ? 'not-allowed' : 'pointer',
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)'
+                            gap: '6px'
                           }}
                         >
                           {isActioning ? (
-                            <Loader2 size={15} className="spin" />
+                            <Loader2 size={15} className="animate-spin" />
                           ) : (
                             <CheckCircle size={15} />
                           )}

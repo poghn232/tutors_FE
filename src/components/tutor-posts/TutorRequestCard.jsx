@@ -2,14 +2,15 @@ import React from 'react';
 import { 
   MapPin, 
   Calendar, 
-  DollarSign, 
   Users, 
   CheckCircle, 
   ArrowRight,
   Sparkles,
-  BookOpen,
   GraduationCap
 } from 'lucide-react';
+
+const formatVND = (value) => 
+  new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
 
 export default function TutorRequestCard({ post, onSelect, user }) {
   const isTutor = user?.role === 'TUTOR';
@@ -20,59 +21,60 @@ export default function TutorRequestCard({ post, onSelect, user }) {
       onClick={() => onSelect(post)}
       style={{
         backgroundColor: '#ffffff',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
+        borderRadius: '20px',
+        border: '1.5px solid #0f172a',
         padding: '22px',
-        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         cursor: 'pointer',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
         position: 'relative'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-3px)';
-        e.currentTarget.style.boxShadow = '0 12px 24px -6px rgba(0, 0, 0, 0.08)';
-        e.currentTarget.style.borderColor = '#93c5fd';
+        e.currentTarget.style.boxShadow = '4px 4px 0px #0f172a';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.03)';
-        e.currentTarget.style.borderColor = '#e2e8f0';
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.03)';
       }}
     >
       <div>
         {/* Badges Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
+              borderRadius: '8px',
               backgroundColor: '#eff6ff',
-              color: '#2563eb',
-              fontSize: '12px',
-              fontWeight: 700
+              color: '#1d4ed8',
+              border: '1.5px solid #2563eb',
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.subjectName}
             </span>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
-              backgroundColor: '#f1f5f9',
-              color: '#334155',
-              fontSize: '12px',
-              fontWeight: 600
+              borderRadius: '8px',
+              backgroundColor: '#f8fafc',
+              color: '#0f172a',
+              border: '1.5px solid #0f172a',
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.gradeLevel}
             </span>
             <span style={{
               padding: '4px 10px',
-              borderRadius: '6px',
-              backgroundColor: post.teachingMode === 'ONLINE' ? '#f3e8ff' : '#fef3c7',
-              color: post.teachingMode === 'ONLINE' ? '#7e22ce' : '#b45309',
-              fontSize: '12px',
-              fontWeight: 600
+              borderRadius: '8px',
+              backgroundColor: post.teachingMode === 'ONLINE' ? '#faf5ff' : '#fef3c7',
+              color: post.teachingMode === 'ONLINE' ? '#6d28d9' : '#b45309',
+              border: `1.5px solid ${post.teachingMode === 'ONLINE' ? '#7c3aed' : '#d97706'}`,
+              fontSize: '0.78rem',
+              fontWeight: 800
             }}>
               {post.teachingMode === 'ONLINE' ? 'Online' : (post.teachingMode === 'OFFLINE' ? 'Tại nhà' : 'Hybrid')}
             </span>
@@ -80,26 +82,27 @@ export default function TutorRequestCard({ post, onSelect, user }) {
 
           {hasApplied && (
             <span style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '11px',
-              fontWeight: 700,
+              fontSize: '0.75rem',
+              fontWeight: 800,
               backgroundColor: '#dcfce7',
               color: '#15803d',
+              border: '1.5px solid #16a34a',
               padding: '4px 8px',
-              borderRadius: '6px'
+              borderRadius: '8px'
             }}>
               <CheckCircle size={13} />
-              Đã ứng tuyển
+              Đã nộp đơn
             </span>
           )}
         </div>
 
         {/* Title */}
         <h3 style={{
-          fontSize: '17px',
-          fontWeight: 700,
+          fontSize: '1.1rem',
+          fontWeight: 800,
           color: '#0f172a',
           margin: '0 0 10px',
           lineHeight: 1.4
@@ -107,11 +110,13 @@ export default function TutorRequestCard({ post, onSelect, user }) {
           {post.title}
         </h3>
 
-        {/* Location & Schedule */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', fontSize: '13px', color: '#475569' }}>
+        {/* Location & Schedule in Hanoi */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', fontSize: '0.85rem', color: '#475569' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={15} color="#2563eb" />
-            <span>{post.district ? `${post.district}, ` : ''}{post.city || 'Toàn quốc'}</span>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>
+              {post.district ? `${post.district}, ` : ''}Hà Nội
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={15} color="#2563eb" />
@@ -128,7 +133,7 @@ export default function TutorRequestCard({ post, onSelect, user }) {
         {/* Notes preview if present */}
         {post.studentNotes && (
           <p style={{
-            fontSize: '13px',
+            fontSize: '0.84rem',
             color: '#64748b',
             lineHeight: 1.5,
             margin: '0 0 16px',
@@ -144,37 +149,40 @@ export default function TutorRequestCard({ post, onSelect, user }) {
 
       {/* Footer info: Budget & Action */}
       <div style={{
-        borderTop: '1px solid #f1f5f9',
+        borderTop: '1.5px solid #f1f5f9',
         paddingTop: '14px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Học phí dự kiến</div>
-          <div style={{ fontSize: '16px', fontWeight: 800, color: '#2563eb' }}>
-            {post.budgetAmount ? `${Number(post.budgetAmount).toLocaleString('vi-VN')} đ` : 'Thỏa thuận'}
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}> /buổi</span>
+          <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Học phí dự kiến</div>
+          <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>
+            {post.budgetAmount ? formatVND(post.budgetAmount) : 'Thỏa thuận'}
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>
+              {post.budgetType === 'PER_MONTH' ? ' / tháng' : ' / buổi'}
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
             <Users size={14} />
-            {post.applicationsCount || 0} ứng tuyển
+            {post.applicationsCount || 0}
           </span>
           <button
             type="button"
             style={{
               padding: '8px 14px',
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 700,
+              backgroundColor: isTutor ? '#0f172a' : '#ffffff',
+              color: isTutor ? '#ffffff' : '#0f172a',
+              border: '2px solid #0f172a',
+              boxShadow: '2px 2px 0px #0f172a',
+              borderRadius: '10px',
+              fontSize: '0.84rem',
+              fontWeight: 800,
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '4px'
             }}
