@@ -29,7 +29,7 @@ function AppContent() {
     });
   };
 
-  const publicViews = ['tutors', 'classes', 'materials', 'vip', 'checkout'];
+  const publicViews = ['tutors', 'tutor-requests', 'classes', 'materials', 'vip', 'checkout'];
   const authViews = ['login', 'register', 'forgot-password'];
 
   // Handle browser Back / Forward buttons

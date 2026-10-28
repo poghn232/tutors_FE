@@ -18,6 +18,10 @@ import AdminUserManagement from '../components/AdminUserManagement';
 import AdminPromotionsManagement from '../components/AdminPromotionsManagement';
 import ProgressReportView from '../components/ProgressReportView';
 import PromotionView from '../components/PromotionView';
+import TutorRequestBoard from '../components/tutor-posts/TutorRequestBoard';
+import MyTutorPostsView from '../components/tutor-posts/MyTutorPostsView';
+import MyApplicationsView from '../components/tutor-posts/MyApplicationsView';
+import AdminPostModerationView from '../components/tutor-posts/AdminPostModerationView';
 import { 
   User, 
   Calendar, 
@@ -263,6 +267,8 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
       {/* Admin Dedicated Views */}
       {normalizedRole === 'ADMIN' && currentTab === 'dashboard' ? (
         <AdminDashboardOverview onNavigate={handleTabChange} />
+      ) : normalizedRole === 'ADMIN' && currentTab === 'post-moderation' ? (
+        <AdminPostModerationView />
       ) : normalizedRole === 'ADMIN' && currentTab === 'tutors' ? (
         <AdminTutorVerificationDashboard />
       ) : normalizedRole === 'ADMIN' && currentTab === 'classes' ? (
@@ -1234,6 +1240,30 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 </button>
               </div>
             )
+          )}
+
+          {currentTab === 'tutor-requests' && (
+            <TutorRequestBoard 
+              user={user}
+              onNavigate={handleTabChange}
+              onRequireAuth={onRequireAuth}
+            />
+          )}
+
+          {currentTab === 'my-requests' && (
+            <MyTutorPostsView 
+              onNavigate={handleTabChange}
+            />
+          )}
+
+          {currentTab === 'my-applications' && (
+            <MyApplicationsView 
+              onNavigate={handleTabChange}
+            />
+          )}
+
+          {currentTab === 'post-moderation' && (
+            <AdminPostModerationView />
           )}
 
           {currentTab === 'checkout' && (

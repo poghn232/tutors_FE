@@ -18,6 +18,7 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
   // Define tabs matching Figma screenshots
   const guestNavItems = [
     { id: 'tutors', label: 'Tìm Gia Sư' },
+    { id: 'tutor-requests', label: 'Lớp Cần Gia Sư' },
     { id: 'classes', label: 'Khóa Học' },
     { id: 'materials', label: 'Tài Liệu' },
     { id: 'vip', label: 'Bảng Giá VIP' },
@@ -25,6 +26,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const parentNavItems = [
     { id: 'tutors', label: 'Tìm Gia Sư' },
+    { id: 'my-requests', label: 'Bài Đăng Của Tôi' },
+    { id: 'tutor-requests', label: 'Bảng Tin Lớp' },
     { id: 'classes', label: 'Lớp Học Của Tôi' },
     { id: 'payment', label: 'Ví Kết Nối' },
     { id: 'materials', label: 'Tài Liệu' },
@@ -35,6 +38,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const tutorNavItems = [
     { id: 'dashboard', label: 'Tổng Quan' },
+    { id: 'tutor-requests', label: 'Bảng Tin Tìm Lớp' },
+    { id: 'my-applications', label: 'Đơn Ứng Tuyển' },
     { id: 'classes', label: 'Lớp Dạy & Yêu Cầu' },
     { id: 'lessons', label: 'Lịch Dạy & AI Note' },
     { id: 'materials', label: 'Tài Liệu' },
@@ -46,6 +51,8 @@ export default function Navbar({ activeTab = 'classes', onNavigate }) {
 
   const adminNavItems = [
     { id: 'dashboard', label: 'Tổng Quan' },
+    { id: 'post-moderation', label: 'Duyệt Bài Tìm Lớp' },
+    { id: 'tutor-requests', label: 'Bảng Tin Lớp' },
     { id: 'tutors', label: 'Duyệt Gia Sư' },
     { id: 'classes', label: 'Quản Lý Lớp Học' },
     { id: 'users', label: 'Người Dùng' },

@@ -122,15 +122,15 @@ export const authService = {
 
   getAllowedViews(role) {
     if (role === 'ADMIN') {
-      return ['dashboard', 'classes', 'materials', 'promotions', 'tutors'];
+      return ['dashboard', 'post-moderation', 'tutor-requests', 'classes', 'materials', 'promotions', 'tutors', 'users'];
     }
     if (role === 'TUTOR') {
-      return ['dashboard', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile'];
+      return ['dashboard', 'tutor-requests', 'my-applications', 'classes', 'assignments', 'materials', 'lessons', 'progress', 'promotions', 'profile'];
     }
     if (role === 'PARENT') {
-      return ['tutors', 'classes', 'payment', 'materials', 'assignments', 'progress', 'promotions', 'vip', 'checkout'];
+      return ['tutors', 'tutor-requests', 'my-requests', 'classes', 'payment', 'materials', 'assignments', 'progress', 'promotions', 'vip', 'checkout'];
     }
-    return ['tutors', 'classes', 'materials', 'vip', 'checkout'];
+    return ['tutors', 'tutor-requests', 'classes', 'materials', 'vip', 'checkout'];
   },
 
   // Đăng ký: Gửi OTP xác thực qua email
