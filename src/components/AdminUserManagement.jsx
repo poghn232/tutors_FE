@@ -131,7 +131,7 @@ export default function AdminUserManagement() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#2563eb', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '6px' }}>
             <Users size={16} /> Quản Trị Thành Viên
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', fontFamily: 'serif' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
             Quản Lý Danh Sách Người Dùng
           </h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.92rem' }}>

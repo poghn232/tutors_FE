@@ -479,7 +479,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                       padding: '16px',
                       textAlign: 'center'
                     }}>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#7c3aed', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#7c3aed', fontFamily: "var(--font-display)" }}>
                         {currentTutor.studentsCount}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
@@ -494,7 +494,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                       padding: '16px',
                       textAlign: 'center'
                     }}>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ea580c', fontFamily: "var(--font-display)" }}>
                         {dynamicReviewsCount}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>
@@ -509,7 +509,7 @@ export default function BookingView({ tutor, onBack, onNavigate, user, onRequire
                       padding: '16px',
                       textAlign: 'center'
                     }}>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#059669', fontFamily: "'Playfair Display', Georgia, serif" }}>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#059669', fontFamily: "var(--font-display)" }}>
                         {currentTutor.experienceYears}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginTop: '2px' }}>

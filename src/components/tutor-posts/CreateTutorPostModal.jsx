@@ -178,11 +178,12 @@ export default function CreateTutorPostModal({ isOpen, onClose, onSuccess }) {
               <MapPin size={13} /> ÁP DỤNG KHU VỰC HÀ NỘI
             </div>
             <h2 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: '1.75rem',
-              fontWeight: 800,
+              fontWeight: 900,
               color: '#0f172a',
-              margin: '0 0 4px 0'
+              margin: '0 0 4px 0',
+              letterSpacing: '-0.015em'
             }}>
               Đăng Tin Tìm Gia Sư
             </h2>

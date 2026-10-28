@@ -452,7 +452,8 @@ export default function LessonList({ user }) {
             fontWeight: 900, 
             color: '#0f172a', 
             margin: '0 0 6px 0',
-            fontFamily: 'serif'
+            fontFamily: 'var(--font-display)',
+            letterSpacing: '-0.02em'
           }}>
             Lịch Dạy Của Tôi
           </h1>
@@ -553,7 +554,7 @@ export default function LessonList({ user }) {
             <Calendar size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ea580c', lineHeight: 1.1, fontFamily: 'serif' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ea580c', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
               {totalLessons}
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -577,7 +578,7 @@ export default function LessonList({ user }) {
             <Clock size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
               {totalHours}h
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -601,7 +602,7 @@ export default function LessonList({ user }) {
             <Users size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'serif' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
               {totalStudents}
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -625,7 +626,7 @@ export default function LessonList({ user }) {
             <DollarSign size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'serif' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
               {new Intl.NumberFormat('vi-VN').format(estimatedIncome)}đ
             </div>
             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -1036,7 +1037,7 @@ export default function LessonList({ user }) {
               color: '#0f172a',
               marginTop: '6px',
               marginBottom: '2px',
-              fontFamily: 'serif'
+              fontFamily: 'var(--font-display)'
             }}>
               {new Intl.NumberFormat('vi-VN').format(estimatedIncome)}đ
             </div>
@@ -1082,7 +1083,7 @@ export default function LessonList({ user }) {
 
       {/* Bottom Section: "Phân tích" (Analysis - Figma 16:399) */}
       <div style={{ marginTop: '48px', position: 'relative', zIndex: 1 }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '20px', fontFamily: 'serif' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '20px', fontFamily: 'var(--font-display)' }}>
           Phân tích
         </h2>
 
@@ -1150,7 +1151,7 @@ export default function LessonList({ user }) {
               fontSize: '2.4rem',
               fontWeight: 900,
               color: '#7c3aed',
-              fontFamily: 'serif',
+              fontFamily: 'var(--font-display)',
               marginBottom: '14px'
             }}>
               &lt; 1 giờ
@@ -1187,7 +1188,7 @@ export default function LessonList({ user }) {
                   fontSize: '2rem',
                   fontWeight: 900,
                   color: '#ea580c',
-                  fontFamily: 'serif',
+                  fontFamily: 'var(--font-display)',
                   marginTop: '4px'
                 }}>
                   78%

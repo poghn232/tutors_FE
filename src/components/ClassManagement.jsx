@@ -395,7 +395,7 @@ export default function ClassManagement({ user, onNavigateToTutors, onNavigateTo
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: '2.2rem',
             fontWeight: 800,
             color: '#0f172a',

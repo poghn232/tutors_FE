@@ -43,7 +43,7 @@ export default function PaymentView() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '16px 20px 48px' }}>
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', fontFamily: 'serif' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
           Ví kết nối
         </h1>
         <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
@@ -57,7 +57,7 @@ export default function PaymentView() {
           <div style={{ marginTop: '14px', color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase' }}>
             Số dư khả dụng
           </div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffd600', marginTop: '6px', fontFamily: 'serif' }}>
+          <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffd600', marginTop: '6px', fontFamily: 'var(--font-display)' }}>
             {formatVND(balance)}
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function PaymentView() {
           <div style={{ marginTop: '14px', color: '#64748b', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase' }}>
             Phí kết nối mặc định (Thử nghiệm)
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', marginTop: '6px', fontFamily: 'serif' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#059669', marginTop: '6px', fontFamily: 'var(--font-display)' }}>
             {formatVND(5000)}
           </div>
           <p style={{ margin: '6px 0 0', color: '#475569', fontSize: '0.86rem' }}>

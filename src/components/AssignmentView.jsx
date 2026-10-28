@@ -513,7 +513,7 @@ export default function AssignmentView({ user, onRequireAuth }) {
       }}>
         <div>
           <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: '2.2rem',
             fontWeight: 800,
             color: '#0f172a',

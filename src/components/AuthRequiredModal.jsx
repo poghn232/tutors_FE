@@ -73,7 +73,7 @@ export default function AuthRequiredModal({
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 10px 0',
-          fontFamily: "'Playfair Display', Georgia, serif"
+          fontFamily: "var(--font-display)"
         }}>
           Yêu cầu Đăng nhập
         </h2>

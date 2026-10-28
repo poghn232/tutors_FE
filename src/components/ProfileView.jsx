@@ -709,7 +709,8 @@ export default function ProfileView({ onBack }) {
               fontWeight: 900,
               color: '#0f172a',
               margin: '0 0 6px 0',
-              fontFamily: 'serif'
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.02em'
             }}>
               Chỉnh sửa Hồ sơ
             </h1>
@@ -1761,7 +1762,8 @@ export default function ProfileView({ onBack }) {
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 6px 0',
-          fontFamily: 'serif'
+          fontFamily: 'var(--font-display)',
+          letterSpacing: '-0.02em'
         }}>
           Hồ sơ phụ huynh / học sinh
         </h1>

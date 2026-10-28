@@ -148,11 +148,12 @@ export default function AdminPostModerationView() {
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Tutora Post Moderation (Khu vực Hà Nội)</span>
           </div>
           <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: '2rem',
             fontWeight: 900,
             color: '#0f172a',
-            margin: '0 0 6px 0'
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.02em'
           }}>
             Kiểm Duyệt Bài Đăng Tìm Gia Sư
           </h1>

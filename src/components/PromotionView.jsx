@@ -72,7 +72,7 @@ export default function PromotionView() {
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '16px 20px 60px' }}>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#ea580c', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase' }}><Gift size={16} /> Ưu đãi</div>
-        <h1 style={{ margin: '6px 0', fontSize: '2rem', fontWeight: 900, color: '#0f172a', fontFamily: 'serif' }}>Kho Voucher</h1>
+        <h1 style={{ margin: '6px 0', fontSize: '2rem', fontWeight: 900, color: '#0f172a', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>Kho Voucher</h1>
         <p style={{ margin: 0, color: '#64748b' }}>Nhận voucher từ link chia sẻ, dùng ở bước thanh toán và nhận voucher cảm ơn sau khi thanh toán thành công.</p>
       </div>
 

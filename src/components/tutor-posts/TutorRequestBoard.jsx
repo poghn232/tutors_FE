@@ -145,11 +145,12 @@ export default function TutorRequestBoard({ user, onRequireAuth, onNavigate }) {
               <MapPin size={13} /> ÁP DỤNG TẠI HÀ NỘI
             </div>
             <h1 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: '2.3rem',
-              fontWeight: 800,
+              fontWeight: 900,
               color: '#0f172a',
-              margin: '0 0 6px 0'
+              margin: '0 0 6px 0',
+              letterSpacing: '-0.02em'
             }}>
               Lớp Cần Gia Sư
             </h1>

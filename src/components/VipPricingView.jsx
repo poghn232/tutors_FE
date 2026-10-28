@@ -132,7 +132,8 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 8px 0',
-          fontFamily: 'serif'
+          fontFamily: 'var(--font-display)',
+          letterSpacing: '-0.02em'
         }}>
           Mở khóa Toàn bộ Tiềm năng Học tập
         </h1>
@@ -269,12 +270,12 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
               Hiện tại
             </span>
 
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', fontFamily: 'serif' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', fontFamily: 'var(--font-display)' }}>
               Miễn phí
             </h3>
             
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0f172a', fontFamily: 'serif' }}>
+              <span style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0f172a', fontFamily: 'var(--font-display)' }}>
                 0đ
               </span>
               <span style={{ color: '#64748b', fontSize: '0.9rem' }}>/tháng</span>
@@ -344,12 +345,12 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
               Cao cấp
             </span>
 
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff', margin: '0 0 6px 0', fontFamily: 'serif' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff', margin: '0 0 6px 0', fontFamily: 'var(--font-display)' }}>
               Cao cấp
             </h3>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '2.4rem', fontWeight: 900, color: '#ffd600', fontFamily: 'serif' }}>
+              <span style={{ fontSize: '2.4rem', fontWeight: 900, color: '#ffd600', fontFamily: 'var(--font-display)' }}>
                 {billingCycle === 'yearly' ? '159.000đ' : '199.000đ'}
               </span>
               <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>/tháng</span>
@@ -410,7 +411,7 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 28px 0',
-          fontFamily: 'serif'
+          fontFamily: 'var(--font-display)'
         }}>
           So sánh tính năng
         </h2>
@@ -458,7 +459,7 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 28px 0',
-          fontFamily: 'serif'
+          fontFamily: 'var(--font-display)'
         }}>
           Phụ huynh nói gì về Tutora?
         </h2>
@@ -526,7 +527,7 @@ export default function VipPricingView({ onBack, onSelectVip, user, onRequireAut
           fontWeight: 900,
           color: '#0f172a',
           margin: '0 0 28px 0',
-          fontFamily: 'serif'
+          fontFamily: 'var(--font-display)'
         }}>
           Câu hỏi thường gặp
         </h2>

@@ -504,7 +504,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ffd600', fontWeight: 900 }}>
                   CHÀO BUỔI SÁNG
                 </span>
-                <h1 style={{ fontFamily: 'serif', fontSize: '2.4rem', fontWeight: 900, color: '#ffffff', margin: '6px 0 8px 0' }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 900, color: '#ffffff', margin: '6px 0 8px 0', letterSpacing: '-0.02em' }}>
                   {user.fullName || 'Gia sư'}
                 </h1>
                 <p style={{ color: '#cbd5e1', fontSize: '0.95rem', margin: 0 }}>
@@ -612,7 +612,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <Calendar size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'serif' }}>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#059669', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
                   {activeClasses.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -636,7 +636,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <Clock size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'serif' }}>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#7c3aed', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
                   {paidPendingRequests.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -663,7 +663,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <CheckSquare size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: pendingRequests.length > 0 ? '#b45309' : '#ea580c', lineHeight: 1.1, fontFamily: 'serif' }}>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: pendingRequests.length > 0 ? '#b45309' : '#ea580c', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
                   {pendingRequests.length}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -687,7 +687,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                 <Star size={22} />
               </div>
               <div>
-                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'serif' }}>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ca8a04', lineHeight: 1.1, fontFamily: 'var(--font-display)' }}>
                   4.9
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>
@@ -712,7 +712,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
               {/* Upcoming Sessions */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: 'serif' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: 0, fontFamily: 'var(--font-display)' }}>
                     Buổi học Sắp tới
                   </h3>
                   <button
@@ -827,7 +827,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
 
               {/* Recent Notifications */}
               <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 16px 0', fontFamily: 'serif' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 16px 0', fontFamily: 'var(--font-display)' }}>
                   Thông báo Gần đây
                 </h3>
 
@@ -919,7 +919,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
 
                 {activeClasses.length === 0 ? (
                   <>
-                    <div style={{ fontSize: '1.3rem', fontWeight: 900, marginTop: '12px', marginBottom: '4px', fontFamily: 'serif' }}>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 900, marginTop: '12px', marginBottom: '4px', fontFamily: 'var(--font-display)' }}>
                       Chưa có lịch dạy
                     </div>
 
@@ -948,7 +948,7 @@ export default function DashboardPage({ activeTab = 'default', onNavigate, onReq
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '8px', marginBottom: '2px', fontFamily: 'serif' }}>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '8px', marginBottom: '2px', fontFamily: 'var(--font-display)' }}>
                       {activeClasses[0].studentName || 'Học sinh'}
                     </div>
 

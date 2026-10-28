@@ -132,7 +132,7 @@ export default function CandidateReviewModal({ isOpen, post, onClose, onPostUpda
         }}>
           <div>
             <h2 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: '1.65rem',
               fontWeight: 800,
               color: '#0f172a',

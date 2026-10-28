@@ -370,7 +370,7 @@ export default function ProgressReportView({ user }) {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             <Sparkles size={16} /> AI học tập
           </div>
-          <h1 style={{ margin: '6px 0', color: '#0f172a', fontSize: '2rem', fontFamily: 'serif', fontWeight: 900 }}>Báo Cáo Tiến Độ</h1>
+          <h1 style={{ margin: '6px 0', color: '#0f172a', fontSize: '2rem', fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: '-0.02em' }}>Báo Cáo Tiến Độ</h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Tổng hợp buổi học, bài tập và khuyến nghị học tập từ dữ liệu thực tế.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>

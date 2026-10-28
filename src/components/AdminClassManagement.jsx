@@ -96,7 +96,7 @@ export default function AdminClassManagement() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '6px' }}>
             <BookOpen size={16} /> Quản Lý Đào Tạo
           </div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', fontFamily: 'serif' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
             Tất Cả Lớp Học & Yêu Cầu Kết Nối
           </h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.92rem' }}>

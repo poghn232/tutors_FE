@@ -123,7 +123,7 @@ export default function AdminDashboardOverview({ onNavigate }) {
           }}>
             <Sparkles size={14} /> TRUNG TÂM ĐIỀU HÀNH TUTORA
           </div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, margin: '0 0 6px 0', fontFamily: 'serif' }}>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 900, margin: '0 0 6px 0', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
             Tổng Quan Hệ Thống Quản Trị
           </h1>
           <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.92rem', maxWidth: '640px', lineHeight: 1.5 }}>

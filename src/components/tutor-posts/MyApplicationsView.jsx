@@ -118,11 +118,12 @@ export default function MyApplicationsView({ onNavigate }) {
             <MapPin size={13} /> GIA SƯ HÀ NỘI
           </div>
           <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: '2.2rem',
-            fontWeight: 800,
+            fontWeight: 900,
             color: '#0f172a',
-            margin: '0 0 6px'
+            margin: '0 0 6px',
+            letterSpacing: '-0.02em'
           }}>
             Đơn Ứng Tuyển Nhận Lớp Của Tôi
           </h1>

@@ -341,7 +341,7 @@ export default function MaterialView({ user, onNavigateToVip, onRequireAuth }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: '2.2rem',
               fontWeight: 800,
               color: '#0f172a',

@@ -277,11 +277,12 @@ export default function TutorCatalog({ onSelectTutor, onNavigate, user, onRequir
       {/* Top Title & Search bar (Figma 15:2008) */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
+          fontFamily: "var(--font-display)",
           fontSize: '2.3rem',
-          fontWeight: 800,
+          fontWeight: 900,
           color: '#0f172a',
-          margin: '0 0 16px 0'
+          margin: '0 0 16px 0',
+          letterSpacing: '-0.02em'
         }}>
           Tìm Gia Sư
         </h1>
